@@ -1,73 +1,104 @@
-# React + TypeScript + Vite
+# easy_publish_frontend
 
-This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
+React + TypeScript frontend for publishing and viewing MoveVM data on IOTA.
 
-Currently, two official plugins are available:
+The app supports:
+- Wallet connection and transaction submission (create/update/publish forms)
+- Browsing containers, data types, data items, and verifications
+- Instance-specific translations (`generic`, `cars`)
+- Bundled CLI package display/download from the landing page (`public/scripts`)
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Babel](https://babeljs.io/) (or [oxc](https://oxc.rs) when used in [rolldown-vite](https://vite.dev/guide/rolldown)) for Fast Refresh
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/) for Fast Refresh
+## Stack
 
-## React Compiler
+- Vite
+- React 19
+- TypeScript
+- `@iota/dapp-kit` + `@iota/iota-sdk`
+- Axios
 
-The React Compiler is not enabled on this template because of its impact on dev & build performances. To add it, see [this documentation](https://react.dev/learn/react-compiler/installation).
+## Prerequisites
 
-## Expanding the ESLint configuration
+- Node.js 18+
+- npm 9+
+- Running backend/API endpoint (`VITE_API_BASE`)
+- IOTA wallet extension (for write transactions)
 
-If you are developing a production application, we recommend updating the configuration to enable type-aware lint rules:
+## Quick Start
 
-```js
-export default defineConfig([
-  globalIgnores(['dist']),
-  {
-    files: ['**/*.{ts,tsx}'],
-    extends: [
-      // Other configs...
+1. Install dependencies:
 
-      // Remove tseslint.configs.recommended and replace with this
-      tseslint.configs.recommendedTypeChecked,
-      // Alternatively, use this for stricter rules
-      tseslint.configs.strictTypeChecked,
-      // Optionally, add this for stylistic rules
-      tseslint.configs.stylisticTypeChecked,
-
-      // Other configs...
-    ],
-    languageOptions: {
-      parserOptions: {
-        project: ['./tsconfig.node.json', './tsconfig.app.json'],
-        tsconfigRootDir: import.meta.dirname,
-      },
-      // other options...
-    },
-  },
-])
+```bash
+npm install
 ```
 
-You can also install [eslint-plugin-react-x](https://github.com/Rel1cx/eslint-react/tree/main/packages/plugins/eslint-plugin-react-x) and [eslint-plugin-react-dom](https://github.com/Rel1cx/eslint-react/tree/main/packages/plugins/eslint-plugin-react-dom) for React-specific lint rules:
+2. Configure environment values in `.env` (local) and/or `.env.production` (production build).
 
-```js
-// eslint.config.js
-import reactX from 'eslint-plugin-react-x'
-import reactDom from 'eslint-plugin-react-dom'
+3. Start development server:
 
-export default defineConfig([
-  globalIgnores(['dist']),
-  {
-    files: ['**/*.{ts,tsx}'],
-    extends: [
-      // Other configs...
-      // Enable lint rules for React
-      reactX.configs['recommended-typescript'],
-      // Enable lint rules for React DOM
-      reactDom.configs.recommended,
-    ],
-    languageOptions: {
-      parserOptions: {
-        project: ['./tsconfig.node.json', './tsconfig.app.json'],
-        tsconfigRootDir: import.meta.dirname,
-      },
-      // other options...
-    },
-  },
-])
+```bash
+npm run dev
 ```
+
+4. Build for production:
+
+```bash
+npm run build
+```
+
+5. Preview production build locally:
+
+```bash
+npm run preview
+```
+
+## Environment Variables
+
+The app reads these from `import.meta.env` (see `src/Config.ts`):
+
+- `VITE_PACKAGE_ID`
+- `VITE_MODULE`
+- `VITE_CLOCK_ID`
+- `VITE_CONTAINER_CHAIN_ID`
+- `VITE_DATA_ITEM_CHAIN`
+- `VITE_DATA_ITEM_VERIFICATION_CHAIN`
+- `VITE_UPDATE_CHAIN_ID`
+- `VITE_IOTA_EXPLORER_OBJECT`
+- `VITE_IOTA_EXPLORER_NETWORK`
+- `VITE_IOTA_EXPLORER_TXBLOCK`
+- `VITE_APP_INSTANCE_NAME` (`generic` or `cars`)
+- `VITE_APP_INSTANCE_DOMAIN`
+- `VITE_API_BASE`
+- `VITE_API_WS_BASE`
+
+## Instance Translation
+
+Translation files are loaded from:
+
+- `public/config/generic.json`
+- `public/config/cars.json`
+
+`VITE_APP_INSTANCE_NAME` controls which translation file is used at runtime.
+
+## Project Structure
+
+- `src/move/forms`: MoveVM transaction forms and shared transaction helpers
+- `src/move/view`: Data listing/table rendering logic
+- `src/panels`: Introduction, scripts carousel, and main panel sections
+- `src/layout`: Navbar, footer, cookie consent
+- `public/scripts`: Downloadable CLI package shown in the landing page carousel
+
+## CLI Repositories
+
+- CLI package repo: https://github.com/CommitForge/easy_publish_cli
+- MoveVM contract repo: https://github.com/CommitForge/easy_publish_movevm
+
+`public/scripts/README.md` contains full CLI usage and payload format details.
+
+## Security Notes
+
+- Do not put private keys or mnemonics into frontend env files.
+- Keep signer secrets in secure local CLI env files (for example `.env.cli`) and never commit them.
+
+## License
+
+No license file is currently included in this repository.

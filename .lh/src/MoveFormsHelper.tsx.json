@@ -1,0 +1,22 @@
+{
+    "sourceFile": "src/MoveFormsHelper.tsx",
+    "activeCommit": 0,
+    "commits": [
+        {
+            "activePatchIndex": 1,
+            "patches": [
+                {
+                    "date": 1768403749891,
+                    "content": "Index: \n===================================================================\n--- \n+++ \n"
+                },
+                {
+                    "date": 1768403853143,
+                    "content": "Index: \n===================================================================\n--- \n+++ \n@@ -0,0 +1,82 @@\n+import React from 'react';\n+\n+/* ============================================================\n+   Generic vertical-aligned form row\n+   Label ends at same column for all fields\n+   ============================================================ */\n+\n+export type FormRowProps = {\n+  label: string;\n+  children: React.ReactNode;\n+};\n+\n+export const FormRow: React.FC<FormRowProps> = ({ label, children }) => (\n+  <div className=\"row align-items-center mb-3\">\n+    <label className=\"col-4 col-form-label text-end\">\n+      {label}\n+    </label>\n+    <div className=\"col-8\">\n+      {children}\n+    </div>\n+  </div>\n+);\n+\n+/* ============================================================\n+   Checkbox section (Permissions, Events, Flags, etc.)\n+   ============================================================ */\n+\n+export type CheckboxSectionProps<T extends Record<string, any>> = {\n+  title: string;\n+  items: [keyof T, string][];\n+  form: T;\n+  toggle: (key: keyof T) => void;\n+};\n+\n+export function CheckboxSection<T extends Record<string, any>>({\n+  title,\n+  items,\n+  form,\n+  toggle,\n+}: CheckboxSectionProps<T>) {\n+  return (\n+    <>\n+      <h6 className=\"text-center mt-4 mb-2\">{title}</h6>\n+\n+      <div className=\"row\">\n+        <div className=\"col-8 offset-4\">\n+          {items.map(([key, label]) => (\n+            <div className=\"form-check mb-2\" key={String(key)}>\n+              <input\n+                className=\"form-check-input\"\n+                type=\"checkbox\"\n+                checked={Boolean(form[key])}\n+                onChange={() => toggle(key)}\n+              />\n+              <label className=\"form-check-label\">\n+                {label}\n+              </label>\n+            </div>\n+          ))}\n+        </div>\n+      </div>\n+    </>\n+  );\n+}\n+\n+/* ============================================================\n+   Small helper inputs (optional but convenient)\n+   ============================================================ */\n+\n+export const TextInput = (props: React.InputHTMLAttributes<HTMLInputElement>) => (\n+  <input\n+    {...props}\n+    className={`form-control form-control-sm rounded-3 ${props.className ?? ''}`}\n+  />\n+);\n+\n+export const TextArea = (props: React.TextareaHTMLAttributes<HTMLTextAreaElement>) => (\n+  <textarea\n+    {...props}\n+    className={`form-control form-control-sm rounded-3 ${props.className ?? ''}`}\n+  />\n+);\n"
+                }
+            ],
+            "date": 1768403749891,
+            "name": "Commit-0",
+            "content": "const FormRow = ({ label, children }: FormRowProps) => (\n  <div className=\"row align-items-center mb-3\">\n    <label className=\"col-4 col-form-label text-end\">\n      {label}\n    </label>\n    <div className=\"col-8\">\n      {children}\n    </div>\n  </div>\n);\n\nexport type CheckboxSectionProps<T> = {\n  title: string;\n  items: [keyof T, string][];\n  form: T;\n  toggle: (key: keyof T) => void;\n};\n\nexport function CheckboxSection<T>({\n  title,\n  items,\n  form,\n  toggle,\n}: CheckboxSectionProps<T>) {\n  return (\n    <>\n      <h6 className=\"text-center mt-4 mb-2\">{title}</h6>\n\n      <div className=\"row\">\n        <div className=\"col-8 offset-4\">\n          {items.map(([key, label]) => (\n            <div className=\"form-check mb-2\" key={String(key)}>\n              <input\n                className=\"form-check-input\"\n                type=\"checkbox\"\n                checked={Boolean(form[key])}\n                onChange={() => toggle(key)}\n              />\n              <label className=\"form-check-label\">\n                {label}\n              </label>\n            </div>\n          ))}\n        </div>\n      </div>\n    </>\n  );\n}"
+        }
+    ]
+}

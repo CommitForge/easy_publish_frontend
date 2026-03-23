@@ -1,0 +1,18 @@
+{
+    "sourceFile": "src/main.tsx",
+    "activeCommit": 0,
+    "commits": [
+        {
+            "activePatchIndex": 0,
+            "patches": [
+                {
+                    "date": 1768404592988,
+                    "content": "Index: \n===================================================================\n--- \n+++ \n"
+                }
+            ],
+            "date": 1768404592988,
+            "name": "Commit-0",
+            "content": "import React from 'react';\nimport ReactDOM from 'react-dom/client';\nimport { IotaClientProvider, WalletProvider, createNetworkConfig } from '@iota/dapp-kit';\nimport { getFullnodeUrl } from '@iota/iota-sdk/client';\nimport { QueryClient, QueryClientProvider } from '@tanstack/react-query';\n// Config options for the networks you want to connect to\nconst { networkConfig } = createNetworkConfig({\n    testnet: { url: getFullnodeUrl('testnet') },\n});\n\nimport App from './App';\n\nconst queryClient = new QueryClient();\n\nReactDOM.createRoot(document.getElementById('root')!).render(\n  <React.StrictMode>\n    <QueryClientProvider client={queryClient}>\n      <IotaClientProvider\n        networks={networkConfig}\n      >\n        <WalletProvider>\n          <App />\n        </WalletProvider>\n      </IotaClientProvider>\n    </QueryClientProvider>\n  </React.StrictMode>\n);\n\n"
+        }
+    ]
+}

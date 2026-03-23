@@ -1,0 +1,18 @@
+{
+    "sourceFile": "src/move/forms/MoveFormRemoveOwner.tsx",
+    "activeCommit": 0,
+    "commits": [
+        {
+            "activePatchIndex": 0,
+            "patches": [
+                {
+                    "date": 1768406682950,
+                    "content": "Index: \n===================================================================\n--- \n+++ \n"
+                }
+            ],
+            "date": 1768406682950,
+            "name": "Commit-0",
+            "content": "import { useSignAndExecuteTransaction } from '@iota/dapp-kit';\nimport { useState } from 'react';\nimport { Transaction } from '@iota/iota-sdk/transactions';\nimport { FormRow } from './MoveFormsStyleHelper.tsx';\nimport { moveTarget, submitTx } from './MoveFormsTransactionHelper.tsx';\n\nexport function RemoveOwnerForm({ address }: { address: string }) {\n  const { mutate: signAndExecuteTransaction } = useSignAndExecuteTransaction();\n  const [digest, setDigest] = useState('');\n\n  const [form, setForm] = useState({\n    containerId: '',\n    owner: '',\n  });\n\n  const submit = () => {\n    const tx = new Transaction();\n\n    tx.moveCall({\n      target: moveTarget('remove_owner'),\n      arguments: [\n        tx.object(form.containerId),\n        tx.pure.string(form.owner),\n      ],\n    });\n\n    submitTx(signAndExecuteTransaction, tx, address, setDigest);\n  };\n\n  return (\n    <div className=\"d-flex justify-content-center mt-4\">\n      <div className=\"w-100\" style={{ maxWidth: 560 }}>\n        <h5 className=\"text-center mb-4\">Remove Owner</h5>\n\n        <FormRow label=\"Container Object ID\">\n          <input\n            className=\"form-control form-control-sm rounded-3\"\n            placeholder=\"0x...\"\n            value={form.containerId}\n            onChange={(e) => setForm({ ...form, containerId: e.target.value })}\n          />\n        </FormRow>\n\n        <FormRow label=\"Owner to Remove\">\n          <input\n            className=\"form-control form-control-sm rounded-3\"\n            placeholder=\"Owner\"\n            value={form.owner}\n            onChange={(e) => setForm({ ...form, owner: e.target.value })}\n          />\n        </FormRow>\n\n        <div className=\"text-center mt-4\">\n          <button\n            className=\"btn btn-outline-primary btn-sm px-4\"\n            onClick={submit}\n          >\n            Remove Owner\n          </button>\n        </div>\n\n        {digest && (\n          <div className=\"text-center small mt-3\">\n            Digest: {digest}\n          </div>\n        )}\n      </div>\n    </div>\n  );\n}\n"
+        }
+    ]
+}

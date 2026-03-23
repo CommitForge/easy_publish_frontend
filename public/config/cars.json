@@ -1,0 +1,190 @@
+{
+    "translation": "cars",
+  "container": {
+    "singular": "Car",
+    "plural": "Cars",
+    "child": "Car Connection"
+  },
+  "type": {
+    "singular": "Maintenance Type",
+    "plural": "Maintenance Types"
+  },
+  "item": {
+    "singular": "Maintenance Event",
+    "plural": "Maintenance Events"
+  },
+  "itemVerification": {
+    "singular": "Maintenance Verification",
+    "plural": "Maintenance Verifications"
+  },
+
+  "fields": {
+        "carId": "Car ID *",
+    "maintenanceTypeId": "Maintenance Type ID *",
+    "name": "Name",
+    "description": "Description",
+    "content": "Content",
+    "version": "Version",
+    "schemas": "Schemas",
+    "apis": "APIs",
+    "resources": "Resources",
+    "externalId": "External ID",
+    "externalIndex": "External Index",
+
+    "containerId": "Car ID",
+    "parentContainerId": "Parent Car ID",
+    "childContainerId": "Child Car ID",
+
+    "owner": "Owner",
+    "ownerAddress": "Owner Address",
+    "role": "Role",
+        "recipients": "Recipients",
+    "references": "References",
+    "verified": "Verified"
+  },
+
+  "actions": {
+        "publish": "Publish",
+    "new": "New",
+    "edit": "Edit",
+    "attach": "Attach",
+    "addOwner": "Owner +",
+    "removeOwner": "Owner −",
+    "clearAll": "Clear All",
+    "followed": "Followed",
+    "skipped": "Skipped",
+    "error": "Error",
+    "update": "Update",
+    "submit": "Submit",
+    "loadSelected": "Load Selected",
+
+    "finalize": "Finalize",
+    "copy": "Copy",
+    "open": "Open",
+    "create": "Create",
+    "selected": "Selected",
+    "loading": "Loading...",
+    "updateDataType": "Update Maintenance Type"
+  },
+
+  "sections": {
+    "container": "Car",
+    "containers": "Cars",
+    "owner": "Owner",
+    "role": "Role",
+    "external": "External",
+    "basicInfo": "Basic Info",
+    "specification": "Specification",
+    "permissions": "Permissions",
+    "events": "Events"
+  },
+
+  "labels": {
+     "verified": "Verified",
+     "targetObjects": "Target Objects",
+    "parentObjects": "Parent Objects",
+    "transactionDigest": "Transaction Digest",
+    "containers": "Cars",
+        "basicInfo": "Basic Info",
+      "basicData": "Basic Data",
+  "specification": "Specification",
+  "external": "External",
+  "permissions": "Permissions",
+  "events": "Events",
+    "selectContainerAndType": "Select Car and Maintenance Type",
+    "newName": "Name",
+    "newDescription": "Description",
+    "newContent": "Content",
+    "updateNameDescriptionContent": "Update Name, Description, and Content",
+    "version": "Version",
+    "schemas": "Schemas",
+    "apis": "APIs",
+    "resources": "Resources",
+    "specificationDetails": "Specification Details",
+    "newExternalId": "External ID",
+    "externalIndex": "External Index",
+    "externalDescription": "External ID, Description, Content",
+    "submitAndInspect": "Submit and Inspect",
+    "finalize": "Finalize",
+          "recipientsAndReferences": "Recipients & References",
+
+                        "parentAndItem": "Parent Car and Maintenance Event",
+    "metadata": "Metadata"
+  },
+  "permissions": {
+    "publicUpdate": "Public can update car info",
+    "publicAttach": "Public can attach maintenance events",
+    "publicCreateType": "Public can create maintenance types",
+    "publicPublish": "Public can publish maintenance events",
+        "parentAndItem": "Parent Car and Maintenance Event",
+    "metadata": "Metadata"
+  },
+
+  "events": {
+    "create": "Create",
+    "publish": "Publish",
+    "attach": "Attach",
+    "addOwner": "Add Owner",
+    "removeOwner": "Remove Owner",
+    "update": "Update"
+  },
+
+  "menu": "Menu",
+  "optional": "Optional",
+
+  "browse": {
+    "containers": "Browse Cars",
+    "types": "Browse Maintenance Types",
+    "items": "Browse Maintenance Events"
+  },
+
+  "messages": {
+    "selectContainerOrType": "Select a car or maintenance type to view maintenance events.",
+    "connectWalletToAdd": "Connect wallet to add objects.",
+    "selectWhatToCreate": "Select what you want to create from the menu.",
+    "selectActionSidebar": "Select an action from the sidebar.",
+    "confirmClearFollowed": "Are you sure you want to unfollow all cars?",
+    "experimentalFeature": "Experimental feature",
+    "noFollowedContainers": "No followed cars",
+    "failedToLoad": "Failed to load data.",
+    "containerAndTypeRequired": "Car ID and Maintenance Type ID are required.",
+    "containerIdAndNameRequired": "Car ID and Name are required.",
+    "containerTypeNameRequired": "Car ID, Maintenance Type ID and Name are required.",
+    "containerItemNameRequired": "Car ID, Maintenance Event ID and Name are required.",
+    "containerAndOwnerRequired": "Car ID and Owner address are required.",
+    "waitSync": "Wait up to 1 minute for data to sync and be visible here.",
+    "syncProblems": "In case of sync problems return later or contact support.",
+    "loading": "Loading...",
+    "noSelectedContainer": "No selected Car ID.",
+    "transactionDigest": "Transaction Digest",
+
+    "noContainerSelected": "No car selected.",
+    "containerNotFound": "Car not found.",
+    "failedLoadContainer": "Failed to load car data.",
+    "failedLoadDataType": "Failed to load maintenance type data.",
+    "failedToLoadDataType": "Failed to load maintenance type data.",
+    "failedLoadDataItem": "Failed to load maintenance event data.",
+    "failedLoadItem": "Failed to load maintenance event.",
+    "nameRequired": "Name is required.",
+    "humanReadableMetadata": "Human-readable metadata to describe this car.",
+    "schemasApisResources": "Schemas, APIs, and resources associated with this car.",
+    "externalIDForIndexing": "External ID used for indexing purposes.",
+    "publicAccessRules": "Public access rules for this car.",
+    "containerEvents": "Events that trigger actions on this car.",
+    "submitAndInspect": "Submit the transaction and inspect results.",
+        "selectParentChildContainers": "Select a parent and child car to attach.",
+    "externalNameDescriptionContent": "External ID, Name, Description, Content",
+    "externalIdAndIndex": "External ID and Index",
+        "removeOwnerFromContainer": "Remove owner from car",
+    "selectedDataType": "Selected Maintenance Type",
+    "clear": "Clear",
+    "noContainerOrType": "No selected car or maintenance type.",
+    "noDataItemId": "No selected maintenance event ID.",
+    "noSelectedItem": "No selected maintenance event.",
+     "optionalRecipientsReference": "Optional: specify recipients and reference",
+       "containerAndType": "Car ID and Maintenance Type ID are required.",
+           "selectItemToVerify": "Select a Maintenance Event to verify.",
+    "basicVerification": "Basic Verification",
+    "submit": "Submit transaction and inspect the resulting digest."
+  }
+}

@@ -1,0 +1,18 @@
+{
+    "sourceFile": "src/move/forms/MoveFormUpdateContainerForm.tsx",
+    "activeCommit": 0,
+    "commits": [
+        {
+            "activePatchIndex": 0,
+            "patches": [
+                {
+                    "date": 1768407212502,
+                    "content": "Index: \n===================================================================\n--- \n+++ \n"
+                }
+            ],
+            "date": 1768407212502,
+            "name": "Commit-0",
+            "content": "import { useSignAndExecuteTransaction } from '@iota/dapp-kit';\nimport { useState } from 'react';\nimport { Transaction } from '@iota/iota-sdk/transactions';\nimport { FormRow } from './MoveFormsStyleHelper.tsx';\nimport { moveTarget, submitTx } from './MoveFormsTransactionHelper.tsx';\n\nexport function UpdateContainerForm({ address }: { address: string }) {\n  const { mutate: signAndExecuteTransaction } = useSignAndExecuteTransaction();\n  const [digest, setDigest] = useState('');\n\n  const [form, setForm] = useState({\n    container: '',\n    name: '',\n    description: '',\n    content: '',\n    externalId: '',\n  });\n\n  const submit = () => {\n    const tx = new Transaction();\n\n    tx.moveCall({\n      target: moveTarget('update_container'),\n      arguments: [\n        tx.object(form.container),\n        tx.pure.string(form.name),\n        tx.pure.string(form.description),\n        tx.pure.string(form.content),\n        tx.pure.string(form.externalId),\n      ],\n    });\n\n    submitTx(signAndExecuteTransaction, tx, address, setDigest);\n  };\n\n  return (\n    <div className=\"d-flex justify-content-center mt-4\">\n      <div className=\"w-100\" style={{ maxWidth: 560 }}>\n        <h5 className=\"text-center mb-4\">Update Container</h5>\n\n        <FormRow label=\"Container ID\">\n          <input\n            className=\"form-control form-control-sm rounded-3\"\n            placeholder=\"0x...\"\n            value={form.container}\n            onChange={(e) => setForm({ ...form, container: e.target.value })}\n          />\n        </FormRow>\n\n        <FormRow label=\"New Name\">\n          <input\n            className=\"form-control form-control-sm rounded-3\"\n            value={form.name}\n            onChange={(e) => setForm({ ...form, name: e.target.value })}\n          />\n        </FormRow>\n\n        <FormRow label=\"New Description\">\n          <input\n            className=\"form-control form-control-sm rounded-3\"\n            value={form.description}\n            onChange={(e) => setForm({ ...form, description: e.target.value })}\n          />\n        </FormRow>\n\n        <FormRow label=\"New Content\">\n          <textarea\n            className=\"form-control form-control-sm rounded-3\"\n            rows={3}\n            value={form.content}\n            onChange={(e) => setForm({ ...form, content: e.target.value })}\n          />\n        </FormRow>\n\n        <FormRow label=\"New External ID\">\n          <input\n            className=\"form-control form-control-sm rounded-3\"\n            value={form.externalId}\n            onChange={(e) => setForm({ ...form, externalId: e.target.value })}\n          />\n        </FormRow>\n\n        <div className=\"text-center mt-4\">\n          <button\n            className=\"btn btn-outline-primary btn-sm px-4\"\n            onClick={submit}\n          >\n            Update Container\n          </button>\n        </div>\n\n        {digest && (\n          <div className=\"text-center small mt-3\">\n            Digest: {digest}\n          </div>\n        )}\n      </div>\n    </div>\n  );\n}\n"
+        }
+    ]
+}

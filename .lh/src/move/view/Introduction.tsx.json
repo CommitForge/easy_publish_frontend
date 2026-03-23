@@ -1,0 +1,18 @@
+{
+    "sourceFile": "src/move/view/Introduction.tsx",
+    "activeCommit": 0,
+    "commits": [
+        {
+            "activePatchIndex": 0,
+            "patches": [
+                {
+                    "date": 1768404591782,
+                    "content": "Index: \n===================================================================\n--- \n+++ \n"
+                }
+            ],
+            "date": 1768404591782,
+            "name": "Commit-0",
+            "content": "\nexport function Introduction() {\n\n  return (\n    <div className=\"display-features\">\n      <section className=\"hero\">\n        <h1>Composable Containers on-chain</h1>\n        <p>Publish, link, and index structured data containers using MoveVM & IOTA.</p>\n        <div className=\"hero-actions\">\n          <a className=\"btn secondary\" href=\"/view/items\">Explore Data</a>\n\n\n\n          <p>Wallet address: <span id=\"walletAddress\">Not connected</span></p>\n          <a className=\"btn secondary\" href=\"/api/items\">API Docs</a>\n        </div>\n      </section>\n\n\n      <section id=\"features\" className=\"features\">\n        <h2>Why BlockPublisher?</h2>\n        <div className=\"feature-grid\">\n          <div className=\"feature\">\n            <h3>🔗 Linked Containers</h3>\n            <p>Attach child containers with ordered indices and immutable history.</p>\n          </div>\n          <div className=\"feature\">\n            <h3>📦 On-chain Indexing</h3>\n            <p>Efficient traversal without recursion or missing segments.</p>\n          </div>\n          <div className=\"feature\">\n            <h3>⚡ Event Driven</h3>\n            <p>Consume MoveVM events for real-time off-chain indexing.</p>\n          </div>\n          <div className=\"feature\">\n            <h3>🛡 Ownership Model</h3>\n            <p>Multi-owner containers with safe removal and permissions.</p>\n          </div>\n        </div>\n      </section>\n\n\n      <section id=\"api\" className=\"api\">\n        <h2>Universal Output</h2>\n        <p>Use the same data via REST, Thymeleaf, or embed anywhere.</p>\n        <pre className=\"code\">\n          GET /api/items?containerId=0x...&type=data_item\n\n\n          GET /view/items?containerId=0x...&type=data_item\n        </pre>\n      </section>\n\n\n      <section id=\"architecture\" className=\"architecture\">\n        <h2>Architecture</h2>\n        <ul>\n          <li>MoveVM smart contracts (IOTA)</li>\n          <li>Event indexing (off-chain)</li>\n          <li>Spring Boot backend</li>\n          <li>Universal HTML output</li>\n        </ul>\n      </section>\n\n\n      <section id=\"cta\" className=\"cta\">\n        <h2>Build on structured on-chain data</h2>\n        <p>Designed for scale, safety, and composability.</p>\n        <a href=\"/view/items\" className=\"btn primary\">Launch App</a>\n      </section>\n    </div>\n  );\n}\n"
+        }
+    ]
+}

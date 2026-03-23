@@ -1,0 +1,26 @@
+{
+    "sourceFile": "src/move/forms/MoveFormsTransactionHelper.tsx",
+    "activeCommit": 0,
+    "commits": [
+        {
+            "activePatchIndex": 2,
+            "patches": [
+                {
+                    "date": 1768404554340,
+                    "content": "Index: \n===================================================================\n--- \n+++ \n"
+                },
+                {
+                    "date": 1768404560150,
+                    "content": "Index: \n===================================================================\n--- \n+++ \n@@ -0,0 +1,36 @@\n+import { Transaction } from '@iota/iota-sdk/transactions';\n+import {\n+    signAndExecuteTransaction,\n+ //   useIotaClient\n+} from '@iota/dapp-kit';\n+// ==========================================\n+// Initialize IOTA Client\n+// ==========================================\n+const PACKAGE_ID = '0x3a43c05a17483b7c754a04439b5f83db473a4c6b18968a2a15b7718286bd81bc';\n+const MODULE = 'generic_store';\n+\n+export function moveTarget(fn: string): string {\n+  return `${PACKAGE_ID}::${MODULE}::${fn}`;\n+}\n+\n+export function submitTx(\n+  signAndExecuteTransaction: any,\n+  tx: Transaction,\n+  address: string,\n+  setDigest: (d: string) => void\n+) {\n+  tx.setSender(address);\n+\n+  signAndExecuteTransaction(\n+    { transaction: tx },\n+    {\n+      onSuccess: (res: any) => {\n+        console.log('TX success', res);\n+        setDigest(res.digest);\n+      },\n+      onError: (err: any) => {\n+        console.error('TX failed', err);\n+      },\n+    }\n+  );\n+}\n\\ No newline at end of file\n"
+                },
+                {
+                    "date": 1768404567877,
+                    "content": "Index: \n===================================================================\n--- \n+++ \n@@ -1,45 +1,6 @@\n import { Transaction } from '@iota/iota-sdk/transactions';\n-import {\n-    signAndExecuteTransaction,\n- //   useIotaClient\n-} from '@iota/dapp-kit';\n-// ==========================================\n-// Initialize IOTA Client\n-// ==========================================\n-const PACKAGE_ID = '0x3a43c05a17483b7c754a04439b5f83db473a4c6b18968a2a15b7718286bd81bc';\n-const MODULE = 'generic_store';\n \n-export function moveTarget(fn: string): string {\n-  return `${PACKAGE_ID}::${MODULE}::${fn}`;\n-}\n-\n-export function submitTx(\n-  signAndExecuteTransaction: any,\n-  tx: Transaction,\n-  address: string,\n-  setDigest: (d: string) => void\n-) {\n-  tx.setSender(address);\n-\n-  signAndExecuteTransaction(\n-    { transaction: tx },\n-    {\n-      onSuccess: (res: any) => {\n-        console.log('TX success', res);\n-        setDigest(res.digest);\n-      },\n-      onError: (err: any) => {\n-        console.error('TX failed', err);\n-      },\n-    }\n-  );\n-}\n-import { Transaction } from '@iota/iota-sdk/transactions';\n-import {\n-    useSignAndExecuteTransaction,\n- //   useIotaClient\n-} from '@iota/dapp-kit';\n // ==========================================\n // Initialize IOTA Client\n // ==========================================\n const PACKAGE_ID = '0x3a43c05a17483b7c754a04439b5f83db473a4c6b18968a2a15b7718286bd81bc';\n"
+                }
+            ],
+            "date": 1768404554340,
+            "name": "Commit-0",
+            "content": "import { Transaction } from '@iota/iota-sdk/transactions';\nimport {\n    useSignAndExecuteTransaction,\n //   useIotaClient\n} from '@iota/dapp-kit';\n// ==========================================\n// Initialize IOTA Client\n// ==========================================\nconst PACKAGE_ID = '0x3a43c05a17483b7c754a04439b5f83db473a4c6b18968a2a15b7718286bd81bc';\nconst MODULE = 'generic_store';\n\nexport function moveTarget(fn: string): string {\n  return `${PACKAGE_ID}::${MODULE}::${fn}`;\n}\n\nexport function submitTx(\n  signAndExecuteTransaction: any,\n  tx: Transaction,\n  address: string,\n  setDigest: (d: string) => void\n) {\n  tx.setSender(address);\n\n  signAndExecuteTransaction(\n    { transaction: tx },\n    {\n      onSuccess: (res: any) => {\n        console.log('TX success', res);\n        setDigest(res.digest);\n      },\n      onError: (err: any) => {\n        console.error('TX failed', err);\n      },\n    }\n  );\n}"
+        }
+    ]
+}

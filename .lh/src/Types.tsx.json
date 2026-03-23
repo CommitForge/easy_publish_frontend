@@ -1,0 +1,22 @@
+{
+    "sourceFile": "src/Types.tsx",
+    "activeCommit": 0,
+    "commits": [
+        {
+            "activePatchIndex": 1,
+            "patches": [
+                {
+                    "date": 1768403627818,
+                    "content": "Index: \n===================================================================\n--- \n+++ \n"
+                },
+                {
+                    "date": 1768403943614,
+                    "content": "Index: \n===================================================================\n--- \n+++ \n@@ -0,0 +1,9 @@\n+export type RawItem = {\n+  object_id: string;\n+  fields: Record<string, any>;\n+};\n+\n+export type Item = {\n+  object_id: string;\n+  fields: Record<string, any>;\n+};\n"
+                }
+            ],
+            "date": 1768403627818,
+            "name": "Commit-0",
+            "content": ""
+        }
+    ]
+}

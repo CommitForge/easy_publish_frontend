@@ -1,0 +1,12 @@
+{
+  "name": "izipublisher-scripts-refactored",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "bin": {
+    "izipub": "./izipub.js"
+  },
+  "dependencies": {
+    "@iota/iota-sdk": "*"
+  }
+}

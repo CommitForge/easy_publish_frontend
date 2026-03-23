@@ -1,0 +1,187 @@
+{
+"translation": "generic",
+  "container": {
+    "singular": "Container",
+    "plural": "Containers",
+    "child": "Container Connection"
+  },
+  "type": {
+    "singular": "Type",
+    "plural": "Types"
+  },
+  "item": {
+    "singular": "Item",
+    "plural": "Items"
+  },
+  "itemVerification": {
+    "singular": "Item Verification",
+    "plural": "Item Verifications"
+  },
+
+  "fields": {
+    "typeId": "Type ID *",
+    "name": "Name",
+    "description": "Description",
+    "content": "Content",
+    "version": "Version",
+    "schemas": "Schemas",
+    "apis": "APIs",
+    "resources": "Resources",
+    "externalId": "External ID",
+    "externalIndex": "External Index",
+
+    "containerId": "Container ID",
+    "parentContainerId": "Parent Container ID",
+    "childContainerId": "Child Container ID",
+
+    "owner": "Owner",
+    "ownerAddress": "Owner Address",
+    "role": "Role",
+        "recipients": "Recipients",
+    "references": "References",
+    "verified": "Verified"
+  },
+
+  "actions": {
+    "publish": "Publish",
+    "new": "New",
+    "edit": "Edit",
+    "attach": "Attach",
+    "addOwner": "Owner +",
+    "removeOwner": "Owner −",
+    "clearAll": "Clear All",
+    "followed": "Followed",
+    "skipped": "Skipped",
+    "error": "Error",
+    "update": "Update",
+    "submit": "Submit",
+    "loadSelected": "Load Selected",
+
+    "finalize": "Finalize",
+    "copy": "Copy",
+    "open": "Open",
+    "create": "Create",
+    "selected": "Selected",
+    "loading": "Loading...",
+    "updateType": "Update Type",
+    "updateDataType": "Update Type"
+  },
+
+  "sections": {
+    "container": "Container",
+    "containers": "Containers",
+    "owner": "Owner",
+    "role": "Role",
+    "external": "External",
+    "basicInfo": "Basic Info",
+    "specification": "Specification",
+    "permissions": "Permissions",
+    "events": "Events"
+  },
+  "labels": {
+         "verified": "Verified",
+    "targetObjects": "Target Objects",
+    "parentObjects": "Parent Objects",
+    "transactionDigest": "Transaction Digest",
+        "basicInfo": "Basic Info",
+  "basicData": "Basic Data",
+  "specification": "Specification",
+  "external": "External",
+  "permissions": "Permissions",
+  "events": "Events",
+      "containers": "Containers",
+        "selectContainerAndType": "Select Container and Type",
+    "newName": "Name",
+    "newDescription": "Description",
+    "newContent": "Content",
+    "updateNameDescriptionContent": "Update Name, Description, and Content",
+    "version": "Version",
+    "schemas": "Schemas",
+    "apis": "APIs",
+    "resources": "Resources",
+    "specificationDetails": "Specification Details",
+    "newExternalId": "External ID",
+    "externalIndex": "External Index",
+    "externalDescription": "External ID, Description, Content",
+    "submitAndInspect": "Submit and Inspect",
+    "finalize": "Finalize",
+      "recipientsAndReferences": "Recipients & References",
+                "parentAndItem": "Parent Container and Item",
+    "metadata": "Metadata"
+},
+  "menu": "Menu",
+  "optional": "Optional",
+
+  "browse": {
+    "containers": "Browse Containers",
+    "types": "Browse Types",
+    "items": "Browse Items"
+  },
+
+  "permissions": {
+    "publicUpdate": "Public can update container",
+    "publicAttach": "Public can attach child container",
+    "publicCreateType": "Public can create types",
+    "publicPublish": "Public can publish items"
+  },
+
+  "events": {
+    "create": "Create",
+    "publish": "Publish",
+    "attach": "Attach",
+    "addOwner": "Add Owner",
+    "removeOwner": "Remove Owner",
+    "update": "Update"
+  },
+
+  "messages": {
+    "selectContainerOrType": "Select a container or type to view items.",
+    "connectWalletToAdd": "Connect wallet to add objects.",
+    "selectWhatToCreate": "Select what you want to create from the menu.",
+    "selectActionSidebar": "Select an action from the sidebar.",
+    "confirmClearFollowed": "Are you sure you want to unfollow all containers?",
+    "experimentalFeature": "Experimental feature",
+    "noFollowedContainers": "No followed containers",
+    "failedToLoad": "Failed to load data.",
+    "containerAndTypeRequired": "Container ID and Type ID are required.",
+    "containerIdAndNameRequired": "Container ID and Name are required.",
+    "containerTypeNameRequired": "Container ID, Type ID and Name are required.",
+    "containerItemNameRequired": "Container ID, Item ID and Name are required.",
+    "containerAndOwnerRequired": "Container ID and Owner address are required.",
+    "waitSync": "Wait up to 1 minute for data to sync and be visible here.",
+    "syncProblems": "In case of sync problems return later or contact support.",
+    "loading": "Loading...",
+    "noSelectedContainer": "No selected Container ID.",
+    "transactionDigest": "Transaction Digest",
+    "noContainerSelected": "No container selected.",
+    "containerNotFound": "Container not found.",
+    "failedLoadContainer": "Failed to load container data.",
+    "failedLoadDataType": "Failed to load type data.",
+    "failedToLoadDataType": "Failed to load type data.",
+    "failedLoadDataItem": "Failed to load item data.",
+    "failedLoadItem": "Failed to load item.",
+    "nameRequired": "Name is required.",
+    "humanReadableMetadata": "Human-readable metadata to describe this container.",
+    "schemasApisResources": "Schemas, APIs, and resources associated with this container.",
+    "externalIDForIndexing": "External ID used for indexing purposes.",
+    "publicAccessRules": "Public access rules for this container.",
+    "containerEvents": "Events that trigger actions on this container.",
+    "submitAndInspect": "Submit the transaction and inspect results.",
+        "selectParentChildContainers": "Select a parent and child Container to attach.",
+    "externalNameDescriptionContent": "External ID, Name, Description, Content",
+    "externalIdAndIndex": "External ID and Index",
+    "removeOwnerFromContainer": "Remove owner from container",
+    "selectedType": "Selected Type",
+    "selectedDataType": "Selected Type",
+    "clear": "Clear",
+    "noContainerOrType": "No selected container or type.",
+    "noDataItemId": "No selected item ID.",
+    "noSelectedItem": "No selected item.",
+      "optionalRecipientsReference": "Optional: specify recipients and reference",
+      "containerAndType": "Container ID and Type ID are required.",
+    "selectItemToVerify": "Select an item to verify.",
+    "basicVerification": "Basic Verification",
+    "submit": "Submit transaction and inspect the resulting digest."
+
+  }
+}

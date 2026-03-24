@@ -1,10 +1,10 @@
 // File: ItemsTable.tsx
 import React, { useState, useMemo, useEffect } from 'react';
 import type { Item } from '../types';
-import { copyToClipboard } from '../../utils/utils.tsx';
+import { copyToClipboard } from '../../utils/clipboard';
 import 'bootstrap-icons/font/bootstrap-icons.css';
-import { IOTA_EXPLORER_OBJECT, IOTA_EXPLORER_NETWORK, APP_INSTANCE_DOMAIN } from '../../Config.ts';
 import ItemsTableRow from './table/ItemsTableRow';
+import { buildObjectExplorerUrl } from '../../utils/explorer';
 
 const PAGE_SIZE = 20;
 
@@ -35,10 +35,7 @@ const ItemsTable: React.FC<ItemsTableProps> = ({
   resetKey,
   label,
   collapsed = false,
-  explorerUrl = (id: string) =>
-    `${IOTA_EXPLORER_OBJECT}/${id}?network=${IOTA_EXPLORER_NETWORK}${
-      APP_INSTANCE_DOMAIN ? `&domain=${APP_INSTANCE_DOMAIN}` : ''
-    }`,
+  explorerUrl = buildObjectExplorerUrl,
 }) => {
   const [expandedCells, setExpandedCells] = useState<Set<string>>(new Set());
 

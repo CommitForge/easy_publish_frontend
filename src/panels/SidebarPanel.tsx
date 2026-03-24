@@ -1,4 +1,4 @@
-import React, { useState, useRef, useEffect, useCallback } from 'react';
+import React, { useState } from 'react';
 import { useCurrentAccount } from '@iota/dapp-kit';
 import { ItemsLoader } from '../move/view/ItemsLoader';
 import { CarMaintenanceReportButton } from './CarMaintenanceReportButton.tsx';
@@ -17,6 +17,7 @@ import {
 } from 'react-icons/fa';
 
 import { t } from '../Config.ts'; // <-- import translations
+import { useDragResize } from '../hooks/useDragResize';
 
 type PanelMenuSelection = Extract<
   PrimarySelection,
@@ -61,8 +62,8 @@ export function SidebarPanel({
 }: SidebarPanelProps) {
   const account = useCurrentAccount();
 
-  const [mainWidth, setMainWidth] = useState(300);
-  const [containersWidth, setContainersWidth] = useState(250);
+  const { width: mainWidth, startDrag: startDragMain } = useDragResize(300, 180, 600);
+  const { width: containersWidth, startDrag: startDragContainers } = useDragResize(250, 150, 500, () => mainWidth);
   const dataTypesWidth = 250;
   const [collapsed, setCollapsed] = useState(false);
   const [showContainersPanel, setShowContainersPanel] = useState(false);
@@ -71,48 +72,6 @@ export function SidebarPanel({
   const [dataTypeRefreshKey, setDataTypeRefreshKey] = useState(0);
   const [expandedSecondary, setExpandedSecondary] =
     useState<'createContainer' | 'addDataType' | null>(null);
-
-  const dragRefMain = useRef(false);
-  const dragRefContainers = useRef(false);
-
-  const handleMouseMove = useCallback(
-    (e: MouseEvent) => {
-      if (dragRefMain.current && !collapsed) {
-        const w = e.clientX;
-        if (w > 180 && w < 600) setMainWidth(w);
-      }
-      if (dragRefContainers.current) {
-        const w = e.clientX - mainWidth;
-        if (w > 150 && w < 500) setContainersWidth(w);
-      }
-    },
-    [mainWidth, collapsed]
-  );
-
-  const handleMouseUp = useCallback(() => {
-    dragRefMain.current = false;
-    dragRefContainers.current = false;
-    document.body.style.cursor = 'default';
-  }, []);
-
-  useEffect(() => {
-    window.addEventListener('mousemove', handleMouseMove);
-    window.addEventListener('mouseup', handleMouseUp);
-    return () => {
-      window.removeEventListener('mousemove', handleMouseMove);
-      window.removeEventListener('mouseup', handleMouseUp);
-    };
-  }, [handleMouseMove, handleMouseUp]);
-
-  const startDragMain = () => {
-    dragRefMain.current = true;
-    document.body.style.cursor = 'col-resize';
-  };
-
-  const startDragContainers = () => {
-    dragRefContainers.current = true;
-    document.body.style.cursor = 'col-resize';
-  };
 
   const toggleCollapse = () => setCollapsed((v) => !v);
 

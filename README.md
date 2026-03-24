@@ -83,9 +83,17 @@ Translation files are loaded from:
 
 - `src/move/forms`: MoveVM transaction forms and shared transaction helpers
 - `src/move/view`: Data listing/table rendering logic
+- `src/utils`: Shared helpers (tree transforms, clipboard, explorer URLs, item loader config)
 - `src/panels`: Introduction, scripts carousel, and main panel sections
 - `src/layout`: Navbar, footer, cookie consent
 - `public/scripts`: Downloadable CLI package shown in the landing page carousel
+
+## Cookies And Embedded Media
+
+- The frontend stores cookie-consent UI state in `localStorage` (`cookie_consent`).
+- The landing page YouTube embed is **not loaded by default**.
+- Users must click the explicit "Load YouTube Video" button before the iframe is rendered.
+- Clicking that button indicates consent to load YouTube content, which may set YouTube cookies.
 
 ## CLI Repositories
 

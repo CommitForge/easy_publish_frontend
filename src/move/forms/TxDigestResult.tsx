@@ -1,6 +1,7 @@
 import { FaExternalLinkAlt, FaRegClipboard } from 'react-icons/fa';
-import { IOTA_EXPLORER_NETWORK, IOTA_EXPLORER_TXBLOCK, t } from '../../Config.ts';
-import { copyToClipboard } from '../../utils/utils.tsx';
+import { t } from '../../Config.ts';
+import { copyToClipboard } from '../../utils/clipboard';
+import { buildTxExplorerUrl } from '../../utils/explorer';
 
 type TxDigestResultProps = {
   digest: string;
@@ -10,7 +11,7 @@ type TxDigestResultProps = {
 export function TxDigestResult({ digest, label }: TxDigestResultProps) {
   if (!digest) return null;
 
-  const explorerUrl = `${IOTA_EXPLORER_TXBLOCK}/${digest}?network=${IOTA_EXPLORER_NETWORK}`;
+  const explorerUrl = buildTxExplorerUrl(digest);
 
   return (
     <div className="mt-2 d-flex justify-content-center gap-2 align-items-center flex-wrap">

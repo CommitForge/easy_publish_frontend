@@ -4,3 +4,6 @@
 # '.*\.txt' ignores any file with 'txt' extension
 # '/test/.*' ignores all the files under the 'test' directory
 # '.*/test/.*' ignores all the files under any 'test' directory (even under sub-folders)
+
+/node_modules/.*
+.*/node_modules/.*

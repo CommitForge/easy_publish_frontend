@@ -1,4 +1,5 @@
 import { ItemsLoader } from './ItemsLoader.tsx';
+import { DEFAULT_FIELDS_BY_TYPE } from '../../utils/itemLoaderConfig';
 
 interface DataItemsViewProps {
   containerId?: string;
@@ -15,16 +16,7 @@ export function DataItemsView({ containerId, dataTypeId }: DataItemsViewProps) {
       type="data_item"
       containerId={containerId}
       dataTypeId={dataTypeId}
-      fieldsToShow={[
-        'dataType',
-        'name',
-        'description',
-        'content',
-        'verified',
-        'creatorAddr',
-        'externalId',
-        'externalIndex',
-      ]}
+      fieldsToShow={DEFAULT_FIELDS_BY_TYPE.data_item}
     />
   );
 }

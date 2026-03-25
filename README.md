@@ -56,11 +56,11 @@ npm run preview
 The app reads these from `import.meta.env` (see `src/Config.ts`):
 
 - `VITE_PACKAGE_ID`
-- `VITE_MODULE`
+- `VITE_MODULE_ID` (legacy alias: `VITE_MODULE`)
 - `VITE_CLOCK_ID`
 - `VITE_CONTAINER_CHAIN_ID`
-- `VITE_DATA_ITEM_CHAIN`
-- `VITE_DATA_ITEM_VERIFICATION_CHAIN`
+- `VITE_DATA_ITEM_CHAIN_ID` (legacy alias: `VITE_DATA_ITEM_CHAIN`)
+- `VITE_DATA_ITEM_VERIFICATION_CHAIN_ID` (legacy alias: `VITE_DATA_ITEM_VERIFICATION_CHAIN`)
 - `VITE_UPDATE_CHAIN_ID`
 - `VITE_IOTA_EXPLORER_OBJECT`
 - `VITE_IOTA_EXPLORER_NETWORK`
@@ -95,6 +95,8 @@ Translation files are loaded from:
 - `src/layout`: Navbar, footer, cookie consent
 - `docs`: Additional project documentation (schemas, conventions)
 - `public/scripts`: Downloadable CLI package shown in the landing page carousel
+- `public/images`: Runtime images and favicons copied into `dist/images` during build
+- `images-dev`: Source/high-resolution/future images kept in git but intentionally not shipped in `dist`
 
 ## Cookies And Embedded Media
 

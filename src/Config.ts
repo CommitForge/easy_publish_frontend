@@ -1,11 +1,27 @@
-export const PACKAGE_ID = import.meta.env.VITE_PACKAGE_ID;
-export const MODULE = import.meta.env.VITE_MODULE;
-export const CLOCK_ID = import.meta.env.VITE_CLOCK_ID;
-export const CONTAINER_CHAIN_ID = import.meta.env.VITE_CONTAINER_CHAIN_ID;
-export const DATA_ITEM_CHAIN = import.meta.env.VITE_DATA_ITEM_CHAIN;
-export const DATA_ITEM_VERIFICATION_CHAIN =
-  import.meta.env.VITE_DATA_ITEM_VERIFICATION_CHAIN;
-export const UPDATE_CHAIN_ID = import.meta.env.VITE_UPDATE_CHAIN_ID;
+const env = import.meta.env as Record<string, string | undefined>;
+
+function envFirst(...keys: string[]): string {
+  for (const key of keys) {
+    const value = env[key];
+    if (typeof value === 'string' && value.trim()) return value;
+  }
+  return '';
+}
+
+export const PACKAGE_ID = envFirst('VITE_PACKAGE_ID');
+export const MODULE = envFirst('VITE_MODULE_ID', 'VITE_MODULE');
+export const MODULE_ID = MODULE;
+export const CLOCK_ID = envFirst('VITE_CLOCK_ID');
+export const CONTAINER_CHAIN_ID = envFirst('VITE_CONTAINER_CHAIN_ID');
+export const DATA_ITEM_CHAIN = envFirst(
+  'VITE_DATA_ITEM_CHAIN_ID',
+  'VITE_DATA_ITEM_CHAIN'
+);
+export const DATA_ITEM_VERIFICATION_CHAIN = envFirst(
+  'VITE_DATA_ITEM_VERIFICATION_CHAIN_ID',
+  'VITE_DATA_ITEM_VERIFICATION_CHAIN'
+);
+export const UPDATE_CHAIN_ID = envFirst('VITE_UPDATE_CHAIN_ID');
 
 export const IOTA_EXPLORER_OBJECT =
   import.meta.env.VITE_IOTA_EXPLORER_OBJECT;

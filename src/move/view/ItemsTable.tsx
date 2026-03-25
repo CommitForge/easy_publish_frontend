@@ -2,7 +2,6 @@
 import React, { useState, useMemo, useEffect } from 'react';
 import type { Item } from '../types';
 import { copyToClipboard } from '../../utils/clipboard';
-import 'bootstrap-icons/font/bootstrap-icons.css';
 import ItemsTableRow from './table/ItemsTableRow';
 import { buildObjectExplorerUrl } from '../../utils/explorer';
 

@@ -19,7 +19,7 @@ import {
 import { t } from '../Config.ts'; // <-- import translations
 import { useDragResize } from '../hooks/useDragResize';
 
-type PanelMenuSelection = Extract<
+export type PanelMenuSelection = Extract<
   PrimarySelection,
   | 'createContainer'
   | 'addDataType'

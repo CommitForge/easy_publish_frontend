@@ -4,6 +4,7 @@ import { IotaClientProvider, WalletProvider, createNetworkConfig } from '@iota/d
 import { IOTA_EXPLORER_NETWORK, APP_INSTANCE_NAME, loadTranslations } from './Config.ts';
 import { getFullnodeUrl } from '@iota/iota-sdk/client';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
+import 'bootstrap-icons/font/bootstrap-icons.css';
 // Config options for the networks you want to connect to
 const { networkConfig } = createNetworkConfig({
     testnet: { url: getFullnodeUrl(IOTA_EXPLORER_NETWORK) },

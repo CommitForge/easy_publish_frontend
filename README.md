@@ -65,10 +65,17 @@ The app reads these from `import.meta.env` (see `src/Config.ts`):
 - `VITE_IOTA_EXPLORER_OBJECT`
 - `VITE_IOTA_EXPLORER_NETWORK`
 - `VITE_IOTA_EXPLORER_TXBLOCK`
-- `VITE_APP_INSTANCE_NAME` (`generic` or `cars`)
+- `VITE_PRIMARY_DOMAIN` (optional, used for auto instance inference from subdomains)
+- `VITE_APP_INSTANCE_NAME` (instance key, for example `generic`, `cars`, or custom)
 - `VITE_APP_INSTANCE_DOMAIN`
 - `VITE_API_BASE`
 - `VITE_API_WS_BASE`
+- `VITE_API_BASE_PATH` (optional when `VITE_API_BASE=auto`, default: `/izipublish`)
+
+For a single multi-domain build, set these to `auto` (or leave them unset):
+`VITE_APP_INSTANCE_NAME`, `VITE_APP_INSTANCE_DOMAIN`, `VITE_API_BASE`, `VITE_API_WS_BASE`.
+Then configure `VITE_PRIMARY_DOMAIN` (and optionally `VITE_API_BASE_PATH`) so
+runtime values are inferred by hostname.
 
 ## Instance Translation
 
@@ -86,6 +93,7 @@ Translation files are loaded from:
 - `src/utils`: Shared helpers (tree transforms, clipboard, explorer URLs, item loader config)
 - `src/panels`: Introduction, scripts carousel, and main panel sections
 - `src/layout`: Navbar, footer, cookie consent
+- `docs`: Additional project documentation (schemas, conventions)
 - `public/scripts`: Downloadable CLI package shown in the landing page carousel
 
 ## Cookies And Embedded Media
@@ -101,6 +109,26 @@ Translation files are loaded from:
 - MoveVM contract repo: https://github.com/CommitForge/easy_publish_movevm
 
 `public/scripts/README.md` contains full CLI usage and payload format details.
+
+CLI assets under `public/scripts` are synced from the CLI repo during build:
+
+```bash
+npm run sync:cli
+```
+
+The build script runs this automatically before bundling.
+
+Optional sync overrides:
+
+- `CLI_SOURCE_REPO` (default: `CommitForge/easy_publish_cli`)
+- `CLI_SOURCE_REF` (default: `main`)
+- `CLI_STRIP_VITE_COMPAT` (`true` by default; set to `false` to keep upstream VITE env compatibility text/aliases)
+
+## Easy Publish Content Schema
+
+The `content.easy_publish` JSON structure used by the frontend is documented in:
+
+- `docs/EASY_PUBLISH_CONTENT.md`
 
 ## Security Notes
 

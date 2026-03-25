@@ -12,21 +12,14 @@ const shortId = (id: string) => `${id.slice(0, 6)}...${id.slice(-4)}`;
 function SelectedObjectCard({
   title,
   objectId,
-  rowStyle,
 }: {
   title: string;
   objectId: string;
-  rowStyle: {
-    display: 'flex';
-    justifyContent: 'space-between';
-    alignItems: 'center';
-    padding: '2px 0';
-  };
 }) {
   return (
-    <div>
-      <div style={{ fontWeight: 600, marginBottom: 4 }}>{title}</div>
-      <div style={rowStyle}>
+    <div className="selected-object-card">
+      <div className="selected-object-title">{title}</div>
+      <div className="selected-object-row">
         <span>{shortId(objectId)}</span>
         <div>
           <i
@@ -55,13 +48,6 @@ export function Navbar({ account, disconnect }: any) {
   const { selectedContainerId, selectedDataTypeId, selectedDataItemId } = useSelection();
   const { syncStatus, splash } = useSyncStatus();
 
-  const infoRowStyle = {
-    display: 'flex',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    padding: '2px 0',
-  } as const;
-
   const selectedObjects = [
     {
       key: 'container',
@@ -86,20 +72,17 @@ export function Navbar({ account, disconnect }: any) {
   );
 
   return (
-    <header
-      className="navbar"
-      style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '0.5rem 1rem' }}
-    >
+    <header className="navbar navbar-main">
       {/* Logo */}
       <div className="logo">
         <img width="120px" height="120px" src="/images/logo.png" alt="Logo" />
       </div>
 
       {/* Top Selection Bar */}
-      <div style={{ display: 'flex', gap: 20, alignItems: 'flex-start' }}>
+      <div className="navbar-info">
         {/* Sync Status */}
-        <div>
-          <div style={{ fontWeight: 600, marginBottom: 4 }}>Sync Status</div>
+        <div className="sync-status-card">
+          <div className="sync-status-title">Sync Status</div>
 
           <div className={splash ? 'sync-status-splash' : ''} style={{ fontSize: 12 }}>
             {syncStatus ? (
@@ -158,21 +141,17 @@ export function Navbar({ account, disconnect }: any) {
             key={entry.key}
             title={entry.title}
             objectId={entry.objectId}
-            rowStyle={infoRowStyle}
           />
         ))}
       </div>
 
       {/* Right-side wallet buttons */}
-      <div
-        className="nav-right"
-        style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}
-      >
+      <div className="nav-right">
         {!account &&
           wallets.length > 0 &&
           wallets.map((wallet) => (
             <button
-              className="btn primary btn-neon btn-neon-right"
+              className="btn primary btn-neon wallet-connect-btn"
               key={wallet.name}
               onClick={() =>
                 connect({ wallet }, { onSuccess: () => console.log('connected') })
@@ -184,7 +163,7 @@ export function Navbar({ account, disconnect }: any) {
 
         {!account && wallets.length === 0 && (
           <button
-            className="btn primary btn-neon btn-neon-right"
+            className="btn primary btn-neon wallet-connect-btn"
             onClick={() =>
               window.open(
                 'https://chromewebstore.google.com/detail/iota-wallet/iidjkmdceolghepehaaddojmnjnkkija?pli=1',
@@ -198,7 +177,7 @@ export function Navbar({ account, disconnect }: any) {
 
         {account && (
           <>
-            <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+            <div className="wallet-connected">
               <span>
                 Connected as: {shortId(account.address)}
               </span>

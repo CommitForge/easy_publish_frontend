@@ -23,7 +23,7 @@ cp .env.cli.example .env.cli
 
 - `IZIPUB_NETWORK` (or `IOTA_NETWORK`)
 - signer: `IOTA_PRIVATE_KEY` or `IOTA_MNEMONIC`
-- move IDs: `PACKAGE_ID`, `MODULE`, `CLOCK_ID`, `CONTAINER_CHAIN_ID`, `DATA_ITEM_CHAIN`, `DATA_ITEM_VERIFICATION_CHAIN`, `UPDATE_CHAIN_ID`
+- move IDs: `PACKAGE_ID`, `MODULE_ID`, `CLOCK_ID`, `CONTAINER_CHAIN_ID`, `DATA_ITEM_CHAIN_ID`, `DATA_ITEM_VERIFICATION_CHAIN_ID`, `UPDATE_CHAIN_ID`
 
 3. Run commands (auto-loads `.env.cli`, `.env.cli.local`, `.env`, `.env.production`, `.env.local` from script/cwd/parent roots):
 
@@ -146,12 +146,11 @@ Use:
 - write payload file via `--input-file <path>` (JSON object; CLI flags override file values)
 - move config IDs from env:
   - preferred CLI names:
-    - `PACKAGE_ID`, `MODULE`, `CLOCK_ID`
-    - `CONTAINER_CHAIN_ID`, `DATA_ITEM_CHAIN`, `DATA_ITEM_VERIFICATION_CHAIN`, `UPDATE_CHAIN_ID`
-  - also supported for app compatibility:
-    - `VITE_PACKAGE_ID`, `VITE_MODULE`, `VITE_CLOCK_ID`
-    - `VITE_CONTAINER_CHAIN_ID`, `VITE_DATA_ITEM_CHAIN`, `VITE_DATA_ITEM_VERIFICATION_CHAIN`, `VITE_UPDATE_CHAIN_ID`
-- network can be set via `--network`, `IOTA_NETWORK`, `IZIPUB_NETWORK`, or `VITE_IOTA_NETWORK`
+    - `PACKAGE_ID`, `MODULE_ID`, `CLOCK_ID`
+    - `CONTAINER_CHAIN_ID`, `DATA_ITEM_CHAIN_ID`, `DATA_ITEM_VERIFICATION_CHAIN_ID`, `UPDATE_CHAIN_ID`
+  - supported legacy aliases:
+    - `MODULE`, `DATA_ITEM_CHAIN`, `DATA_ITEM_VERIFICATION_CHAIN`
+- network can be set via `--network`, `IOTA_NETWORK`, or `IZIPUB_NETWORK`
 - optional `--env-file <path>` to load env values from a file like `.env.cli` or `.env.production`
 - auto-load scan order includes these names in script/cwd/parent roots: `.env.cli`, `.env.cli.local`, `.env`, `.env.production`, `.env.local`
 

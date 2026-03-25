@@ -128,7 +128,7 @@ function printHelp(command = null) {
       'Options:',
       '      --network <name>',
       '      IOTA network name',
-      '      (default: IOTA_NETWORK / IZIPUB_NETWORK / VITE_IOTA_NETWORK / mainnet)',
+      '      (default: IOTA_NETWORK / IZIPUB_NETWORK / mainnet)',
       '',
       '      --env-file <PATH>',
       '      Optional env file with network/signer/on-chain IDs',
@@ -232,7 +232,7 @@ Write commands:
 Global options:
   -n, --count <N>       Number of items to return for list commands
   -s, --start-id <ID>   Start object ID, or null for latest
-      --network <name>  IOTA network name (default: IOTA_NETWORK / IZIPUB_NETWORK / VITE_IOTA_NETWORK / mainnet)
+      --network <name>  IOTA network name (default: IOTA_NETWORK / IZIPUB_NETWORK / mainnet)
       --private-key     Signer key for write commands (or IOTA_PRIVATE_KEY or IZIPUB_PRIVATE_KEY)
       --mnemonic        Signer mnemonic for write commands (or IOTA_MNEMONIC)
       --env-file        Optional env file path for network/signer/MOVE IDs

@@ -56,8 +56,11 @@ const legalLinks: ModalLink[] = [
 
 const socialLinks = [
   { label: 'X (Twitter)', href: 'https://x.com/EpicOasisX' },
-  { label: 'GitHub', href: 'https://github.com/CommitForge/easy_publish_movevm' },
-  { label: 'GitHub CLI', href: 'https://github.com/CommitForge/easy_publish_cli' },
+  { label: 'GitHub MoveVM (Move)', href: 'https://github.com/CommitForge/easy_publish_movevm' },
+  { label: 'GitHub CLI (JavaScript)', href: 'https://github.com/CommitForge/easy_publish_cli' },
+  { label: 'GitHub Frontend (TypeScript)', href: 'https://github.com/CommitForge/easy_publish_frontend' },
+  { label: 'GitHub Backend (Java)', href: 'https://github.com/CommitForge/easy_publish_backend' },
+  { label: 'GitHub Deploy (Shell)', href: 'https://github.com/CommitForge/easy_publish_deploy' },
 ];
 
 export function Footer() {

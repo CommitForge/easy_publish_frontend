@@ -30,7 +30,7 @@ export default function ScriptsCarousel({
       {
         title: "izipub.js",
         description:
-          "Main CLI entrypoint. This is the primary script users should run. It exposes the real commands with help, logging, and subcommands.",
+          "Main CLI entry point. This is the primary script users should run. It exposes the real commands with help, logging, and subcommands.",
         usage: `node izipub.js --help
 
 node izipub.js object <OBJECT_ID>
@@ -161,7 +161,7 @@ node izipub.js publish-data-item --input-file ./payload.publish-data-item.json -
     const url = URL.createObjectURL(blob);
     const a = document.createElement("a");
     a.href = url;
-    a.download = "izipublisher_scripts_refactored.zip";
+    a.download = "easy_publish_cli_scripts.zip";
     a.click();
     URL.revokeObjectURL(url);
   };

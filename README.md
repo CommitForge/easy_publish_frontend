@@ -105,10 +105,13 @@ Translation files are loaded from:
 - Users must click the explicit "Load YouTube Video" button before the iframe is rendered.
 - Clicking that button indicates consent to load YouTube content, which may set YouTube cookies.
 
-## CLI Repositories
+## Repository Links
 
-- CLI package repo: https://github.com/CommitForge/easy_publish_cli
-- MoveVM contract repo: https://github.com/CommitForge/easy_publish_movevm
+- easy_publish_movevm (Move): https://github.com/CommitForge/easy_publish_movevm
+- easy_publish_cli (JavaScript): https://github.com/CommitForge/easy_publish_cli
+- easy_publish_frontend (TypeScript): https://github.com/CommitForge/easy_publish_frontend
+- easy_publish_backend (Java): https://github.com/CommitForge/easy_publish_backend
+- easy_publish_deploy (Shell): https://github.com/CommitForge/easy_publish_deploy
 
 `public/scripts/README.md` contains full CLI usage and payload format details.
 

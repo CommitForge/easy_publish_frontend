@@ -276,7 +276,7 @@ function resolveNetwork(args) {
   if (fromArg) return fromArg;
 
   const fromEnv = String(
-    process.env.IOTA_NETWORK ?? process.env.IZIPUB_NETWORK ?? process.env.VITE_IOTA_NETWORK ?? ''
+    process.env.IOTA_NETWORK ?? process.env.IZIPUB_NETWORK ?? ''
   ).trim();
 
   return fromEnv || 'mainnet';
@@ -296,31 +296,38 @@ function getConfigValue(args, optionNames, envNames, fallback = '') {
 
 function resolveMoveConfig(args) {
   const config = {
-    packageId: getConfigValue(args, ['package-id'], ['PACKAGE_ID', 'VITE_PACKAGE_ID']),
-    module: getConfigValue(args, ['module'], ['MODULE', 'VITE_MODULE']),
-    clockId: getConfigValue(args, ['clock-id'], ['CLOCK_ID', 'VITE_CLOCK_ID']),
+    packageId: getConfigValue(args, ['package-id'], ['PACKAGE_ID']),
+    module: getConfigValue(args, ['module', 'module-id'], ['MODULE_ID', 'MODULE']),
+    clockId: getConfigValue(args, ['clock-id'], ['CLOCK_ID']),
     containerChainId: getConfigValue(
       args,
       ['container-chain-id'],
-      ['CONTAINER_CHAIN_ID', 'VITE_CONTAINER_CHAIN_ID']
+      ['CONTAINER_CHAIN_ID']
     ),
-    dataItemChainId: getConfigValue(args, ['data-item-chain-id'], ['DATA_ITEM_CHAIN', 'VITE_DATA_ITEM_CHAIN']),
+    dataItemChainId: getConfigValue(
+      args,
+      ['data-item-chain-id'],
+      ['DATA_ITEM_CHAIN_ID', 'DATA_ITEM_CHAIN']
+    ),
     dataItemVerificationChainId: getConfigValue(
       args,
       ['data-item-verification-chain-id'],
-      ['DATA_ITEM_VERIFICATION_CHAIN', 'VITE_DATA_ITEM_VERIFICATION_CHAIN']
+      ['DATA_ITEM_VERIFICATION_CHAIN_ID', 'DATA_ITEM_VERIFICATION_CHAIN']
     ),
-    updateChainId: getConfigValue(args, ['update-chain-id'], ['UPDATE_CHAIN_ID', 'VITE_UPDATE_CHAIN_ID']),
+    updateChainId: getConfigValue(args, ['update-chain-id'], ['UPDATE_CHAIN_ID']),
   };
 
   if (!config.packageId) throw new Error('Missing PACKAGE_ID (or --package-id)');
-  if (!config.module) throw new Error('Missing MODULE (or --module)');
+  if (!config.module) throw new Error('Missing MODULE_ID/MODULE (or --module-id/--module)');
   config.clockId = requireObjectId(config.clockId, 'CLOCK_ID');
   config.containerChainId = requireObjectId(config.containerChainId, 'CONTAINER_CHAIN_ID');
-  config.dataItemChainId = requireObjectId(config.dataItemChainId, 'DATA_ITEM_CHAIN');
+  config.dataItemChainId = requireObjectId(
+    config.dataItemChainId,
+    'DATA_ITEM_CHAIN_ID/DATA_ITEM_CHAIN'
+  );
   config.dataItemVerificationChainId = requireObjectId(
     config.dataItemVerificationChainId,
-    'DATA_ITEM_VERIFICATION_CHAIN'
+    'DATA_ITEM_VERIFICATION_CHAIN_ID/DATA_ITEM_VERIFICATION_CHAIN'
   );
   config.updateChainId = requireObjectId(config.updateChainId, 'UPDATE_CHAIN_ID');
 

@@ -115,14 +115,14 @@ export function Footer() {
                 <>
                   {' '}
                   <a
-                    className="footer-link"
+                    className="explorer-icon"
                     href={buildObjectExplorerUrl(row.value)}
                     target="_blank"
                     rel="noopener noreferrer"
-                    style={{ display: 'inline' }}
                     title={`Open ${row.label} in IOTA Explorer`}
+                    aria-label={`Open ${row.label} in IOTA Explorer`}
                   >
-                    Explorer <i className="bi bi-box-arrow-up-right" />
+                    <i className="bi bi-box-arrow-up-right" />
                   </a>
                 </>
               )}

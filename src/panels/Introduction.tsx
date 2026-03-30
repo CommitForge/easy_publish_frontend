@@ -205,7 +205,7 @@ export function Introduction({ account }: IntroductionProps) {
               <div className="hero-left">
                 <h1>Publish Car Maintenance Events on Blockchain</h1>
                 <p className="subtitle">
-                  Put maintenance information of your cars on blockchain and share it with others.
+                  Publish your car maintenance records on-chain and share trusted history with others.
                 </p>
                 <h2 className="tagline">– The Easiest Way –</h2>
                 <div className="hero-actions">
@@ -221,7 +221,7 @@ export function Introduction({ account }: IntroductionProps) {
           <section className="cars-intro features">
             <h2>Welcome to Cars Mode!</h2>
             <p>
-              This mode is designed for automotive enthusiasts, garages, and fleet managers. You can publish car maintenance data, service logs, and workflow-specific items efficiently.
+              This mode is built for car owners, garages, and fleets. Publish maintenance logs and workflow items in a clear structure.
             </p>
             <div className="feature-grid">
               <div className="feature">
@@ -230,7 +230,7 @@ export function Introduction({ account }: IntroductionProps) {
                     Publish Car Maintenance Data
                   </SectionFeatureTitle>
                 </h3>
-                <p>Store service logs, repair history, mileage, and parts replacements in structured containers.</p>
+                <p>Store service history, mileage, repairs, and parts replacements in structured containers.</p>
               </div>
               <div className="feature">
                 <h3>
@@ -238,7 +238,7 @@ export function Introduction({ account }: IntroductionProps) {
                     Structured &amp; Searchable JSON
                   </SectionFeatureTitle>
                 </h3>
-                <p>All data is structured in JSON, ready for analytics, integration, or future reference.</p>
+                <p>Data is saved as structured JSON, ready for search, integrations, and long-term reference.</p>
               </div>
               <div className="feature">
                 <h3>
@@ -246,7 +246,7 @@ export function Introduction({ account }: IntroductionProps) {
                     Link Car Records
                   </SectionFeatureTitle>
                 </h3>
-                <p>Connect vehicles to their parts, maintenance events, and previous owners, forming a hierarchical workflow.</p>
+                <p>Link vehicles with parts, maintenance events, and owners to build a clean historical timeline.</p>
               </div>
               <div className="feature">
                 <h3>
@@ -254,7 +254,7 @@ export function Introduction({ account }: IntroductionProps) {
                     Share &amp; Preserve for the Future
                   </SectionFeatureTitle>
                 </h3>
-                <p>Share car histories with other users, garages, or future buyers safely and immutably on blockchain.</p>
+                <p>Share trusted car history with garages, buyers, or partners using immutable blockchain records.</p>
               </div>
             </div>
           </section>
@@ -268,7 +268,7 @@ export function Introduction({ account }: IntroductionProps) {
                     1. Get IOTA Wallet
                   </SectionFeatureTitle>
                 </h3>
-                <p>You can get it by pressing the button on the top right corner. It is a Chrome browser extension.</p>
+                <p>Install the IOTA Wallet browser extension, then open it from your top-right wallet button.</p>
               </div>
               <div className="feature">
                 <h3>
@@ -276,7 +276,7 @@ export function Introduction({ account }: IntroductionProps) {
                     2. Get a Few IOTA Tokens
                   </SectionFeatureTitle>
                 </h3>
-                <p>To cover network fees just 5 tokens (1$ worth) can publish hundreds of content, buy or have a friend send it to your wallet.</p>
+                <p>A few IOTA tokens cover many transactions; around 5 tokens can publish a large amount of data.</p>
               </div>
               <div className="feature">
                 <h3>
@@ -284,7 +284,7 @@ export function Introduction({ account }: IntroductionProps) {
                     3. Connect and Log in
                   </SectionFeatureTitle>
                 </h3>
-                <p>Connect and log in to this website, by pressing button on the top right corner.</p>
+                <p>Connect your wallet using the top-right button, then sign in to start publishing.</p>
               </div>
               <div className="feature">
                 <h3>
@@ -292,7 +292,7 @@ export function Introduction({ account }: IntroductionProps) {
                     4. Publish the Content
                   </SectionFeatureTitle>
                 </h3>
-                <p>Use "New Container" and then "New Type" and then "New Item" buttons, to store your content/items.</p>
+                <p>Create a Container, then a Type, then an Item to publish your content.</p>
               </div>
             </div>
           </section>
@@ -306,7 +306,7 @@ export function Introduction({ account }: IntroductionProps) {
                     Sample Car Maintenance Report
                   </SectionFeatureTitle>
                 </h3>
-                <p>Generate a report for your vehicle directly in the app.</p>
+                <p>Generate a sample maintenance report for your vehicle directly from the app.</p>
                 <form
                   action="https://cars.izipublish.com/izipublish/api/report/car"
                   method="POST"
@@ -331,7 +331,7 @@ export function Introduction({ account }: IntroductionProps) {
             <div className="hero-content">
               <div className="hero-left">
                 <h1>Publish Content on Blockchain</h1>
-                <p className="subtitle"> Publish, link, and index structured data using MoveVM & IOTA. </p>
+                <p className="subtitle"> Publish, link, and index structured data on MoveVM and IOTA. </p>
                 <h2 className="tagline">– The Easiest Way –</h2>
                 <div className="hero-actions">
                   <span className="wallet-address"> Wallet: Not connected </span>
@@ -380,7 +380,7 @@ export function Introduction({ account }: IntroductionProps) {
                     Put Content on Blockchain
                   </SectionFeatureTitle>
                 </h3>
-                <p>Easiest way to store and share your content on blockchain.</p>
+                <p>Store and share your content on-chain with transparent history and ownership.</p>
               </div>
               <div className="feature">
                 <h3>
@@ -388,7 +388,7 @@ export function Introduction({ account }: IntroductionProps) {
                     As Easy as Filling a Form
                   </SectionFeatureTitle>
                 </h3>
-                <p>Use a simple form to publish your content.</p>
+                <p>Use guided forms instead of manual transactions to publish data quickly.</p>
               </div>
               <div className="feature">
                 <h3>
@@ -396,7 +396,7 @@ export function Introduction({ account }: IntroductionProps) {
                     View Published Content
                   </SectionFeatureTitle>
                 </h3>
-                <p>All published data on the blockchain will be visible here in the tables.</p>
+                <p>Browse published records in tables and inspect linked objects with ease.</p>
               </div>
               <div className="feature">
                 <h3>
@@ -404,7 +404,7 @@ export function Introduction({ account }: IntroductionProps) {
                     Integrate Content With Systems
                   </SectionFeatureTitle>
                 </h3>
-                <p>You will also be able to integrate the content with system to system.</p>
+                <p>Connect published content to external systems, workflows, and automations.</p>
               </div>
             </div>
           </section>
@@ -417,7 +417,7 @@ export function Introduction({ account }: IntroductionProps) {
                     1. Get IOTA Wallet
                   </SectionFeatureTitle>
                 </h3>
-                <p>You can get it by pressing the button on the top right corner. It is a Chrome browser extension.</p>
+                <p>Install the IOTA Wallet browser extension, then open it from your top-right wallet button.</p>
               </div>
               <div className="feature">
                 <h3>
@@ -425,7 +425,7 @@ export function Introduction({ account }: IntroductionProps) {
                     2. Get a Few IOTA Tokens
                   </SectionFeatureTitle>
                 </h3>
-                <p>To cover network fees just 5 tokens (1$ worth) can publish hundreds of content, buy or have a friend send it to your wallet.</p>
+                <p>A few IOTA tokens cover many transactions; around 5 tokens can publish a large amount of data.</p>
               </div>
               <div className="feature">
                 <h3>
@@ -433,7 +433,7 @@ export function Introduction({ account }: IntroductionProps) {
                     3. Connect and Log in
                   </SectionFeatureTitle>
                 </h3>
-                <p>Connect and log in to this website, by pressing button on the top right corner.</p>
+                <p>Connect your wallet using the top-right button, then sign in to start publishing.</p>
               </div>
               <div className="feature">
                 <h3>
@@ -441,7 +441,7 @@ export function Introduction({ account }: IntroductionProps) {
                     4. Publish the Content
                   </SectionFeatureTitle>
                 </h3>
-                <p>Use "New Container" and then "New Type" and then "New Item" buttons, to store your content/items.</p>
+                <p>Create a Container, then a Type, then an Item to publish your content.</p>
               </div>
             </div>
           </section>
@@ -454,7 +454,7 @@ export function Introduction({ account }: IntroductionProps) {
                     Supports Custom Content
                   </SectionFeatureTitle>
                 </h3>
-                <p>You publish any content, usually in structured (machine readable) JSON format, as long as it respects terms of service.</p>
+                <p>Publish any content, usually structured JSON, as long as it respects the platform terms.</p>
               </div>
               <div className="feature">
                 <h3>
@@ -462,7 +462,7 @@ export function Introduction({ account }: IntroductionProps) {
                     Supports Custom Workflow
                   </SectionFeatureTitle>
                 </h3>
-                <p>You can decide what kind of data you need to put on blockchain, that will support your workflow (ie. you can specify all references that you need).</p>
+                <p>Design your own data workflow, including references and links between related records.</p>
               </div>
               <div className="feature">
                 <h3>
@@ -470,7 +470,7 @@ export function Introduction({ account }: IntroductionProps) {
                     Predefined Structure
                   </SectionFeatureTitle>
                 </h3>
-                <p>To make things simpler, there is a predefined set of fields you can use. 'Content' is usually the field to store main data.</p>
+                <p>Use predefined fields for faster setup; the Content field usually stores your main data.</p>
               </div>
               <div className="feature">
                 <h3>
@@ -478,7 +478,7 @@ export function Introduction({ account }: IntroductionProps) {
                     Examples of Published Data
                   </SectionFeatureTitle>
                 </h3>
-                <p>We will make a guide and examples of content. Do *not* publish things like personal data, use other data respecting terms of service.</p>
+                <p>Use examples and guides before publishing, and avoid sensitive personal information.</p>
               </div>
             </div>
           </section>
@@ -491,7 +491,7 @@ export function Introduction({ account }: IntroductionProps) {
                     Linked Containers
                   </SectionFeatureTitle>
                 </h3>
-                <p>Attach child containers into hierarchy.</p>
+                <p>Build hierarchies by attaching child containers to parent containers.</p>
               </div>
               <div className="feature">
                 <h3>
@@ -499,7 +499,7 @@ export function Introduction({ account }: IntroductionProps) {
                     On-Chain and Off-Chain Indexing
                   </SectionFeatureTitle>
                 </h3>
-                <p>Efficient traversal through recursion. Content indexed here.</p>
+                <p>Traverse records on-chain and off-chain with efficient recursive indexing.</p>
               </div>
               <div className="feature">
                 <h3>
@@ -507,7 +507,7 @@ export function Introduction({ account }: IntroductionProps) {
                     Recipient Verification Enabled
                   </SectionFeatureTitle>
                 </h3>
-                <p>Published content can be set to 'verified' by recipients.</p>
+                <p>Allow recipients to mark items as verified when confirmation is required.</p>
               </div>
               <div className="feature">
                 <h3>
@@ -515,17 +515,17 @@ export function Introduction({ account }: IntroductionProps) {
                     Ownership Model
                   </SectionFeatureTitle>
                 </h3>
-                <p>Multi-owner containers with safe access to publishing content.</p>
+                <p>Use multi-owner containers for safer collaboration and controlled publishing access.</p>
               </div>
             </div>
           </section>
           <section id="features5" className="features">
             <h2>BETA version - transient era</h2>
             <div className="feature-grid">
-              <div className="feature">This is currently in beta version.</div>
-              <div className="feature">You can use it, but there is more likely for issues to occur.</div>
-              <div className="feature">We especially in this stage reserve the right to relaunch the platform in case of any major issues.</div>
-              <div className="feature">If you want us to remove beta stage, you can help us test it and contact us at izipublish.com@gmail.com</div>
+              <div className="feature">The platform is currently in beta and still evolving.</div>
+              <div className="feature">You can already use it, but occasional issues may still appear during this stage.</div>
+              <div className="feature">During beta, we may relaunch parts of the platform if major issues require a clean reset.</div>
+              <div className="feature">To help us exit beta faster, please test and share feedback at izipublish.com@gmail.com.</div>
             </div>
           </section>
           <YoutubeVideoConsentSection />

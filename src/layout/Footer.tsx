@@ -6,6 +6,7 @@ import {
   DATA_ITEM_CHAIN,
   DATA_ITEM_VERIFICATION_CHAIN
 } from '../Config.ts';
+import { buildObjectExplorerUrl } from '../utils/explorer';
 
 import {
   TERMS_CONTENT,
@@ -33,6 +34,8 @@ const blockchainRows = [
   { label: 'Data Item Chain', value: DATA_ITEM_CHAIN },
   { label: 'Data Item Verification Chain', value: DATA_ITEM_VERIFICATION_CHAIN },
 ];
+
+const isLikelyObjectId = (value: string) => /^0x[0-9a-fA-F]+$/.test(value);
 
 const aboutLinks: ModalLink[] = [
   { title: 'About Us', content: ABOUT_CONTENT },
@@ -96,7 +99,22 @@ export function Footer() {
           <h4 style={sectionTitleStyle}>Blockchain Info</h4>
           {blockchainRows.map((row) => (
             <p key={row.label} style={{ fontSize: '0.85rem' }}>
-              {row.label}: {row.value}
+              <span>{row.label}: {row.value || '-'}</span>
+              {row.value && isLikelyObjectId(row.value) && (
+                <>
+                  {' '}
+                  <a
+                    className="footer-link"
+                    href={buildObjectExplorerUrl(row.value)}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    style={{ display: 'inline' }}
+                    title={`Open ${row.label} in IOTA Explorer`}
+                  >
+                    Explorer <i className="bi bi-box-arrow-up-right" />
+                  </a>
+                </>
+              )}
             </p>
           ))}
         </div>

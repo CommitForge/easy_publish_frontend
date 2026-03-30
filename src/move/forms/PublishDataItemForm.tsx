@@ -1,5 +1,5 @@
 import { useSignAndExecuteTransaction } from '@iota/dapp-kit';
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { Transaction } from '@iota/iota-sdk/transactions';
 import { FormRow } from './FormUi.tsx';
 import { FormSectionRow } from './CollapsibleFormSectionRow.tsx';
@@ -10,6 +10,7 @@ import {
   extractFollowContainersFromContent,
   extractRevisionChangeFromContent,
   extractRevisionIdsFromContent,
+  ADD_DATA_ITEM_LOAD_SELECTED_INTENT_STORAGE_KEY,
   FOLLOW_CONTAINERS_DRAFT_STORAGE_KEY,
   FOLLOW_CONTAINERS_PUBLISH_INTENT_STORAGE_KEY,
   getCarsContentJson,
@@ -118,7 +119,7 @@ export function PublishDataItemForm({ address }: { address: string }) {
     setDigest('');
   };
 
-  const loadSelectedDataItem = async (dataItemId: string) => {
+  const loadSelectedDataItem = useCallback(async (dataItemId: string) => {
     if (!dataItemId) {
       return alert(t('messages.noDataItemId'));
     }
@@ -155,9 +156,9 @@ export function PublishDataItemForm({ address }: { address: string }) {
     } finally {
       setLoadingDataItem(false);
     }
-  };
+  }, []);
 
-  const loadContainerAndType = () => {
+  const loadContainerAndType = useCallback(() => {
     if (!selectedContainerId || !selectedDataTypeId) {
       return alert(t('messages.noContainerOrType'));
     }
@@ -177,7 +178,31 @@ export function PublishDataItemForm({ address }: { address: string }) {
       revisionOf: '',
       revisionChange: '',
     });
-  };
+  }, [carsMode, followTemplateMode, selectedContainerId, selectedDataTypeId]);
+
+  useEffect(() => {
+    const shouldAutoLoadSelected =
+      localStorage.getItem(ADD_DATA_ITEM_LOAD_SELECTED_INTENT_STORAGE_KEY) ===
+      '1';
+    if (!shouldAutoLoadSelected) return;
+
+    localStorage.removeItem(ADD_DATA_ITEM_LOAD_SELECTED_INTENT_STORAGE_KEY);
+
+    if (selectedDataItemId) {
+      void loadSelectedDataItem(selectedDataItemId);
+      return;
+    }
+
+    if (selectedContainerId && selectedDataTypeId) {
+      loadContainerAndType();
+    }
+  }, [
+    selectedDataItemId,
+    selectedContainerId,
+    selectedDataTypeId,
+    loadContainerAndType,
+    loadSelectedDataItem,
+  ]);
 
   type RevisionValidationResult = {
     missingIds: string[];

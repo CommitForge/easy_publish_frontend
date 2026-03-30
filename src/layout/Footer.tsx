@@ -6,6 +6,7 @@ import {
   DATA_ITEM_CHAIN,
   DATA_ITEM_VERIFICATION_CHAIN
 } from '../Config.ts';
+import { copyToClipboard } from '../utils/clipboard';
 import { buildObjectExplorerUrl } from '../utils/explorer';
 
 import {
@@ -100,6 +101,16 @@ export function Footer() {
           {blockchainRows.map((row) => (
             <p key={row.label} style={{ fontSize: '0.85rem' }}>
               <span>{row.label}: {row.value || '-'}</span>
+              {row.value && (
+                <>
+                  {' '}
+                  <i
+                    className="bi bi-clipboard copy-icon"
+                    title={`Copy ${row.label} ID`}
+                    onClick={(e) => copyToClipboard(e, row.value)}
+                  />
+                </>
+              )}
               {row.value && isLikelyObjectId(row.value) && (
                 <>
                   {' '}

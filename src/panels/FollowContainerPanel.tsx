@@ -253,14 +253,14 @@ export function FollowContainerPanel({
 
           <div className="follow-panel-actions">
             <button
-              className="btn follow-panel-follow-btn"
+              className="btn btn-sm btn-success text-dark flex-fill"
               onClick={queueInputAsFollow}
               disabled={validatingInput}
             >
               Follow
             </button>
             <button
-              className="btn follow-panel-unfollow-btn"
+              className="btn btn-sm btn-outline-warning flex-fill"
               onClick={queueInputAsUnfollow}
               disabled={validatingInput}
             >
@@ -294,11 +294,17 @@ export function FollowContainerPanel({
             </small>
           </div>
 
-          <button className="btn follow-panel-publish-btn" onClick={openPublishFollowForm}>
+          <button
+            className="btn btn-sm btn-outline-primary w-100 mt-2"
+            onClick={openPublishFollowForm}
+          >
             Publish Follow &gt;&gt;
           </button>
 
-          <button className="btn follow-panel-view-btn" onClick={toggleViewFollowed}>
+          <button
+            className="btn btn-sm btn-outline-secondary w-100 mt-2"
+            onClick={toggleViewFollowed}
+          >
             {showFollowed ? 'Hide Followed ▲' : 'View Followed ▼'}
           </button>
 

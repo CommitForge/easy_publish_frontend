@@ -1,11 +1,14 @@
 import { useSignAndExecuteTransaction, useCurrentAccount } from '@iota/dapp-kit';
-import { useState } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { Transaction } from '@iota/iota-sdk/transactions';
 import { FormRow } from './FormUi.tsx';
 import { FormSectionRow } from './CollapsibleFormSectionRow.tsx';
 import { TxDigestResult } from './TxDigestResult.tsx';
 import { moveTarget, submitTx } from './TransactionUtils.tsx';
-import { isCarsInstance } from './FormUtils.tsx';
+import {
+  isCarsInstance,
+  UPDATE_CONTAINER_LOAD_SELECTED_INTENT_STORAGE_KEY,
+} from './FormUtils.tsx';
 import { UPDATE_CHAIN_ID, CLOCK_ID, API_BASE, t } from '../../Config.ts';
 import { useSelection } from '../../context/SelectionContext';
 
@@ -60,7 +63,7 @@ export function UpdateContainerForm() {
     setDigest('');
   };
 
-  const loadSelectedContainer = async () => {
+  const loadSelectedContainer = useCallback(async () => {
     if (!selectedContainerId) {
       alert(t('messages.selectContainerOrType'));
       return;
@@ -92,7 +95,19 @@ export function UpdateContainerForm() {
     } finally {
       setLoadingContainer(false);
     }
-  };
+  }, [selectedContainerId]);
+
+  useEffect(() => {
+    const shouldAutoLoad =
+      localStorage.getItem(UPDATE_CONTAINER_LOAD_SELECTED_INTENT_STORAGE_KEY) ===
+      '1';
+    if (!shouldAutoLoad) return;
+
+    localStorage.removeItem(UPDATE_CONTAINER_LOAD_SELECTED_INTENT_STORAGE_KEY);
+    if (selectedContainerId) {
+      void loadSelectedContainer();
+    }
+  }, [selectedContainerId, loadSelectedContainer]);
 
   const valid = account && form.container.trim() && form.name.trim();
 

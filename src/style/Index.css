@@ -1350,6 +1350,45 @@ a:hover {
   gap: 8px;
 }
 
+.selected-object-id-text {
+  min-width: 0;
+  flex: 1;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.selected-object-icons {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.selected-object-name-btn {
+  width: 100%;
+  margin-top: 6px;
+  border: none;
+  background: transparent;
+  color: var(--fg);
+  text-align: left;
+  padding: 0;
+  cursor: pointer;
+}
+
+.selected-object-name-btn:hover {
+  color: #00ff88;
+}
+
+.selected-object-name-text {
+  display: block;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-size: 0.86rem;
+  font-weight: 600;
+}
+
 .nav-right {
   margin-left: 0;
   display: flex;

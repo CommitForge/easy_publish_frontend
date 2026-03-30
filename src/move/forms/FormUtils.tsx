@@ -5,6 +5,12 @@ export const FOLLOW_CONTAINERS_DRAFT_STORAGE_KEY =
   'easy_publish.follow_containers.draft.v1';
 export const FOLLOW_CONTAINERS_PUBLISH_INTENT_STORAGE_KEY =
   'easy_publish.follow_containers.publish_intent.v1';
+export const UPDATE_CONTAINER_LOAD_SELECTED_INTENT_STORAGE_KEY =
+  'easy_publish.intent.update_container.load_selected.v1';
+export const UPDATE_DATA_TYPE_LOAD_SELECTED_INTENT_STORAGE_KEY =
+  'easy_publish.intent.update_data_type.load_selected.v1';
+export const ADD_DATA_ITEM_LOAD_SELECTED_INTENT_STORAGE_KEY =
+  'easy_publish.intent.add_data_item.load_selected.v1';
 
 export type FollowContainerUpdateEntry = {
   container_id: string;

@@ -34,44 +34,23 @@
   margin-top: 6px;
 }
 
-.follow-panel-follow-btn,
-.follow-panel-unfollow-btn,
-.follow-panel-publish-btn,
-.follow-panel-view-btn,
+.follow-panel-actions .btn {
+  min-width: 0;
+  width: auto;
+  flex: 1;
+}
+
+.follow-panel-actions .btn.btn-success,
+.follow-panel-actions .btn.btn-success:hover {
+  color: #111;
+}
+
 .follow-panel-unfollow-inline-btn {
   padding: 4px 10px;
   font-size: 13px;
   border-radius: 4px;
   border: 1px solid transparent;
   cursor: pointer;
-}
-
-.follow-panel-follow-btn {
-  background: var(--accent);
-  color: #fff;
-  flex: 1;
-}
-
-.follow-panel-unfollow-btn {
-  background: transparent;
-  border-color: #d97706;
-  color: #d97706;
-  flex: 1;
-}
-
-.follow-panel-publish-btn {
-  width: 100%;
-  margin-top: 8px;
-  background: var(--accent);
-  color: #fff;
-}
-
-.follow-panel-view-btn {
-  width: 100%;
-  margin-top: 8px;
-  background: transparent;
-  border-color: var(--accent);
-  color: var(--accent);
 }
 
 .follow-panel-feedback {

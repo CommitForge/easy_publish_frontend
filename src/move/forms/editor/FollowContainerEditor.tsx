@@ -133,7 +133,7 @@ export default function FollowContainerEditor({
 
       <div className="d-flex gap-2 mb-2">
         <button
-          className="btn btn-sm btn-outline-primary flex-fill"
+          className="btn btn-sm btn-outline-primary w-50"
           onClick={() => {
             void queueUpdates(true);
           }}
@@ -142,7 +142,7 @@ export default function FollowContainerEditor({
           Follow
         </button>
         <button
-          className="btn btn-sm btn-outline-warning flex-fill"
+          className="btn btn-sm btn-outline-warning w-50"
           onClick={() => {
             void queueUpdates(false);
           }}

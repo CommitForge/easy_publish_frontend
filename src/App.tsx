@@ -46,10 +46,19 @@ function AppInner({
   disconnect,
   primaryMenuSelection,
   setPrimaryMenuSelection,
-}: any) {
+}: {
+  account: { address: string } | null | undefined;
+  disconnect: () => void;
+  primaryMenuSelection: PanelMenuSelection;
+  setPrimaryMenuSelection: (value: PanelMenuSelection) => void;
+}) {
   return (
     <div className="app-container">
-      <Navbar account={account} disconnect={disconnect} />
+      <Navbar
+        account={account}
+        disconnect={disconnect}
+        setPrimaryMenuSelection={setPrimaryMenuSelection}
+      />
 
       <div className="app-body">
         {!account && <Introduction account={account} />}

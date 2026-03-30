@@ -1,11 +1,14 @@
 import { useSignAndExecuteTransaction } from '@iota/dapp-kit';
-import { useState } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { Transaction } from '@iota/iota-sdk/transactions';
 import { FormRow } from './FormUi.tsx';
 import { FormSectionRow } from './CollapsibleFormSectionRow.tsx';
 import { TxDigestResult } from './TxDigestResult.tsx';
 import { moveTarget, submitTx } from './TransactionUtils.tsx';
-import { isCarsInstance } from './FormUtils.tsx';
+import {
+  isCarsInstance,
+  UPDATE_DATA_TYPE_LOAD_SELECTED_INTENT_STORAGE_KEY,
+} from './FormUtils.tsx';
 import { CLOCK_ID, UPDATE_CHAIN_ID, API_BASE, t } from '../../Config.ts';
 import { useSelection } from '../../context/SelectionContext';
 
@@ -66,9 +69,9 @@ export function UpdateDataTypeForm({ address }: { address: string }) {
 
   const valid = form.container.trim() && form.dataType.trim();
 
-  const loadSelectedDataType = async () => {
+  const loadSelectedDataType = useCallback(async () => {
 
-    if (!selectedContainerId || !selectedDataTypeId) {
+    if (!selectedDataTypeId) {
       alert(t('messages.selectContainerOrType'));
       return;
     }
@@ -84,7 +87,7 @@ export function UpdateDataTypeForm({ address }: { address: string }) {
       const data = await res.json();
 
       setForm({
-        container: selectedContainerId,
+        container: data.containerId ?? selectedContainerId ?? '',
         dataType: selectedDataTypeId,
         externalId: data.externalId || '',
         name: data.name || '',
@@ -107,7 +110,19 @@ export function UpdateDataTypeForm({ address }: { address: string }) {
       setLoadingDataType(false);
 
     }
-  };
+  }, [selectedContainerId, selectedDataTypeId]);
+
+  useEffect(() => {
+    const shouldAutoLoad =
+      localStorage.getItem(UPDATE_DATA_TYPE_LOAD_SELECTED_INTENT_STORAGE_KEY) ===
+      '1';
+    if (!shouldAutoLoad) return;
+
+    localStorage.removeItem(UPDATE_DATA_TYPE_LOAD_SELECTED_INTENT_STORAGE_KEY);
+    if (selectedDataTypeId) {
+      void loadSelectedDataType();
+    }
+  }, [selectedDataTypeId, loadSelectedDataType]);
 
   const submit = () => {
 

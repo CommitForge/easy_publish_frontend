@@ -243,9 +243,10 @@ export function FollowContainerPanel({
       {showFollowPanel && (
         <div className="follow-panel-body">
           <div className="follow-panel-input-row">
-            <input
+            <textarea
               className="follow-panel-input"
               placeholder="0x... IDs (comma/newline)"
+              rows={3}
               value={followInput}
               onChange={(e) => setFollowInput(e.target.value)}
             />

@@ -1,5 +1,28 @@
 import { Suspense, lazy, useEffect, useState } from "react";
 import { getBrandLogoPath, isCarsTranslation } from "../Config.ts";
+import { SectionFeatureTitle } from "../assets/section-icons/SectionFeatureTitle.tsx";
+import {
+  LuBadgeCheck,
+  LuBoxes,
+  LuCar,
+  LuChartBar,
+  LuClipboardList,
+  LuCoins,
+  LuDatabase,
+  LuEye,
+  LuFileJson,
+  LuFilePenLine,
+  LuLink2,
+  LuPlugZap,
+  LuPuzzle,
+  LuRocket,
+  LuSearchCheck,
+  LuShare2,
+  LuShieldCheck,
+  LuUsers,
+  LuWallet,
+  LuWorkflow,
+} from "react-icons/lu";
 
 interface IntroductionProps {
   account: any | null;
@@ -14,6 +37,12 @@ type ScriptMap = {
   packageJsonFile: string;
   envCliExampleFile: string;
   readmeFile: string;
+};
+
+type ShareLink = {
+  label: string;
+  href: string;
+  iconClass: string;
 };
 
 const emptyScripts: ScriptMap = {
@@ -89,6 +118,36 @@ export function Introduction({ account }: IntroductionProps) {
   const [loadApiSection, setLoadApiSection] = useState(false);
   const [loadScriptsSection, setLoadScriptsSection] = useState(false);
   const [scripts, setScripts] = useState<ScriptMap>(emptyScripts);
+  const shareBaseUrl =
+    typeof window !== "undefined" && window.location.href
+      ? window.location.href
+      : "https://izipublish.com";
+  const encodedShareUrl = encodeURIComponent(shareBaseUrl);
+  const encodedShareText = encodeURIComponent(
+    "Publish and verify on-chain content with iziPublish."
+  );
+  const shareLinks: ShareLink[] = [
+    {
+      label: "X",
+      href: `https://x.com/intent/tweet?text=${encodedShareText}&url=${encodedShareUrl}`,
+      iconClass: "bi bi-twitter-x",
+    },
+    {
+      label: "Facebook",
+      href: `https://www.facebook.com/sharer/sharer.php?u=${encodedShareUrl}`,
+      iconClass: "bi bi-facebook",
+    },
+    {
+      label: "LinkedIn",
+      href: `https://www.linkedin.com/sharing/share-offsite/?url=${encodedShareUrl}`,
+      iconClass: "bi bi-linkedin",
+    },
+    {
+      label: "WhatsApp",
+      href: `https://wa.me/?text=${encodedShareText}%20${encodedShareUrl}`,
+      iconClass: "bi bi-whatsapp",
+    },
+  ];
 
   useEffect(() => {
     if (!loadScriptsSection) return;
@@ -154,7 +213,7 @@ export function Introduction({ account }: IntroductionProps) {
                 </div>
               </div>
               <div className="hero-right">
-                <img src={logoPath} alt="IziPublish Logo" className="hero-logo" />
+                <img src={logoPath} alt="iziPublish Logo" className="hero-logo" />
               </div>
             </div>
           </section>
@@ -166,19 +225,35 @@ export function Introduction({ account }: IntroductionProps) {
             </p>
             <div className="feature-grid">
               <div className="feature">
-                <h3>🚗 Publish Car Maintenance Data</h3>
+                <h3>
+                  <SectionFeatureTitle icon={LuCar}>
+                    Publish Car Maintenance Data
+                  </SectionFeatureTitle>
+                </h3>
                 <p>Store service logs, repair history, mileage, and parts replacements in structured containers.</p>
               </div>
               <div className="feature">
-                <h3>🛠 Structured & Searchable JSON</h3>
+                <h3>
+                  <SectionFeatureTitle icon={LuFileJson}>
+                    Structured &amp; Searchable JSON
+                  </SectionFeatureTitle>
+                </h3>
                 <p>All data is structured in JSON, ready for analytics, integration, or future reference.</p>
               </div>
               <div className="feature">
-                <h3>🔗 Link Car Records</h3>
+                <h3>
+                  <SectionFeatureTitle icon={LuLink2}>
+                    Link Car Records
+                  </SectionFeatureTitle>
+                </h3>
                 <p>Connect vehicles to their parts, maintenance events, and previous owners, forming a hierarchical workflow.</p>
               </div>
               <div className="feature">
-                <h3>📤 Share & Preserve for the Future</h3>
+                <h3>
+                  <SectionFeatureTitle icon={LuShare2}>
+                    Share &amp; Preserve for the Future
+                  </SectionFeatureTitle>
+                </h3>
                 <p>Share car histories with other users, garages, or future buyers safely and immutably on blockchain.</p>
               </div>
             </div>
@@ -188,19 +263,35 @@ export function Introduction({ account }: IntroductionProps) {
             <h2>How do I do that?</h2>
             <div className="feature-grid">
               <div className="feature">
-                <h3>👛 1. Get IOTA Wallet</h3>
+                <h3>
+                  <SectionFeatureTitle icon={LuWallet}>
+                    1. Get IOTA Wallet
+                  </SectionFeatureTitle>
+                </h3>
                 <p>You can get it by pressing the button on the top right corner. It is a Chrome browser extension.</p>
               </div>
               <div className="feature">
-                <h3>💰 2. Get a Few IOTA Tokens</h3>
+                <h3>
+                  <SectionFeatureTitle icon={LuCoins}>
+                    2. Get a Few IOTA Tokens
+                  </SectionFeatureTitle>
+                </h3>
                 <p>To cover network fees just 5 tokens (1$ worth) can publish hundreds of content, buy or have a friend send it to your wallet.</p>
               </div>
               <div className="feature">
-                <h3>🔐 3. Connect and Log in</h3>
+                <h3>
+                  <SectionFeatureTitle icon={LuShieldCheck}>
+                    3. Connect and Log in
+                  </SectionFeatureTitle>
+                </h3>
                 <p>Connect and log in to this website, by pressing button on the top right corner.</p>
               </div>
               <div className="feature">
-                <h3>🚀 4. Publish the Content</h3>
+                <h3>
+                  <SectionFeatureTitle icon={LuRocket}>
+                    4. Publish the Content
+                  </SectionFeatureTitle>
+                </h3>
                 <p>Use "New Container" and then "New Type" and then "New Item" buttons, to store your content/items.</p>
               </div>
             </div>
@@ -210,7 +301,11 @@ export function Introduction({ account }: IntroductionProps) {
             <h2>Car Report</h2>
             <div className="feature-grid">
               <div className="feature">
-                <h3>Sample Car Maintenance Report</h3>
+                <h3>
+                  <SectionFeatureTitle icon={LuClipboardList}>
+                    Sample Car Maintenance Report
+                  </SectionFeatureTitle>
+                </h3>
                 <p>Generate a report for your vehicle directly in the app.</p>
                 <form
                   action="https://cars.izipublish.com/izipublish/api/report/car"
@@ -254,27 +349,61 @@ export function Introduction({ account }: IntroductionProps) {
                 </p>
               </div>
               <div className="hero-right">
-                <img src={logoPath} alt="IziPublish Logo" className="hero-logo" />
+                <img src={logoPath} alt="iziPublish Logo" className="hero-logo" />
               </div>
+            </div>
+          </section>
+          <section className="features share-strip">
+            <h2>Share iziPublish</h2>
+            <div className="share-strip-row">
+              {shareLinks.map((link) => (
+                <a
+                  key={link.label}
+                  className="share-strip-btn"
+                  href={link.href}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  title={`Share on ${link.label}`}
+                >
+                  <i className={link.iconClass} aria-hidden="true" />
+                  <span>{link.label}</span>
+                </a>
+              ))}
             </div>
           </section>
           <section id="features1" className="features">
             <h2>What is this for?</h2>
             <div className="feature-grid">
               <div className="feature">
-                <h3>🔗 Put Content on Blockchain</h3>
+                <h3>
+                  <SectionFeatureTitle icon={LuDatabase}>
+                    Put Content on Blockchain
+                  </SectionFeatureTitle>
+                </h3>
                 <p>Easiest way to store and share your content on blockchain.</p>
               </div>
               <div className="feature">
-                <h3>📝 As Easy as Filling a Form</h3>
+                <h3>
+                  <SectionFeatureTitle icon={LuFilePenLine}>
+                    As Easy as Filling a Form
+                  </SectionFeatureTitle>
+                </h3>
                 <p>Use a simple form to publish your content.</p>
               </div>
               <div className="feature">
-                <h3>👁️ View Published Content</h3>
+                <h3>
+                  <SectionFeatureTitle icon={LuEye}>
+                    View Published Content
+                  </SectionFeatureTitle>
+                </h3>
                 <p>All published data on the blockchain will be visible here in the tables.</p>
               </div>
               <div className="feature">
-                <h3>🔌 Integrate Content With Systems</h3>
+                <h3>
+                  <SectionFeatureTitle icon={LuPlugZap}>
+                    Integrate Content With Systems
+                  </SectionFeatureTitle>
+                </h3>
                 <p>You will also be able to integrate the content with system to system.</p>
               </div>
             </div>
@@ -283,19 +412,35 @@ export function Introduction({ account }: IntroductionProps) {
             <h2>How do I do that?</h2>
             <div className="feature-grid">
               <div className="feature">
-                <h3>👛 1. Get IOTA Wallet</h3>
+                <h3>
+                  <SectionFeatureTitle icon={LuWallet}>
+                    1. Get IOTA Wallet
+                  </SectionFeatureTitle>
+                </h3>
                 <p>You can get it by pressing the button on the top right corner. It is a Chrome browser extension.</p>
               </div>
               <div className="feature">
-                <h3>💰 2. Get a Few IOTA Tokens</h3>
+                <h3>
+                  <SectionFeatureTitle icon={LuCoins}>
+                    2. Get a Few IOTA Tokens
+                  </SectionFeatureTitle>
+                </h3>
                 <p>To cover network fees just 5 tokens (1$ worth) can publish hundreds of content, buy or have a friend send it to your wallet.</p>
               </div>
               <div className="feature">
-                <h3>🔐 3. Connect and Log in</h3>
+                <h3>
+                  <SectionFeatureTitle icon={LuShieldCheck}>
+                    3. Connect and Log in
+                  </SectionFeatureTitle>
+                </h3>
                 <p>Connect and log in to this website, by pressing button on the top right corner.</p>
               </div>
               <div className="feature">
-                <h3>🚀 4. Publish the Content</h3>
+                <h3>
+                  <SectionFeatureTitle icon={LuRocket}>
+                    4. Publish the Content
+                  </SectionFeatureTitle>
+                </h3>
                 <p>Use "New Container" and then "New Type" and then "New Item" buttons, to store your content/items.</p>
               </div>
             </div>
@@ -304,19 +449,35 @@ export function Introduction({ account }: IntroductionProps) {
             <h2>What content do I publish?</h2>
             <div className="feature-grid">
               <div className="feature">
-                <h3>🧩 Supports Custom Content</h3>
+                <h3>
+                  <SectionFeatureTitle icon={LuPuzzle}>
+                    Supports Custom Content
+                  </SectionFeatureTitle>
+                </h3>
                 <p>You publish any content, usually in structured (machine readable) JSON format, as long as it respects terms of service.</p>
               </div>
               <div className="feature">
-                <h3>🗂️ Supports Custom Workflow</h3>
+                <h3>
+                  <SectionFeatureTitle icon={LuWorkflow}>
+                    Supports Custom Workflow
+                  </SectionFeatureTitle>
+                </h3>
                 <p>You can decide what kind of data you need to put on blockchain, that will support your workflow (ie. you can specify all references that you need).</p>
               </div>
               <div className="feature">
-                <h3>📦 Predefined Structure</h3>
+                <h3>
+                  <SectionFeatureTitle icon={LuBoxes}>
+                    Predefined Structure
+                  </SectionFeatureTitle>
+                </h3>
                 <p>To make things simpler, there is a predefined set of fields you can use. 'Content' is usually the field to store main data.</p>
               </div>
               <div className="feature">
-                <h3>📊 Examples of Published Data</h3>
+                <h3>
+                  <SectionFeatureTitle icon={LuChartBar}>
+                    Examples of Published Data
+                  </SectionFeatureTitle>
+                </h3>
                 <p>We will make a guide and examples of content. Do *not* publish things like personal data, use other data respecting terms of service.</p>
               </div>
             </div>
@@ -325,19 +486,35 @@ export function Introduction({ account }: IntroductionProps) {
             <h2>Tell me more!</h2>
             <div className="feature-grid">
               <div className="feature">
-                <h3>🏗️ Linked Containers</h3>
+                <h3>
+                  <SectionFeatureTitle icon={LuLink2}>
+                    Linked Containers
+                  </SectionFeatureTitle>
+                </h3>
                 <p>Attach child containers into hierarchy.</p>
               </div>
               <div className="feature">
-                <h3>🔎 On-Chain and Off-Chain Indexing</h3>
+                <h3>
+                  <SectionFeatureTitle icon={LuSearchCheck}>
+                    On-Chain and Off-Chain Indexing
+                  </SectionFeatureTitle>
+                </h3>
                 <p>Efficient traversal through recursion. Content indexed here.</p>
               </div>
               <div className="feature">
-                <h3>✅ Recipient Verification Enabled</h3>
+                <h3>
+                  <SectionFeatureTitle icon={LuBadgeCheck}>
+                    Recipient Verification Enabled
+                  </SectionFeatureTitle>
+                </h3>
                 <p>Published content can be set to 'verified' by recipients.</p>
               </div>
               <div className="feature">
-                <h3>👥 Ownership Model</h3>
+                <h3>
+                  <SectionFeatureTitle icon={LuUsers}>
+                    Ownership Model
+                  </SectionFeatureTitle>
+                </h3>
                 <p>Multi-owner containers with safe access to publishing content.</p>
               </div>
             </div>

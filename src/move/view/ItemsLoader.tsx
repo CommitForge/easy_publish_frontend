@@ -1,11 +1,14 @@
 // File: ItemsLoader.tsx
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useMemo } from 'react';
 import { useCurrentAccount } from '@iota/dapp-kit';
 import ItemsTable from './ItemsTable';
 import type { Item } from '../types';
 import { useSelection } from '../../context/SelectionContext';
 import { API_BASE } from '../../Config.ts';
-import { extractItemsFromTree } from '../../utils/dataTransform';
+import {
+  extractItemsFromTree,
+  filterSupersededRevisionItems,
+} from '../../utils/dataTransform';
 import {
   DEFAULT_FIELDS_BY_TYPE,
   DEFAULT_INCLUDE_BY_TYPE,
@@ -81,14 +84,19 @@ export function ItemsLoader({
   const effectiveDataTypeId = resolveEffectiveDataTypeId(dataTypeId, selectedDataTypeId);
 
   const [items, setItems] = useState<Item[]>([]);
+  const [hasNextPage, setHasNextPage] = useState(false);
+  const [totalPages, setTotalPages] = useState<number | null>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [latestRevisionOnly, setLatestRevisionOnly] = useState(false);
 
   const canLoad = canLoadItems(type, account?.address, effectiveContainerId);
 
   const loadItems = useCallback(async () => {
     if (!canLoad || !account?.address) {
       setItems([]);
+      setHasNextPage(false);
+      setTotalPages(null);
       setError(null);
       return;
     }
@@ -111,13 +119,26 @@ export function ItemsLoader({
       if (!res.ok) throw new Error(`HTTP ${res.status}`);
 
       const tree = await res.json();
-      setItems(
-        extractItemsFromTree(tree, type, effectiveContainerId, effectiveDataTypeId)
+      const meta = tree?.meta;
+      const nextFromMeta =
+        typeof meta?.hasNext === 'boolean' ? meta.hasNext : null;
+      const totalPagesFromMeta =
+        typeof meta?.totalPages === 'number' ? meta.totalPages : null;
+      const extracted = extractItemsFromTree(
+        tree,
+        type,
+        effectiveContainerId,
+        effectiveDataTypeId
       );
+      setHasNextPage(nextFromMeta ?? extracted.length >= pageSize);
+      setTotalPages(totalPagesFromMeta);
+      setItems(extracted);
     } catch (err: unknown) {
       const message = err instanceof Error ? err.message : 'Failed to load';
       setError(message);
       setItems([]);
+      setHasNextPage(false);
+      setTotalPages(null);
     } finally {
       setLoading(false);
     }
@@ -179,20 +200,44 @@ export function ItemsLoader({
     selectedDataItemId,
   });
 
+  const effectiveFields = fieldsToShow ?? DEFAULT_FIELDS_BY_TYPE[type];
+  const visibleItems = useMemo(
+    () =>
+      type === 'data_item' && latestRevisionOnly
+        ? filterSupersededRevisionItems(items)
+        : items,
+    [items, latestRevisionOnly, type]
+  );
+  const hideObjectIdInCompactSelection =
+    (type === 'container' || type === 'data_type') &&
+    effectiveFields.length === 1 &&
+    effectiveFields[0] === 'name';
+
   return (
-    <div style={{ marginTop: 20 }}>
+    <div className="bp-items-loader">
       {loading && <div>Loading…</div>}
 
       <ItemsTable
-        items={items}
+        items={visibleItems}
         page={page}
         onPageChange={setPage}
         selectedId={selectedId ?? undefined}
         onSelect={handleSelect}
         disableSelect={false}
-        fieldsToShow={fieldsToShow ?? DEFAULT_FIELDS_BY_TYPE[type]}
+        fieldsToShow={effectiveFields}
         label={ITEM_LABEL_BY_TYPE[type]}
         resetKey={getResetKey(type, effectiveContainerId, effectiveDataTypeId)}
+        pageSize={pageSize}
+        hasNextPage={hasNextPage}
+        totalPages={totalPages}
+        showObjectIdColumn={!hideObjectIdInCompactSelection}
+        latestRevisionOnly={latestRevisionOnly}
+        onToggleLatestRevisionOnly={
+          type === 'data_item'
+            ? () => setLatestRevisionOnly((prev) => !prev)
+            : undefined
+        }
+        enableDetailToggle={type === 'data_item'}
       />
 
       {error && <div style={{ color: 'red' }}>{error}</div>}

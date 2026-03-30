@@ -12,25 +12,66 @@
   padding-left: 8px;
 }
 
+.follow-panel-input-row {
+  display: flex;
+  gap: 6px;
+  margin-top: 4px;
+}
+
 .follow-panel-input {
-  width: 100%;
-  min-height: 60px;
-  padding: 4px 6px;
+  flex: 1;
+  min-width: 0;
+  padding: 6px 8px;
   border-radius: 4px;
   border: 1px solid #ccc;
   font-size: 13px;
-  resize: vertical;
 }
 
-.follow-panel-add-btn {
-  align-self: flex-start;
+.follow-panel-actions {
+  display: flex;
+  flex-wrap: nowrap;
+  gap: 6px;
+  margin-top: 6px;
+}
+
+.follow-panel-follow-btn,
+.follow-panel-unfollow-btn,
+.follow-panel-publish-btn,
+.follow-panel-view-btn,
+.follow-panel-unfollow-inline-btn {
   padding: 4px 10px;
   font-size: 13px;
   border-radius: 4px;
+  border: 1px solid transparent;
+  cursor: pointer;
+}
+
+.follow-panel-follow-btn {
   background: var(--accent);
   color: #fff;
-  cursor: pointer;
-  margin-top: 4px;
+  flex: 1;
+}
+
+.follow-panel-unfollow-btn {
+  background: transparent;
+  border-color: #d97706;
+  color: #d97706;
+  flex: 1;
+}
+
+.follow-panel-publish-btn {
+  width: 100%;
+  margin-top: 8px;
+  background: var(--accent);
+  color: #fff;
+}
+
+.follow-panel-view-btn {
+  width: 100%;
+  margin-top: 8px;
+  background: transparent;
+  border-color: var(--accent);
+  color: var(--accent);
 }
 
 .follow-panel-feedback {
@@ -38,32 +79,34 @@
   font-size: 12px;
 }
 
-.follow-panel-experimental {
-  color: pink;
+.follow-panel-draft {
+  margin-top: 10px;
+  border: 1px dashed #8b8b8b;
+  border-radius: 6px;
+  padding: 8px;
 }
 
 .follow-panel-list {
   margin-top: 10px;
 }
 
+.follow-panel-search {
+  width: 100%;
+  padding: 4px 6px;
+  border-radius: 4px;
+  border: 1px solid #ccc;
+  font-size: 12px;
+  margin-bottom: 6px;
+}
+
 .follow-panel-list-header {
   font-size: 12px;
   font-weight: 600;
-  opacity: 0.7;
+  opacity: 0.75;
   margin-bottom: 4px;
   display: flex;
   justify-content: space-between;
   align-items: center;
-}
-
-.follow-panel-clear-btn {
-  font-size: 11px;
-  padding: 2px 6px;
-  border-radius: 4px;
-  border: 1px solid var(--accent);
-  background: transparent;
-  cursor: pointer;
-  color: var(--accent);
 }
 
 .follow-panel-row {
@@ -76,16 +119,22 @@
 
 .follow-panel-row-link {
   cursor: pointer;
+  overflow-wrap: anywhere;
 }
 
-.follow-panel-row-remove {
-  cursor: pointer;
-  opacity: 0.6;
+.follow-panel-unfollow-inline-btn {
+  padding: 0 6px;
+  height: 20px;
+  font-size: 11px;
+  line-height: 18px;
+  border-color: #d97706;
+  color: #d97706;
+  background: transparent;
 }
 
 .follow-panel-empty {
   font-size: 12px;
-  opacity: 0.5;
+  opacity: 0.6;
   padding: 4px 6px;
 }
 

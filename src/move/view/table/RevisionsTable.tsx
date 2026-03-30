@@ -1,14 +1,14 @@
 import React, { useEffect, useState } from 'react';
-import type { CarMaintenance } from '../../types';
+import type { ItemRevision } from '../../types';
 
-type CarMaintenanceTableProps = {
-  maintenances: CarMaintenance[];
+type RevisionsTableProps = {
+  revisions: ItemRevision[];
   parentObjectId: string;
   forceExpanded?: boolean;
 };
 
-const CarMaintenanceTable: React.FC<CarMaintenanceTableProps> = ({
-  maintenances,
+const RevisionsTable: React.FC<RevisionsTableProps> = ({
+  revisions,
   parentObjectId,
   forceExpanded = true,
 }) => {
@@ -18,7 +18,7 @@ const CarMaintenanceTable: React.FC<CarMaintenanceTableProps> = ({
     setExpanded(forceExpanded);
   }, [forceExpanded]);
 
-  if (!maintenances || maintenances.length === 0) return null;
+  if (!revisions || revisions.length === 0) return null;
 
   return (
     <div className="bp-nested-table-block">
@@ -28,7 +28,7 @@ const CarMaintenanceTable: React.FC<CarMaintenanceTableProps> = ({
         onClick={() => setExpanded((e) => !e)}
       >
         <span className="bp-nested-table-caret">{expanded ? '▼' : '▶'}</span>
-        <span>Maintenances ({maintenances.length})</span>
+        <span>Revisions ({revisions.length})</span>
         <span className="bp-nested-table-parent-id">{parentObjectId}</span>
       </button>
 
@@ -38,26 +38,16 @@ const CarMaintenanceTable: React.FC<CarMaintenanceTableProps> = ({
             <thead>
               <tr>
                 <th className="bp-nested-index-col">#</th>
-                <th>Date</th>
-                <th>Distance</th>
-                <th>Service</th>
-                <th>Cost</th>
-                <th>Parts</th>
-                <th>Performed By</th>
-                <th>Note</th>
+                <th>Previous Data Item ID</th>
+                <th>Source</th>
               </tr>
             </thead>
             <tbody>
-              {maintenances.map((m, idx) => (
-                <tr key={`${parentObjectId}-maint-${idx}`}>
+              {revisions.map((revision, idx) => (
+                <tr key={`${parentObjectId}-revision-${revision.previousDataItemId}-${idx}`}>
                   <td>{idx + 1}</td>
-                  <td>{m.date}</td>
-                  <td>{m.distance}</td>
-                  <td>{m.service}</td>
-                  <td>{m.cost}</td>
-                  <td>{m.parts}</td>
-                  <td>{m.performed_by}</td>
-                  <td className="bp-nested-multiline">{m.note}</td>
+                  <td className="bp-nested-multiline">{revision.previousDataItemId}</td>
+                  <td>{revision.source}</td>
                 </tr>
               ))}
             </tbody>
@@ -68,4 +58,4 @@ const CarMaintenanceTable: React.FC<CarMaintenanceTableProps> = ({
   );
 };
 
-export default CarMaintenanceTable;
+export default RevisionsTable;

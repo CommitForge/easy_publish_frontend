@@ -20,6 +20,14 @@ type ItemsTableProps = {
   label?: string;
   collapsed?: boolean;
   explorerUrl?: (objectId: string) => string; // <- pass function
+  pageSize?: number;
+  hasNextPage?: boolean;
+  totalPages?: number | null;
+  showObjectIdColumn?: boolean;
+  latestRevisionOnly?: boolean;
+  onToggleLatestRevisionOnly?: () => void;
+  enableDetailToggle?: boolean;
+  filterBar?: React.ReactNode;
 };
 
 const ItemsTable: React.FC<ItemsTableProps> = ({
@@ -35,10 +43,22 @@ const ItemsTable: React.FC<ItemsTableProps> = ({
   label,
   collapsed = false,
   explorerUrl = buildObjectExplorerUrl,
+  pageSize = PAGE_SIZE,
+  hasNextPage,
+  totalPages = null,
+  showObjectIdColumn = true,
+  latestRevisionOnly = false,
+  onToggleLatestRevisionOnly,
+  enableDetailToggle = false,
+  filterBar,
 }) => {
   const [expandedCells, setExpandedCells] = useState<Set<string>>(new Set());
+  const [detailsExpanded, setDetailsExpanded] = useState(true);
 
-  useEffect(() => setExpandedCells(new Set()), [resetKey]);
+  useEffect(() => {
+    setExpandedCells(new Set());
+    setDetailsExpanded(true);
+  }, [resetKey]);
 
   const pagedItems = items;
 
@@ -55,13 +75,18 @@ const ItemsTable: React.FC<ItemsTableProps> = ({
     });
   };
 
+  const canGoNext =
+    typeof hasNextPage === 'boolean' ? hasNextPage : items.length >= pageSize;
+
   return (
     <div className="bp-items-root" style={{ position: 'relative' }}>
       {/* Top bar */}
-      <div style={{ display: 'flex', alignItems: 'center', fontSize: collapsed ? 12 : 14, marginBottom: 5, gap: 6 }}>
+      <div className="bp-items-toolbar" style={{ fontSize: collapsed ? 12 : 14 }}>
         <span>
           Selected {label ?? 'Item'}:{' '}
-          {selectedId ? `${selectedId.slice(0, 6)}...${selectedId.slice(-4)}` : '(none)'}
+          <strong>
+            {selectedId ? `${selectedId.slice(0, 6)}...${selectedId.slice(-4)}` : '(none)'}
+          </strong>
         </span>
         {selectedId && (
           <>
@@ -77,18 +102,40 @@ const ItemsTable: React.FC<ItemsTableProps> = ({
             </a>
           </>
         )}
+        <div className="bp-toolbar-actions">
+          {onToggleLatestRevisionOnly && (
+            <button
+              type="button"
+              className={`bp-toolbar-btn ${latestRevisionOnly ? 'is-active' : ''}`}
+              onClick={onToggleLatestRevisionOnly}
+              aria-pressed={latestRevisionOnly}
+            >
+              Latest Revision
+            </button>
+          )}
+          {enableDetailToggle && (
+            <button
+              type="button"
+              className={`bp-toolbar-btn ${detailsExpanded ? 'is-active' : ''}`}
+              onClick={() => setDetailsExpanded((prev) => !prev)}
+            >
+              {detailsExpanded ? 'Collapse Details' : 'Expand Details'}
+            </button>
+          )}
+        </div>
       </div>
+      {filterBar}
 
       {error && <div className="error">{error}</div>}
       {items.length === 0 ? (
         <p className="empty-msg">No items found.</p>
       ) : (
-        <div className="table-wrapper" style={{ overflowX: 'auto' }}>
-          <table className="table table-striped table-bordered table-sm">
+        <div className="table-wrapper">
+          <table className="bp-items-table">
             <thead>
               <tr>
-                <th style={{ width: 40 }}>Sel.</th>
-                <th>Object ID</th>
+                <th className="bp-select-col-header">Sel.</th>
+                {showObjectIdColumn && <th>Object ID</th>}
                 {columns.map(col => <th key={col}>{col}</th>)}
               </tr>
             </thead>
@@ -104,6 +151,8 @@ const ItemsTable: React.FC<ItemsTableProps> = ({
                   expandedCells={expandedCells}
                   toggleCell={toggleCell}
                   explorerUrl={explorerUrl} // <- pass function instead of string
+                  showObjectIdColumn={showObjectIdColumn}
+                  detailsExpanded={detailsExpanded}
                 />
               ))}
             </tbody>
@@ -112,17 +161,28 @@ const ItemsTable: React.FC<ItemsTableProps> = ({
       )}
 
       {/* Pagination */}
-      <div style={{ marginTop: 6, fontSize: 13 }}>
+      <div className="bp-items-pagination">
         {page > 0 && (
-          <b style={{ cursor: 'pointer', marginRight: 8 }} onClick={() => onPageChange(page - 1)}>
+          <button
+            type="button"
+            className="bp-page-btn"
+            onClick={() => onPageChange(page - 1)}
+          >
             {'< page ' + page}
-          </b>
+          </button>
         )}
-        <span style={{ marginRight: 8 }}>Page {page + 1}</span>
-        {items.length === PAGE_SIZE && (
-          <b style={{ cursor: 'pointer' }} onClick={() => onPageChange(page + 1)}>
+        <span className="bp-page-indicator">
+          Page {page + 1}
+          {totalPages ? ` / ${Math.max(1, totalPages)}` : ''}
+        </span>
+        {canGoNext && (
+          <button
+            type="button"
+            className="bp-page-btn"
+            onClick={() => onPageChange(page + 1)}
+          >
             {'page ' + (page + 2) + ' >'}
-          </b>
+          </button>
         )}
       </div>
     </div>

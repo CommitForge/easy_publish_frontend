@@ -19,9 +19,9 @@ type BuildItemsQueryParamsInput = {
 };
 
 export const DEFAULT_INCLUDE_BY_TYPE: Record<ItemType, string> = {
-  container: 'DATA_TYPE',
-  data_type: 'DATA_TYPE',
-  data_item: 'DATA_ITEM',
+  container: 'CONTAINER',
+  data_type: 'CONTAINER,DATA_TYPE',
+  data_item: 'CONTAINER,DATA_TYPE,DATA_ITEM,DATA_ITEM_VERIFICATION',
 };
 
 export const DEFAULT_FIELDS_BY_TYPE: Record<ItemType, string[]> = {

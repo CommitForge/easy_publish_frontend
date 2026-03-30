@@ -65,10 +65,9 @@ export default function AccountWorkspace({
             <UpdateDataTypeForm address={account.address} />
           )}
 
-        {primaryMenuSelection === 'addDataItem' &&
-          selectedDataTypeId && (
-            <PublishDataItemForm address={account.address} />
-          )}
+        {primaryMenuSelection === 'addDataItem' && (
+          <PublishDataItemForm address={account.address} />
+        )}
 
         {primaryMenuSelection === 'publishDataItemVerification' &&
           selectedContainerId &&

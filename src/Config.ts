@@ -170,3 +170,9 @@ export function t(path: string): string {
 export function isCarsTranslation(): boolean {
   return t('translation') === 'cars' || t('container.singular') === 'Car';
 }
+
+export function getBrandLogoPath(): string {
+  return isCarsTranslation()
+    ? '/images/logo-cars.png'
+    : '/images/logo-generic.png';
+}

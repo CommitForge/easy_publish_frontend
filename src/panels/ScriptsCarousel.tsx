@@ -13,6 +13,17 @@ interface ScriptsCarouselProps {
   readmeScript: string;
 }
 
+type ScriptGroup = "Core CLI" | "Libraries" | "Config and Docs";
+
+type VisibleScript = {
+  title: string;
+  description: string;
+  usage: string;
+  code: string;
+  language: string;
+  group: ScriptGroup;
+};
+
 export default function ScriptsCarousel({
   izipubScript,
   cliScript,
@@ -25,7 +36,7 @@ export default function ScriptsCarousel({
 }: ScriptsCarouselProps) {
   const SCRIPT_LINES_PER_CHUNK = 220;
 
-  const visibleScripts = useMemo(
+  const visibleScripts = useMemo<VisibleScript[]>(
     () => [
       {
         title: "izipub.js",
@@ -48,6 +59,7 @@ node izipub.js publish-data-item-verification --container-id 0x... --data-item-i
 node izipub.js publish-data-item --input-file ./payload.publish-data-item.json --private-key iotaprivkey...`,
         code: izipubScript,
         language: "javascript",
+        group: "Core CLI",
       },
       {
         title: "cli.sh",
@@ -58,6 +70,7 @@ node izipub.js publish-data-item --input-file ./payload.publish-data-item.json -
 ./cli.sh --help`,
         code: cliScript,
         language: "bash",
+        group: "Core CLI",
       },
       {
         title: "lib/commands.js",
@@ -66,6 +79,7 @@ node izipub.js publish-data-item --input-file ./payload.publish-data-item.json -
         usage: "Imported internally by izipub.js",
         code: commandsLibScript,
         language: "javascript",
+        group: "Libraries",
       },
       {
         title: "lib/iota.js",
@@ -74,6 +88,7 @@ node izipub.js publish-data-item --input-file ./payload.publish-data-item.json -
         usage: "Imported internally by the package",
         code: iotaLibScript,
         language: "javascript",
+        group: "Libraries",
       },
       {
         title: "lib/logger.js",
@@ -82,6 +97,7 @@ node izipub.js publish-data-item --input-file ./payload.publish-data-item.json -
         usage: "Imported internally by the package",
         code: loggerLibScript,
         language: "javascript",
+        group: "Libraries",
       },
       {
         title: ".env.cli.example",
@@ -90,14 +106,7 @@ node izipub.js publish-data-item --input-file ./payload.publish-data-item.json -
         usage: "Copy to .env.cli and fill your real values",
         code: envCliExampleScript,
         language: "bash",
-      },
-      {
-        title: "README.md",
-        description:
-          "Package documentation and usage notes for the CLI.",
-        usage: "Open in a text editor or read on GitHub",
-        code: readmeScript,
-        language: "markdown",
+        group: "Config and Docs",
       },
       {
         title: "package.json",
@@ -106,6 +115,16 @@ node izipub.js publish-data-item --input-file ./payload.publish-data-item.json -
         usage: "Used by npm / node tooling",
         code: packageJsonScript,
         language: "json",
+        group: "Config and Docs",
+      },
+      {
+        title: "README.md",
+        description:
+          "Package documentation and usage notes for the CLI.",
+        usage: "Open in a text editor or read on GitHub",
+        code: readmeScript,
+        language: "markdown",
+        group: "Config and Docs",
       },
     ],
     [
@@ -118,6 +137,19 @@ node izipub.js publish-data-item --input-file ./payload.publish-data-item.json -
       envCliExampleScript,
       readmeScript,
     ]
+  );
+
+  const groupedScripts = useMemo(
+    () =>
+      (["Core CLI", "Libraries", "Config and Docs"] as ScriptGroup[])
+        .map((group) => ({
+          group,
+          scripts: visibleScripts
+            .map((script, index) => ({ script, index }))
+            .filter(({ script }) => script.group === group),
+        }))
+        .filter(({ scripts }) => scripts.length > 0),
+    [visibleScripts]
   );
 
   const allFilesForZip = useMemo(
@@ -183,25 +215,20 @@ node izipub.js publish-data-item --input-file ./payload.publish-data-item.json -
   }, [currentScript]);
 
   return (
-    <section
-      id="scripts"
-      className="scripts"
+    <div
       style={{
-        padding: "2rem",
-        backgroundColor: "#1e1e1e",
-        borderRadius: "0.5rem",
-        width: "min(100%, 980px)",
-        maxWidth: "980px",
+        width: "100%",
+        maxWidth: "100%",
         margin: "0 auto",
         boxSizing: "border-box",
         overflow: "hidden",
       }}
     >
-      <h2 style={{ marginBottom: "1rem", color: "#ffd700" }}>
+      <h2 style={{ marginBottom: "1rem" }}>
         🔌 Integrate Content With Systems
       </h2>
 
-      <div style={{ marginBottom: "1rem", color: "#ccc", lineHeight: 1.6 }}>
+      <div style={{ marginBottom: "1rem", color: "var(--fg-muted)", lineHeight: 1.6 }}>
         <div style={{ marginBottom: "0.5rem" }}>
           This package is trimmed to the essential CLI files.
           <strong> The main script is izipub.js</strong>.
@@ -213,7 +240,7 @@ node izipub.js publish-data-item --input-file ./payload.publish-data-item.json -
           href="https://docs.iota.org/developer/ts-sdk/typescript/"
           target="_blank"
           rel="noopener noreferrer"
-          style={{ color: "#4fc3f7", textDecoration: "underline" }}
+          style={{ color: "var(--cyan)", textDecoration: "underline" }}
         >
           IOTA TypeScript SDK
         </a>
@@ -250,7 +277,7 @@ node izipub.js publish-data-item --input-file ./payload.publish-data-item.json -
               padding: "0.5rem 1rem",
               borderRadius: "0.25rem",
               border: "1px solid #4fc3f7",
-              color: "#4fc3f7",
+              color: "var(--cyan)",
               textDecoration: "none",
               display: "inline-flex",
               alignItems: "center",
@@ -261,36 +288,50 @@ node izipub.js publish-data-item --input-file ./payload.publish-data-item.json -
         </span>
       </div>
 
-      <div
-        style={{
-          display: "flex",
-          justifyContent: "space-between",
-          alignItems: "center",
-          marginBottom: "1rem",
-          gap: "0.75rem",
-        }}
-      >
-        <div style={{ width: "100%", overflowX: "auto" }}>
-          <div style={{ display: "inline-flex", gap: "0.5rem", minWidth: "max-content" }}>
-            {visibleScripts.map((s, i) => (
-              <button
-                key={s.title}
-                onClick={() => setCurrent(i)}
-                style={{
-                  padding: "0.5rem 1rem",
-                  borderRadius: "0.25rem",
-                  border: "none",
-                  cursor: "pointer",
-                  backgroundColor: i === current ? "#4fc3f7" : "#333",
-                  color: i === current ? "#000" : "#ccc",
-                  whiteSpace: "nowrap",
-                }}
-              >
-                {s.title}
-              </button>
-            ))}
+      <div style={{ marginBottom: "1rem", width: "100%" }}>
+        {groupedScripts.map(({ group, scripts }) => (
+          <div key={group} style={{ marginBottom: "0.85rem" }}>
+            <div
+              style={{
+                marginBottom: "0.35rem",
+                fontSize: "0.85rem",
+                letterSpacing: "0.03em",
+                textTransform: "uppercase",
+                color: "var(--fg-muted)",
+              }}
+            >
+              {group}
+            </div>
+            <div
+              style={{
+                display: "grid",
+                gridTemplateColumns: "repeat(auto-fit, minmax(180px, 1fr))",
+                gap: "0.5rem",
+              }}
+            >
+              {scripts.map(({ script, index }) => (
+                <button
+                  key={script.title}
+                  onClick={() => setCurrent(index)}
+                  style={{
+                    padding: "0.55rem 0.75rem",
+                    borderRadius: "0.25rem",
+                    border: "1px solid #2e4758",
+                    cursor: "pointer",
+                    backgroundColor: index === current ? "#4fc3f7" : "#1f2428",
+                    color: index === current ? "#03121c" : "#d6deeb",
+                    whiteSpace: "normal",
+                    textAlign: "left",
+                    lineHeight: 1.25,
+                    minHeight: 44,
+                  }}
+                >
+                  {script.title}
+                </button>
+              ))}
+            </div>
           </div>
-        </div>
+        ))}
       </div>
 
       <div
@@ -314,7 +355,7 @@ node izipub.js publish-data-item --input-file ./payload.publish-data-item.json -
           <h3
             style={{
               marginBottom: "1rem",
-              color: "#4fc3f7",
+              color: "var(--green)",
               overflowWrap: "anywhere",
               wordBreak: "break-word",
             }}
@@ -325,7 +366,7 @@ node izipub.js publish-data-item --input-file ./payload.publish-data-item.json -
           <p
             style={{
               marginBottom: "0.5rem",
-              color: "#ccc",
+              color: "var(--fg-muted)",
               overflowWrap: "anywhere",
               wordBreak: "break-word",
             }}
@@ -333,7 +374,7 @@ node izipub.js publish-data-item --input-file ./payload.publish-data-item.json -
             {currentScript.description}
           </p>
 
-          <p style={{ marginBottom: "0.5rem", color: "#ccc" }}>Usage:</p>
+          <p style={{ marginBottom: "0.5rem", color: "var(--fg-muted)" }}>Usage:</p>
           <div
             style={{
               width: "100%",
@@ -364,7 +405,7 @@ node izipub.js publish-data-item --input-file ./payload.publish-data-item.json -
           <div
             style={{
               margin: "1rem 0 0.5rem 0",
-              color: "#ccc",
+              color: "var(--fg-muted)",
               display: "flex",
               justifyContent: "space-between",
               alignItems: "center",
@@ -485,6 +526,6 @@ node izipub.js publish-data-item --input-file ./payload.publish-data-item.json -
           ▶
         </button>
       </div>
-    </section>
+    </div>
   );
 }

@@ -135,6 +135,13 @@ The `content.easy_publish` JSON structure used by the frontend is documented in:
 
 - `docs/EASY_PUBLISH_CONTENT.md`
 
+## Items API Guide (Beta)
+
+Comprehensive `/api/items` usage (params, include modes, pagination behavior,
+request samples, and response sample) is documented in:
+
+- `docs/ITEMS_API.md`
+
 ## Security Notes
 
 - Do not put private keys or mnemonics into frontend env files.

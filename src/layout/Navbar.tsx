@@ -1,7 +1,7 @@
 import { useWallets, useConnectWallet } from '@iota/dapp-kit';
 import { copyToClipboard } from '../utils/clipboard';
 import { useSelection } from '../context/SelectionContext.tsx';
-import { t } from '../Config.ts';
+import { getBrandLogoPath, t } from '../Config.ts';
 import { useSyncStatus } from '../hooks/useSyncStatus';
 import { buildObjectExplorerUrl } from '../utils/explorer';
 
@@ -47,6 +47,7 @@ export function Navbar({ account, disconnect }: any) {
   const { mutate: connect } = useConnectWallet();
   const { selectedContainerId, selectedDataTypeId, selectedDataItemId } = useSelection();
   const { syncStatus, splash } = useSyncStatus();
+  const logoPath = getBrandLogoPath();
 
   const selectedObjects = [
     {
@@ -75,7 +76,7 @@ export function Navbar({ account, disconnect }: any) {
     <header className="navbar navbar-main">
       {/* Logo */}
       <div className="logo">
-        <img width="120px" height="120px" src="/images/logo.png" alt="Logo" />
+        <img width="120px" height="120px" src={logoPath} alt="IziPublish Logo" />
       </div>
 
       {/* Top Selection Bar */}

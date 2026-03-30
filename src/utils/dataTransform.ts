@@ -1,4 +1,173 @@
-import type { Item } from '../move/types';
+import type { Item, ItemRevision } from '../move/types';
+
+const OBJECT_ID_REGEX = /^0x[a-fA-F0-9]{64}$/;
+
+function uniq(values: string[]): string[] {
+  return Array.from(new Set(values));
+}
+
+function toObjectIdList(value: unknown): string[] {
+  if (typeof value === 'string') {
+    return value
+      .split(',')
+      .map((part) => part.trim())
+      .filter((part) => OBJECT_ID_REGEX.test(part));
+  }
+
+  if (Array.isArray(value)) {
+    return uniq(value.flatMap((entry) => toObjectIdList(entry)));
+  }
+
+  if (value && typeof value === 'object') {
+    const obj = value as Record<string, unknown>;
+    return uniq(
+      [
+        obj.id,
+        obj.object_id,
+        obj.dataItemId,
+        obj.data_item_id,
+        obj.address,
+        obj.value,
+      ].flatMap((entry) => toObjectIdList(entry))
+    );
+  }
+
+  return [];
+}
+
+function parseContentObject(content: unknown): Record<string, unknown> | null {
+  if (!content) return null;
+
+  if (typeof content === 'object') {
+    return content as Record<string, unknown>;
+  }
+
+  if (typeof content !== 'string') return null;
+
+  try {
+    const parsed = JSON.parse(content);
+    return parsed && typeof parsed === 'object'
+      ? (parsed as Record<string, unknown>)
+      : null;
+  } catch {
+    return null;
+  }
+}
+
+function toVerifiedString(value: unknown): string {
+  if (value == null) return '';
+  return value ? 'true' : 'false';
+}
+
+function normalizeDataItemVerification(verificationNode: any) {
+  const raw =
+    verificationNode?.dataItemVerification ??
+    verificationNode?.verification ??
+    verificationNode ??
+    {};
+
+  return {
+    id: raw.id ?? raw.object_id ?? '',
+    containerId: raw.containerId ?? raw.container_id ?? '',
+    dataItemId: raw.dataItemId ?? raw.data_item_id ?? '',
+    name: raw.name ?? '',
+    description: raw.description ?? '',
+    content: raw.content ?? '',
+    verified: toVerifiedString(raw.verified),
+    creatorAddr: raw.creator?.creatorAddr ?? '',
+    externalId: raw.externalId ?? raw.external_id ?? '',
+    externalIndex: raw.externalIndex ?? raw.external_index ?? '',
+  };
+}
+
+function normalizeReferenceIds(rawDataItem: any): string[] {
+  return uniq(
+    [
+      rawDataItem?.reference,
+      rawDataItem?.references,
+      rawDataItem?.referenceIds,
+      rawDataItem?.reference_ids,
+      rawDataItem?.refs,
+    ].flatMap((entry) => toObjectIdList(entry))
+  );
+}
+
+function extractRevisionSetting(content: unknown): {
+  enabled: boolean;
+  explicitPreviousIds: string[];
+} {
+  const contentObj = parseContentObject(content);
+  const revisions = (contentObj?.easy_publish as any)?.revisions;
+
+  if (revisions == null) {
+    return { enabled: false, explicitPreviousIds: [] };
+  }
+
+  if (typeof revisions === 'boolean') {
+    return { enabled: revisions, explicitPreviousIds: [] };
+  }
+
+  if (typeof revisions === 'string' || Array.isArray(revisions)) {
+    return {
+      enabled: true,
+      explicitPreviousIds: uniq(toObjectIdList(revisions)),
+    };
+  }
+
+  if (typeof revisions === 'object') {
+    const raw = revisions as Record<string, unknown>;
+    const explicitPreviousIds = uniq(
+      [
+        raw.replaces,
+        raw.replaced,
+        raw.previous,
+        raw.previousIds,
+        raw.previous_ids,
+        raw.previousDataItemIds,
+        raw.previous_data_item_ids,
+        raw.of,
+        raw.items,
+        raw.references,
+      ].flatMap((entry) => toObjectIdList(entry))
+    );
+
+    // Keep semantics parallel with publish.targets[*].enabled:
+    // object form is opt-in and requires explicit enabled=true.
+    const enabled =
+      typeof raw.enabled === 'boolean' ? raw.enabled : false;
+
+    return { enabled, explicitPreviousIds };
+  }
+
+  return { enabled: false, explicitPreviousIds: [] };
+}
+
+function buildItemRevisions(
+  content: unknown,
+  referenceIds: string[],
+  sameContainerDataItemIds?: ReadonlySet<string>
+): ItemRevision[] {
+  const revisionSetting = extractRevisionSetting(content);
+  if (!revisionSetting.enabled) return [];
+
+  const explicitSet = new Set(revisionSetting.explicitPreviousIds);
+  const effectivePreviousIds =
+    revisionSetting.explicitPreviousIds.length > 0
+      ? revisionSetting.explicitPreviousIds
+      : referenceIds;
+
+  const sameContainerFilteredIds = uniq(effectivePreviousIds).filter(
+    (previousDataItemId) =>
+      !sameContainerDataItemIds || sameContainerDataItemIds.has(previousDataItemId)
+  );
+
+  return sameContainerFilteredIds.map((previousDataItemId) => ({
+    previousDataItemId,
+    source: explicitSet.has(previousDataItemId)
+      ? 'revision_setting'
+      : 'references',
+  }));
+}
 
 /**
  * Extracts flattened UI records from the nested backend tree structure.
@@ -51,6 +220,17 @@ export function extractItemsFromTree(
 
   if (type === 'data_item') {
     const rows: Item[] = [];
+    const sameContainerDataItemIds = new Set<string>();
+
+    (containerNode.dataTypes ?? []).forEach((dt: any) => {
+      (dt.dataItems ?? []).forEach((di: any) => {
+        const dataItemId = di?.dataItem?.id;
+        if (typeof dataItemId === 'string' && OBJECT_ID_REGEX.test(dataItemId)) {
+          sameContainerDataItemIds.add(dataItemId);
+        }
+      });
+    });
+
     (containerNode.dataTypes ?? []).forEach((dt: any) => {
       const dtId = dt.dataType.id;
       // Filter by dataTypeId if specified
@@ -59,6 +239,13 @@ export function extractItemsFromTree(
       const dataTypeName = dt.dataType.name;
 
       (dt.dataItems ?? []).forEach((di: any) => {
+        const referenceIds = normalizeReferenceIds(di.dataItem);
+        const revisions = buildItemRevisions(
+          di.dataItem.content,
+          referenceIds,
+          sameContainerDataItemIds
+        );
+
         rows.push({
           object_id: di.dataItem.id,
           fields: {
@@ -69,14 +256,18 @@ export function extractItemsFromTree(
             externalId: di.dataItem.externalId,
             containerId: di.dataItem.containerId,
             dataTypeId: di.dataItem.dataTypeId,
-            verified:
-              di.dataItem.verified == null
-                ? ''
-                : di.dataItem.verified
-                ? 'true'
-                : 'false',
+            verified: toVerifiedString(di.dataItem.verified),
             creatorAddr: di.dataItem.creator?.creatorAddr ?? '',
             externalIndex: di.dataItem.externalIndex ?? '',
+            referenceIds,
+            revisions,
+            dataItemVerifications: Array.isArray(di.dataItemVerifications)
+              ? di.dataItemVerifications.map(normalizeDataItemVerification)
+              : Array.isArray(di.verifications)
+              ? di.verifications.map(normalizeDataItemVerification)
+              : Array.isArray(di.data_item_verifications)
+              ? di.data_item_verifications.map(normalizeDataItemVerification)
+              : [],
           },
         });
       });
@@ -85,4 +276,34 @@ export function extractItemsFromTree(
   }
 
   return [];
+}
+
+/**
+ * Filters out superseded rows (older revisions) for friendly views like Cars mode.
+ * Generic mode can still render all rows by skipping this filter.
+ */
+export function filterSupersededRevisionItems(items: Item[]): Item[] {
+  const supersededIds = new Set<string>();
+
+  items.forEach((item) => {
+    const revisions = item.fields?.revisions;
+    if (!Array.isArray(revisions)) return;
+
+    revisions.forEach((entry: unknown) => {
+      const previousId =
+        typeof entry === 'string'
+          ? entry
+          : (entry as Record<string, unknown>)?.previousDataItemId;
+
+      if (
+        typeof previousId === 'string' &&
+        OBJECT_ID_REGEX.test(previousId) &&
+        previousId !== item.object_id
+      ) {
+        supersededIds.add(previousId);
+      }
+    });
+  });
+
+  return items.filter((item) => !supersededIds.has(item.object_id));
 }

@@ -253,7 +253,7 @@ export function FollowContainerPanel({
 
           <div className="follow-panel-actions">
             <button
-              className="btn btn-sm btn-success text-dark flex-fill"
+              className="btn btn-sm btn-success flex-fill"
               onClick={queueInputAsFollow}
               disabled={validatingInput}
             >

@@ -120,6 +120,10 @@ export function SidebarPanel({
     { label: t('type.singular') + ' ' + t('actions.edit'), key: 'updateDataType', icon: <FaEdit />, disabled: !selectedDataTypeId },
   ];
 
+  const canCreateDataType = !!selectedContainerId;
+  const canCreateDataItem = !!selectedContainerId && !!selectedDataTypeId;
+  const canCreateVerification = !!selectedContainerId && !!selectedDataTypeId;
+
   return (
     <div style={{ display: 'flex' }}>
       <aside
@@ -184,8 +188,13 @@ export function SidebarPanel({
                 ))}
 
               <div
-                style={actionButtonStyle(primaryMenuSelection === 'addDataType')}
+                style={actionButtonStyle(
+                  primaryMenuSelection === 'addDataType',
+                  0,
+                  !canCreateDataType
+                )}
                 onClick={() => {
+                  if (!canCreateDataType) return;
                   setPrimaryMenuSelection('addDataType');
                   setExpandedSecondary(
                     expandedSecondary === 'addDataType' ? null : 'addDataType'
@@ -209,15 +218,29 @@ export function SidebarPanel({
                 ))}
 
               <div
-                style={actionButtonStyle(primaryMenuSelection === 'addDataItem')}
-                onClick={() => setPrimaryMenuSelection('addDataItem')}
+                style={actionButtonStyle(
+                  primaryMenuSelection === 'addDataItem',
+                  0,
+                  !canCreateDataItem
+                )}
+                onClick={() => {
+                  if (!canCreateDataItem) return;
+                  setPrimaryMenuSelection('addDataItem');
+                }}
               >
                 <FaPlus /> {t('actions.new')} {t('item.singular')}
               </div>
 
               <div
-                style={actionButtonStyle(primaryMenuSelection === 'publishDataItemVerification')}
-                onClick={() => setPrimaryMenuSelection('publishDataItemVerification')}
+                style={actionButtonStyle(
+                  primaryMenuSelection === 'publishDataItemVerification',
+                  0,
+                  !canCreateVerification
+                )}
+                onClick={() => {
+                  if (!canCreateVerification) return;
+                  setPrimaryMenuSelection('publishDataItemVerification');
+                }}
               >
                 <FaPlus /> {t('actions.new')} {t('itemVerification.singular')}
               </div>

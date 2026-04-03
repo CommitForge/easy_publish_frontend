@@ -1,0 +1,35 @@
+name: Build Main Dist Zip
+
+on:
+  push:
+    branches:
+      - main
+  workflow_dispatch:
+
+jobs:
+  build-dist-zip:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Build and pack dist zip
+        run: npm run build:zip
+
+      - name: Upload dist zip artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: dist-easy_publish_frontend-main
+          path: dist-easy_publish_frontend.zip
+          if-no-files-found: error
+          retention-days: 14

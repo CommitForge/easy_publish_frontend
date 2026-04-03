@@ -4,6 +4,7 @@ import { copyToClipboard } from '../utils/clipboard';
 import { useSelection } from '../context/SelectionContext.tsx';
 import { API_BASE, getBrandLogoPath, t } from '../Config.ts';
 import { useSyncStatus } from '../hooks/useSyncStatus';
+import type { SyncStatus } from '../hooks/useSyncStatus';
 import { buildObjectExplorerUrl } from '../utils/explorer';
 import type { PanelMenuSelection } from '../panels/SidebarPanel.tsx';
 import {
@@ -13,11 +14,172 @@ import {
 } from '../move/forms/FormUtils.tsx';
 
 const explorerUrl = (objectId: string) => buildObjectExplorerUrl(objectId);
+const SYNC_TICK_MS = 125;
+const SYNC_PROGRESS_RADIUS = 21;
+const SYNC_PROGRESS_CIRCUMFERENCE = 2 * Math.PI * SYNC_PROGRESS_RADIUS;
 
 const shortByAddressStyle = (value: string, minLengthToShorten = 16) =>
   value.length > minLengthToShorten
     ? `${value.slice(0, 6)}...${value.slice(-4)}`
     : value;
+
+const toTimestampMs = (value: string | null | undefined): number | null => {
+  if (!value) return null;
+  const parsed = new Date(value).getTime();
+  return Number.isFinite(parsed) ? parsed : null;
+};
+
+const formatRemainingCompact = (ms: number): string => {
+  const totalSeconds = Math.max(0, Math.ceil(ms / 1000));
+  const hours = Math.floor(totalSeconds / 3600);
+  const minutes = Math.floor((totalSeconds % 3600) / 60);
+  const seconds = totalSeconds % 60;
+
+  if (hours > 0) return `${hours}h${minutes}m`;
+  if (minutes > 0) return `${minutes}m${seconds}s`;
+  return `${seconds}s`;
+};
+
+function SyncStatusCard({
+  syncStatus,
+  splash,
+}: {
+  syncStatus: SyncStatus | null;
+  splash: boolean;
+}) {
+  const [nowMs, setNowMs] = useState(() => Date.now());
+
+  useEffect(() => {
+    if (!syncStatus) return;
+
+    const tick = window.setInterval(() => {
+      setNowMs(Date.now());
+    }, SYNC_TICK_MS);
+
+    return () => {
+      window.clearInterval(tick);
+    };
+  }, [syncStatus]);
+
+  const lastSyncMs = toTimestampMs(syncStatus?.lastSyncTs);
+  const nextSyncMs = toTimestampMs(syncStatus?.nextSyncTs);
+  const hasSchedule = nextSyncMs !== null;
+
+  const rawRemainingMs = hasSchedule ? nextSyncMs - nowMs : null;
+  const remainingMs = rawRemainingMs !== null ? Math.max(0, rawRemainingMs) : null;
+  const cycleMs =
+    lastSyncMs !== null && nextSyncMs !== null && nextSyncMs > lastSyncMs
+      ? nextSyncMs - lastSyncMs
+      : hasSchedule && rawRemainingMs !== null && rawRemainingMs > 0
+      ? rawRemainingMs
+      : null;
+
+  const overdueMs =
+    rawRemainingMs !== null && rawRemainingMs < 0 ? Math.abs(rawRemainingMs) : 0;
+  const isOverdueGrace =
+    cycleMs !== null && overdueMs > 0 && overdueMs < cycleMs;
+  const isOverdueStalled =
+    cycleMs !== null && overdueMs >= cycleMs;
+
+  const elapsedMs =
+    cycleMs !== null && hasSchedule && remainingMs !== null
+      ? Math.max(0, cycleMs - remainingMs)
+      : null;
+
+  const progress =
+    cycleMs !== null && cycleMs > 0 && isOverdueGrace
+      ? Math.min(1, Math.max(0, overdueMs / cycleMs))
+      : isOverdueStalled
+      ? 1
+      : cycleMs !== null && elapsedMs !== null && cycleMs > 0
+      ? Math.min(1, Math.max(0, elapsedMs / cycleMs))
+      : null;
+
+  const dashOffset =
+    progress === null
+      ? SYNC_PROGRESS_CIRCUMFERENCE
+      : SYNC_PROGRESS_CIRCUMFERENCE * (1 - progress);
+
+  const ringModeClass =
+    progress === null
+      ? 'is-indeterminate'
+      : isOverdueGrace
+      ? 'is-overdue'
+      : isOverdueStalled
+      ? 'is-overdue-stalled'
+      : '';
+
+  const ringCounterText = isOverdueGrace
+    ? `+${formatRemainingCompact(overdueMs)}`
+    : isOverdueStalled
+    ? 'wait'
+    : remainingMs !== null
+    ? formatRemainingCompact(remainingMs)
+    : '...';
+
+  return (
+    <div className="sync-status-card">
+      <div className="sync-status-title">Sync Status</div>
+
+      <div className={`sync-status-content ${splash ? 'sync-status-splash' : ''}`}>
+        {syncStatus ? (
+          <div className="sync-status-body">
+            <div className="sync-progress-widget" aria-hidden="true">
+              <svg className="sync-progress-ring" viewBox="0 0 54 54">
+                <circle
+                  className="sync-progress-ring-track"
+                  cx="27"
+                  cy="27"
+                  r={SYNC_PROGRESS_RADIUS}
+                />
+                <circle
+                  className={`sync-progress-ring-value ${ringModeClass}`.trim()}
+                  cx="27"
+                  cy="27"
+                  r={SYNC_PROGRESS_RADIUS}
+                  strokeDasharray={SYNC_PROGRESS_CIRCUMFERENCE}
+                  strokeDashoffset={dashOffset}
+                />
+              </svg>
+              <div className={`sync-progress-core ${isOverdueGrace || isOverdueStalled ? 'is-overdue' : ''}`.trim()}>
+                {ringCounterText}
+              </div>
+            </div>
+
+            <div className="sync-status-lines">
+              <div>
+                Last Sync:{' '}
+                {syncStatus.lastSyncTs
+                  ? new Date(syncStatus.lastSyncTs).toLocaleTimeString()
+                  : 'N/A'}
+              </div>
+
+              <div>
+                Next Sync:{' '}
+                {syncStatus.nextSyncTs
+                  ? new Date(syncStatus.nextSyncTs).toLocaleTimeString()
+                  : 'N/A'}
+              </div>
+
+              <div className="sync-status-meta">
+                <span className={`sync-status-health ${syncStatus.lastSyncError ? 'is-error' : 'is-ok'}`}>
+                  {syncStatus.lastSyncError ? 'Last Sync Error' : 'OK'}
+                </span>
+                <span className="sync-status-meta-sep">|</span>
+                <span className="sync-status-meta-values">
+                  Upd: {syncStatus.lastSequenceIndex} | {t('item.singular')}:{' '}
+                  {syncStatus.onchainLastDataItemIndex ?? 'N/A'}
+                </span>
+              </div>
+            </div>
+          </div>
+        ) : (
+          <div>Loading...</div>
+        )}
+      </div>
+    </div>
+  );
+}
 
 function SelectedObjectCard({
   title,
@@ -253,60 +415,7 @@ export function Navbar({
       {/* Top Selection Bar */}
       <div className="navbar-info">
         {/* Sync Status */}
-        <div className="sync-status-card">
-          <div className="sync-status-title">Sync Status</div>
-
-          <div className={splash ? 'sync-status-splash' : ''} style={{ fontSize: 12 }}>
-            {syncStatus ? (
-              <>
-                <div>
-                  Last Sync:{' '}
-                  {syncStatus.lastSyncTs
-                    ? new Date(syncStatus.lastSyncTs).toLocaleTimeString()
-                    : 'N/A'}{' '}
-                  | Upd: {syncStatus.lastSequenceIndex} |{' '}
-                  {t("item.singular")}:{' '}
-                  {syncStatus.onchainLastDataItemIndex ?? 'N/A'}
-                </div>
-
-                <div>
-                  Next Sync:{' '}
-                  {syncStatus.nextSyncTs
-                    ? new Date(syncStatus.nextSyncTs).toLocaleTimeString()
-                    : 'N/A'}
-                </div>
-
-                <div>
-                  {syncStatus.nextSyncTs ? (
-                    <>
-                      In{' '}
-                      {Math.max(
-                        0,
-                        Math.floor(
-                          (new Date(syncStatus.nextSyncTs).getTime() - Date.now()) /
-                            1000
-                        )
-                      )}{' '}
-                      sec
-                    </>
-                  ) : (
-                    'Waiting...'
-                  )}
-                </div>
-
-                <div>
-                  {syncStatus.lastSyncError ? (
-                    <span style={{ color: 'red' }}>Last Sync Error</span>
-                  ) : (
-                    <span style={{ color: 'green' }}>OK</span>
-                  )}
-                </div>
-              </>
-            ) : (
-              <div>Loading...</div>
-            )}
-          </div>
-        </div>
+        <SyncStatusCard syncStatus={syncStatus} splash={splash} />
 
         {selectedObjects.map((entry) => (
           <SelectedObjectCard
@@ -331,7 +440,7 @@ export function Navbar({
                 connect({ wallet }, { onSuccess: () => console.log('connected') })
               }
             >
-              Connect to {wallet.name}
+              <span className="wallet-connect-btn-label">Connect to {wallet.name}</span>
             </button>
           ))}
 
@@ -345,7 +454,7 @@ export function Navbar({
               )
             }
           >
-            Get IOTA Wallet to Connect
+            <span className="wallet-connect-btn-label">Get IOTA Wallet to Connect</span>
           </button>
         )}
 

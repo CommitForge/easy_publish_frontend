@@ -1,4 +1,5 @@
 export type PrimarySelection =
+  | 'dashboard'
   | 'createContainer'
   | 'updateContainer'
   | 'addDataType'

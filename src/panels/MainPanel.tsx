@@ -78,7 +78,7 @@ export function MainPanel({
     <main
       style={{
         flex: 1,
-        padding: 20,
+        padding: 0,
         overflowY: 'auto',
       }}
     >

@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { useSelection } from '../context/SelectionContext.tsx';
 import { SidebarPanel } from './SidebarPanel.tsx';
 import { MainPanel } from './MainPanel.tsx';
+import { AnalyticsDashboardPanel } from './AnalyticsDashboardPanel.tsx';
 import {
   AddOwnerForm,
   AttachChildForm,
@@ -90,6 +91,14 @@ export default function AccountWorkspace({
 
         {primaryMenuSelection === 'items' && (
           <MainPanel type="data_items" />
+        )}
+
+        {primaryMenuSelection === 'dashboard' && (
+          <AnalyticsDashboardPanel
+            accountAddress={account.address}
+            selectedContainerId={selectedContainerId}
+            selectedDataTypeId={selectedDataTypeId}
+          />
         )}
       </main>
     </div>

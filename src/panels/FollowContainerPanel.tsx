@@ -2,9 +2,13 @@ import React, { useEffect, useState } from 'react';
 import axios from 'axios';
 import { API_BASE } from '../Config';
 import {
+  FOLLOW_CONTAINERS_CLEARED_EVENT,
   FOLLOW_CONTAINERS_DRAFT_STORAGE_KEY,
   FOLLOW_CONTAINERS_PUBLISH_INTENT_STORAGE_KEY,
   OBJECT_ID_REGEX,
+  getFollowStorageItem,
+  removeFollowStorageItem,
+  setFollowStorageItem,
   type FollowContainerUpdateEntry,
 } from '../move/forms/FormUtils.tsx';
 import './FollowContainerPanel.css';
@@ -36,7 +40,7 @@ export function FollowContainerPanel({
   const [reloadFollowed, setReloadFollowed] = useState(0);
   const [validatingInput, setValidatingInput] = useState(false);
   const [pendingUpdates, setPendingUpdates] = useState<FollowContainerUpdateEntry[]>(() => {
-    const rawDraft = localStorage.getItem(FOLLOW_CONTAINERS_DRAFT_STORAGE_KEY);
+    const rawDraft = getFollowStorageItem(FOLLOW_CONTAINERS_DRAFT_STORAGE_KEY);
     if (!rawDraft) return [];
     try {
       const parsed = JSON.parse(rawDraft) as { entries?: FollowContainerUpdateEntry[] };
@@ -119,7 +123,7 @@ export function FollowContainerPanel({
     skipExistsCheck = false
   ) => {
     if (ids.length === 0) {
-      showFollowStatus('Please enter valid 0x... container IDs.', 'red');
+      showFollowStatus('Enter valid 0x... IDs.', 'red');
       return;
     }
 
@@ -140,8 +144,8 @@ export function FollowContainerPanel({
     if (idsToQueue.length === 0) {
       showFollowStatus(
         missingIds.length > 0
-          ? `Container not found: ${missingIds.join(', ')}`
-          : 'No valid container IDs to queue.',
+          ? `Not found: ${missingIds.join(', ')}`
+          : 'No valid IDs to queue.',
         'red'
       );
       return;
@@ -161,21 +165,14 @@ export function FollowContainerPanel({
     if (!skipExistsCheck && missingIds.length > 0) {
       setFollowInput(missingIds.join(','));
       showFollowStatus(
-        `Queued ${idsToQueue.length} update(s) as ${
-          enabled ? 'follow' : 'unfollow'
-        }. Invalid ID(s): ${missingIds.join(', ')}`,
+        `Queued ${idsToQueue.length} ${enabled ? 'follow' : 'unfollow'}. Not found: ${missingIds.join(', ')}`,
         'red'
       );
       return;
     }
 
     setFollowInput('');
-    showFollowStatus(
-      `Queued ${idsToQueue.length} update(s) as ${
-        enabled ? 'follow' : 'unfollow'
-      }. Open New Item and publish to apply.`,
-      'green'
-    );
+    showFollowStatus(`Queued ${idsToQueue.length} ${enabled ? 'follow' : 'unfollow'}.`, 'green');
   };
 
   const queueInputAsFollow = () => {
@@ -187,29 +184,48 @@ export function FollowContainerPanel({
 
   useEffect(() => {
     if (pendingUpdates.length === 0) {
-      localStorage.removeItem(FOLLOW_CONTAINERS_DRAFT_STORAGE_KEY);
+      removeFollowStorageItem(FOLLOW_CONTAINERS_DRAFT_STORAGE_KEY);
       return;
     }
 
-    localStorage.setItem(
+    setFollowStorageItem(
       FOLLOW_CONTAINERS_DRAFT_STORAGE_KEY,
       JSON.stringify({ entries: pendingUpdates })
     );
   }, [pendingUpdates]);
 
+  useEffect(() => {
+    const clearDraftOnUnload = () => {
+      removeFollowStorageItem(FOLLOW_CONTAINERS_DRAFT_STORAGE_KEY);
+      removeFollowStorageItem(FOLLOW_CONTAINERS_PUBLISH_INTENT_STORAGE_KEY);
+    };
+    const clearDraftFromEvent = () => {
+      setPendingUpdates([]);
+      setFollowInput('');
+      showFollowStatus('Pending updates cleared.', 'green');
+    };
+
+    window.addEventListener('beforeunload', clearDraftOnUnload);
+    window.addEventListener(FOLLOW_CONTAINERS_CLEARED_EVENT, clearDraftFromEvent);
+    return () => {
+      window.removeEventListener('beforeunload', clearDraftOnUnload);
+      window.removeEventListener(FOLLOW_CONTAINERS_CLEARED_EVENT, clearDraftFromEvent);
+    };
+  }, []);
+
   const openPublishFollowForm = () => {
     if (pendingUpdates.length === 0) {
-      showFollowStatus('Queue at least one follow/unfollow update first.', 'red');
+      showFollowStatus('Queue at least one update first.', 'red');
       return;
     }
 
-    localStorage.setItem(
+    setFollowStorageItem(
       FOLLOW_CONTAINERS_DRAFT_STORAGE_KEY,
       JSON.stringify({ entries: pendingUpdates })
     );
-    localStorage.setItem(FOLLOW_CONTAINERS_PUBLISH_INTENT_STORAGE_KEY, '1');
+    setFollowStorageItem(FOLLOW_CONTAINERS_PUBLISH_INTENT_STORAGE_KEY, '1');
     setPrimaryMenuSelection('addDataItem');
-    showFollowStatus('Follow draft prepared. Complete New Item and publish.', 'green');
+    showFollowStatus('Draft ready in New Item form.', 'green');
   };
 
   const toggleViewFollowed = () => {
@@ -228,6 +244,10 @@ export function FollowContainerPanel({
       )
     : followedContainers;
 
+  const removePendingUpdate = (containerId: string) => {
+    setPendingUpdates((prev) => prev.filter((entry) => entry.container_id !== containerId));
+  };
+
   return (
     <div className="follow-panel-root">
       <div
@@ -245,7 +265,7 @@ export function FollowContainerPanel({
           <div className="follow-panel-input-row">
             <textarea
               className="follow-panel-input"
-              placeholder="0x... IDs (comma/newline)"
+              placeholder="0x... IDs"
               rows={3}
               value={followInput}
               onChange={(e) => setFollowInput(e.target.value)}
@@ -277,7 +297,7 @@ export function FollowContainerPanel({
 
           <div className="follow-panel-draft">
             <div className="follow-panel-list-header">
-              <span>Pending Follow Updates (publish required)</span>
+              <span>Pending</span>
             </div>
             {pendingUpdates.length > 0 ? (
               pendingUpdates.map((entry) => (
@@ -285,29 +305,30 @@ export function FollowContainerPanel({
                   <span className="follow-panel-row-link" title={entry.container_id}>
                     {entry.enabled ? 'Follow' : 'Unfollow'}: {entry.container_id}
                   </span>
+                  <button
+                    className="follow-panel-remove-btn"
+                    title={`Remove ${entry.container_id}`}
+                    onClick={() => removePendingUpdate(entry.container_id)}
+                  >
+                    X
+                  </button>
                 </div>
               ))
             ) : (
               <div className="follow-panel-empty">No queued updates.</div>
             )}
-            <small className="muted d-block">
-              Follow/unfollow is applied only after publishing a new data item.
-            </small>
+            <small className="muted d-block">Applies on publish.</small>
           </div>
 
-          <button
-            className="btn btn-sm btn-outline-primary w-100 mt-2"
-            onClick={openPublishFollowForm}
-          >
-            Publish Follow &gt;&gt;
-          </button>
+          <div className="follow-panel-primary-buttons">
+            <button className="btn btn-sm btn-outline-primary" onClick={openPublishFollowForm}>
+              Open Input Form
+            </button>
 
-          <button
-            className="btn btn-sm btn-outline-secondary w-100 mt-2"
-            onClick={toggleViewFollowed}
-          >
-            {showFollowed ? 'Hide Followed ▲' : 'View Followed ▼'}
-          </button>
+            <button className="btn btn-sm btn-outline-secondary" onClick={toggleViewFollowed}>
+              {showFollowed ? 'Hide Followed' : 'View Followed'}
+            </button>
+          </div>
 
           {showFollowed && (
             <div className="follow-panel-list">

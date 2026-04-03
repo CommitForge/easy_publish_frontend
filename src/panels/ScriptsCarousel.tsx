@@ -1,6 +1,7 @@
-import { useEffect, useMemo, useState } from "react";
-import { Prism as SyntaxHighlighter } from "react-syntax-highlighter";
-import { dark } from "react-syntax-highlighter/dist/esm/styles/prism";
+import { useMemo, useState } from "react";
+import CodeViewer from "./CodeViewer";
+import VerticalNavCarousel from "./VerticalNavCarousel";
+import "./ScriptsCarousel.css";
 
 interface ScriptsCarouselProps {
   izipubScript: string;
@@ -34,14 +35,12 @@ export default function ScriptsCarousel({
   envCliExampleScript,
   readmeScript,
 }: ScriptsCarouselProps) {
-  const SCRIPT_LINES_PER_CHUNK = 220;
-
   const visibleScripts = useMemo<VisibleScript[]>(
     () => [
       {
         title: "izipub.js",
         description:
-          "Main CLI entry point. This is the primary script users should run. It exposes the real commands with help, logging, and subcommands.",
+          "Main CLI entry point. This is the primary script users should run. It exposes commands, help, logging, and subcommands.",
         usage: `node izipub.js --help
 
 node izipub.js object <OBJECT_ID>
@@ -74,8 +73,7 @@ node izipub.js publish-data-item --input-file ./payload.publish-data-item.json -
       },
       {
         title: "lib/commands.js",
-        description:
-          "Core command implementations used by the main CLI.",
+        description: "Core command implementations used by the main CLI.",
         usage: "Imported internally by izipub.js",
         code: commandsLibScript,
         language: "javascript",
@@ -110,8 +108,7 @@ node izipub.js publish-data-item --input-file ./payload.publish-data-item.json -
       },
       {
         title: "package.json",
-        description:
-          "Package metadata and dependencies required by the CLI.",
+        description: "Package metadata and dependencies required by the CLI.",
         usage: "Used by npm / node tooling",
         code: packageJsonScript,
         language: "json",
@@ -119,8 +116,7 @@ node izipub.js publish-data-item --input-file ./payload.publish-data-item.json -
       },
       {
         title: "README.md",
-        description:
-          "Package documentation and usage notes for the CLI.",
+        description: "Package documentation and usage notes for the CLI.",
         usage: "Open in a text editor or read on GitHub",
         code: readmeScript,
         language: "markdown",
@@ -152,22 +148,12 @@ node izipub.js publish-data-item --input-file ./payload.publish-data-item.json -
     [visibleScripts]
   );
 
-  const allFilesForZip = useMemo(
-    () =>
-      visibleScripts.map((script) => ({
-        path: script.title,
-        code: script.code,
-      })),
-    [visibleScripts]
-  );
-
   const initialIndex = useMemo(
     () => visibleScripts.findIndex((s) => s.title === "izipub.js"),
     [visibleScripts]
   );
 
   const [current, setCurrent] = useState(initialIndex >= 0 ? initialIndex : 0);
-  const [scriptChunkIndex, setScriptChunkIndex] = useState(0);
 
   const prevSlide = () => {
     setCurrent((c) => (c === 0 ? visibleScripts.length - 1 : c - 1));
@@ -177,63 +163,26 @@ node izipub.js publish-data-item --input-file ./payload.publish-data-item.json -
     setCurrent((c) => (c === visibleScripts.length - 1 ? 0 : c + 1));
   };
 
-  useEffect(() => {
-    setScriptChunkIndex(0);
-  }, [current]);
-
-  const downloadAll = async () => {
-    const JSZip = (await import("jszip")).default;
-    const zip = new JSZip();
-
-    allFilesForZip.forEach((file) => {
-      zip.file(file.path, file.code || "");
-    });
-
-    const blob = await zip.generateAsync({ type: "blob" });
-    const url = URL.createObjectURL(blob);
+  const downloadAll = () => {
     const a = document.createElement("a");
-    a.href = url;
+    a.href = "/scripts/easy_publish_cli_scripts.zip";
     a.download = "easy_publish_cli_scripts.zip";
     a.click();
-    URL.revokeObjectURL(url);
   };
 
   const currentScript = visibleScripts[current];
-  const scriptChunks = useMemo(() => {
-    const rawCode = currentScript?.code || "";
-    const lines = rawCode.split("\n");
-
-    if (lines.length <= SCRIPT_LINES_PER_CHUNK) {
-      return [rawCode];
-    }
-
-    const chunks: string[] = [];
-    for (let i = 0; i < lines.length; i += SCRIPT_LINES_PER_CHUNK) {
-      chunks.push(lines.slice(i, i + SCRIPT_LINES_PER_CHUNK).join("\n"));
-    }
-    return chunks;
-  }, [currentScript]);
+  if (!currentScript) return null;
 
   return (
-    <div
-      style={{
-        width: "100%",
-        maxWidth: "100%",
-        margin: "0 auto",
-        boxSizing: "border-box",
-        overflow: "hidden",
-      }}
-    >
-      <h2 style={{ marginBottom: "1rem" }}>
-        🔌 Integrate Content With Systems
-      </h2>
+    <div className="scripts-carousel-root">
+      <h2 className="scripts-carousel-title">Integrate Content With Systems</h2>
 
-      <div style={{ marginBottom: "1rem", color: "var(--fg-muted)", lineHeight: 1.6 }}>
-        <div style={{ marginBottom: "0.5rem" }}>
+      <div className="scripts-carousel-intro">
+        <p>
           This package is trimmed to the essential CLI files.
           <strong> The main script is izipub.js</strong>.
           Retrieval and Move write functionality are available through subcommands.
-        </div>
+        </p>
 
         <span>Requirement: install the </span>
         <a
@@ -245,86 +194,39 @@ node izipub.js publish-data-item --input-file ./payload.publish-data-item.json -
           IOTA TypeScript SDK
         </a>
 
-        <span
-          style={{
-            display: "inline-flex",
-            gap: "0.75rem",
-            marginTop: "0.5rem",
-            marginLeft: "1rem",
-            flexWrap: "wrap",
-            verticalAlign: "middle",
-          }}
-        >
+        <span className="scripts-carousel-links">
           <button
+            type="button"
             onClick={downloadAll}
-            style={{
-              padding: "0.5rem 1rem",
-              borderRadius: "0.25rem",
-              border: "none",
-              backgroundColor: "#ffd700",
-              color: "#000",
-              cursor: "pointer",
-            }}
+            className="scripts-carousel-download-btn"
           >
-            💾 Download Full Package as ZIP
+            Download Full Package as ZIP
           </button>
 
           <a
             href="https://github.com/CommitForge/easy_publish_cli"
             target="_blank"
             rel="noopener noreferrer"
-            style={{
-              padding: "0.5rem 1rem",
-              borderRadius: "0.25rem",
-              border: "1px solid #4fc3f7",
-              color: "var(--cyan)",
-              textDecoration: "none",
-              display: "inline-flex",
-              alignItems: "center",
-            }}
+            className="scripts-carousel-repo-link"
           >
             CLI GitHub
           </a>
         </span>
       </div>
 
-      <div style={{ marginBottom: "1rem", width: "100%" }}>
+      <div className="scripts-carousel-groups">
         {groupedScripts.map(({ group, scripts }) => (
-          <div key={group} style={{ marginBottom: "0.85rem" }}>
-            <div
-              style={{
-                marginBottom: "0.35rem",
-                fontSize: "0.85rem",
-                letterSpacing: "0.03em",
-                textTransform: "uppercase",
-                color: "var(--fg-muted)",
-              }}
-            >
-              {group}
-            </div>
-            <div
-              style={{
-                display: "grid",
-                gridTemplateColumns: "repeat(auto-fit, minmax(180px, 1fr))",
-                gap: "0.5rem",
-              }}
-            >
+          <div key={group} className="scripts-carousel-group">
+            <div className="scripts-carousel-group-name">{group}</div>
+            <div className="scripts-carousel-file-grid">
               {scripts.map(({ script, index }) => (
                 <button
                   key={script.title}
+                  type="button"
                   onClick={() => setCurrent(index)}
-                  style={{
-                    padding: "0.55rem 0.75rem",
-                    borderRadius: "0.25rem",
-                    border: "1px solid #2e4758",
-                    cursor: "pointer",
-                    backgroundColor: index === current ? "#4fc3f7" : "#1f2428",
-                    color: index === current ? "#03121c" : "#d6deeb",
-                    whiteSpace: "normal",
-                    textAlign: "left",
-                    lineHeight: 1.25,
-                    minHeight: 44,
-                  }}
+                  className={`scripts-carousel-file-btn ${
+                    index === current ? "is-active" : ""
+                  }`}
                 >
                   {script.title}
                 </button>
@@ -334,198 +236,43 @@ node izipub.js publish-data-item --input-file ./payload.publish-data-item.json -
         ))}
       </div>
 
-      <div
-        style={{
-          position: "relative",
-          overflowX: "auto",
-          overflowY: "hidden",
-          width: "100%",
-          maxWidth: "100%",
-        }}
+      <VerticalNavCarousel
+        onPrev={prevSlide}
+        onNext={nextSlide}
+        prevLabel="Previous script"
+        nextLabel="Next script"
       >
-        <div
-          style={{
-            minWidth: 760,
-            width: "100%",
-            maxWidth: "100%",
-            boxSizing: "border-box",
-            overflow: "hidden",
-          }}
-        >
-          <h3
-            style={{
-              marginBottom: "1rem",
-              color: "var(--green)",
-              overflowWrap: "anywhere",
-              wordBreak: "break-word",
-            }}
-          >
-            {currentScript.title}
-          </h3>
+        <article className="scripts-slide">
+          <header className="scripts-slide-header">
+            <h3 className="scripts-slide-title">{currentScript.title}</h3>
+            <span className="scripts-slide-group">{currentScript.group}</span>
+          </header>
 
-          <p
-            style={{
-              marginBottom: "0.5rem",
-              color: "var(--fg-muted)",
-              overflowWrap: "anywhere",
-              wordBreak: "break-word",
-            }}
-          >
-            {currentScript.description}
-          </p>
+          <p className="scripts-slide-description">{currentScript.description}</p>
 
-          <p style={{ marginBottom: "0.5rem", color: "var(--fg-muted)" }}>Usage:</p>
-          <div
-            style={{
-              width: "100%",
-              maxWidth: "100%",
-              overflowX: "auto",
-              overflowY: "hidden",
-              borderRadius: "0.25rem",
-            }}
-          >
-            <SyntaxHighlighter
+          <section className="scripts-slide-section">
+            <div className="scripts-slide-section-label">Usage</div>
+            <CodeViewer
+              title={`${currentScript.title} usage`}
+              code={currentScript.usage}
               language="bash"
-              style={dark}
-              showLineNumbers
-              customStyle={{
-                margin: 0,
-                minWidth: 0,
-                width: "100%",
-                maxWidth: "100%",
-                boxSizing: "border-box",
-              }}
-              wrapLongLines={true}
-              wrapLines={true}
-            >
-              {currentScript.usage}
-            </SyntaxHighlighter>
-          </div>
-
-          <div
-            style={{
-              margin: "1rem 0 0.5rem 0",
-              color: "var(--fg-muted)",
-              display: "flex",
-              justifyContent: "space-between",
-              alignItems: "center",
-              gap: "0.5rem",
-              flexWrap: "wrap",
-            }}
-          >
-            <span>
-              Script
-              {scriptChunks.length > 1
-                ? ` (Part ${scriptChunkIndex + 1}/${scriptChunks.length})`
-                : ""}
-              :
-            </span>
-            {scriptChunks.length > 1 && (
-              <div style={{ display: "inline-flex", gap: "0.5rem" }}>
-                <button
-                  onClick={() =>
-                    setScriptChunkIndex((idx) => Math.max(0, idx - 1))
-                  }
-                  disabled={scriptChunkIndex === 0}
-                  style={{
-                    padding: "0.25rem 0.5rem",
-                    borderRadius: "0.25rem",
-                    border: "1px solid #555",
-                    background: scriptChunkIndex === 0 ? "#2a2a2a" : "#333",
-                    color: scriptChunkIndex === 0 ? "#777" : "#ddd",
-                    cursor: scriptChunkIndex === 0 ? "default" : "pointer",
-                  }}
-                >
-                  ← Part
-                </button>
-                <button
-                  onClick={() =>
-                    setScriptChunkIndex((idx) =>
-                      Math.min(scriptChunks.length - 1, idx + 1)
-                    )
-                  }
-                  disabled={scriptChunkIndex >= scriptChunks.length - 1}
-                  style={{
-                    padding: "0.25rem 0.5rem",
-                    borderRadius: "0.25rem",
-                    border: "1px solid #555",
-                    background:
-                      scriptChunkIndex >= scriptChunks.length - 1 ? "#2a2a2a" : "#333",
-                    color:
-                      scriptChunkIndex >= scriptChunks.length - 1 ? "#777" : "#ddd",
-                    cursor:
-                      scriptChunkIndex >= scriptChunks.length - 1 ? "default" : "pointer",
-                  }}
-                >
-                  Part →
-                </button>
-              </div>
-            )}
-          </div>
-          <div
-            style={{
-              width: "100%",
-              maxWidth: "100%",
-              overflowX: "auto",
-              overflowY: "hidden",
-              borderRadius: "0.25rem",
-            }}
-          >
-            <SyntaxHighlighter
-              language={currentScript.language}
-              style={dark}
-              showLineNumbers
-              customStyle={{
-                margin: 0,
-                minWidth: 0,
-                width: "100%",
-                maxWidth: "100%",
-                boxSizing: "border-box",
-              }}
+              maxHeight={null}
               wrapLongLines={false}
-              wrapLines={false}
-            >
-              {(scriptChunks[scriptChunkIndex] ?? currentScript.code) || "// Loading script..."}
-            </SyntaxHighlighter>
-          </div>
-        </div>
+            />
+          </section>
 
-        <button
-          onClick={prevSlide}
-          aria-label="Previous script"
-          style={{
-            position: "absolute",
-            top: "50%",
-            left: "0",
-            transform: "translateY(-50%)",
-            background: "rgba(0,0,0,0.5)",
-            color: "#fff",
-            border: "none",
-            padding: "0.5rem 1rem",
-            cursor: "pointer",
-          }}
-        >
-          ◀
-        </button>
-
-        <button
-          onClick={nextSlide}
-          aria-label="Next script"
-          style={{
-            position: "absolute",
-            top: "50%",
-            right: "0",
-            transform: "translateY(-50%)",
-            background: "rgba(0,0,0,0.5)",
-            color: "#fff",
-            border: "none",
-            padding: "0.5rem 1rem",
-            cursor: "pointer",
-          }}
-        >
-          ▶
-        </button>
-      </div>
+          <section className="scripts-slide-section">
+            <div className="scripts-slide-section-label">Source</div>
+            <CodeViewer
+              title={currentScript.title}
+              code={currentScript.code || "// Loading script..."}
+              language={currentScript.language}
+              maxHeight={1000}
+              wrapLongLines={false}
+            />
+          </section>
+        </article>
+      </VerticalNavCarousel>
     </div>
   );
 }

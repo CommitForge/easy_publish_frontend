@@ -3,6 +3,8 @@ import { Client } from '@stomp/stompjs';
 import type { IMessage } from '@stomp/stompjs';
 import { API_WS_BASE } from '../Config.ts';
 
+const SYNC_SPLASH_DURATION_MS = 4000;
+
 export interface SyncStatus {
   lastSequenceIndex: number;
   lastSyncTs: string | null;
@@ -22,6 +24,7 @@ export function useSyncStatus() {
   const [syncStatus, setSyncStatus] = useState<SyncStatus | null>(null);
   const [splash, setSplash] = useState(false);
   const lastSyncRef = useRef<string | null>(null);
+  const splashTimeoutRef = useRef<number | null>(null);
 
   useEffect(() => {
     const client = new Client({
@@ -37,7 +40,13 @@ export function useSyncStatus() {
             // Trigger splash animation if sync timestamp changed
             if (lastSyncRef.current && lastSyncRef.current !== data.lastSyncTs) {
               setSplash(true);
-              setTimeout(() => setSplash(false), 800);
+              if (splashTimeoutRef.current !== null) {
+                window.clearTimeout(splashTimeoutRef.current);
+              }
+              splashTimeoutRef.current = window.setTimeout(() => {
+                setSplash(false);
+                splashTimeoutRef.current = null;
+              }, SYNC_SPLASH_DURATION_MS);
             }
 
             lastSyncRef.current = data.lastSyncTs;
@@ -53,6 +62,9 @@ export function useSyncStatus() {
     client.activate();
 
     return () => {
+      if (splashTimeoutRef.current !== null) {
+        window.clearTimeout(splashTimeoutRef.current);
+      }
       client.deactivate().catch((err) =>
         console.error('Error during STOMP disconnect', err)
       );

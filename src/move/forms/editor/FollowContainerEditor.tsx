@@ -64,7 +64,7 @@ export default function FollowContainerEditor({
   const queueUpdates = async (enabled: boolean) => {
     const ids = parseInputIds();
     if (ids.length === 0) {
-      showStatus('Please enter valid 0x... container IDs.', 'red');
+      showStatus('Enter valid 0x... IDs.', 'red');
       return;
     }
 
@@ -82,8 +82,8 @@ export default function FollowContainerEditor({
     if (idsToQueue.length === 0) {
       showStatus(
         missingIds.length > 0
-          ? `Container not found: ${missingIds.join(', ')}`
-          : 'No valid container IDs to queue.',
+          ? `Not found: ${missingIds.join(', ')}`
+          : 'No valid IDs to queue.',
         'red'
       );
       return;
@@ -103,21 +103,18 @@ export default function FollowContainerEditor({
     if (missingIds.length > 0) {
       setContainerInput(missingIds.join(','));
       showStatus(
-        `Queued ${idsToQueue.length} update(s) as ${
-          enabled ? 'follow' : 'unfollow'
-        }. Invalid ID(s): ${missingIds.join(', ')}`,
+        `Queued ${idsToQueue.length} ${enabled ? 'follow' : 'unfollow'}. Not found: ${missingIds.join(', ')}`,
         'red'
       );
       return;
     }
 
     setContainerInput('');
-    showStatus(
-      `Queued ${idsToQueue.length} update(s) as ${
-        enabled ? 'follow' : 'unfollow'
-      }. Publish this item to apply.`,
-      'green'
-    );
+    showStatus(`Queued ${idsToQueue.length} ${enabled ? 'follow' : 'unfollow'}.`, 'green');
+  };
+
+  const removeEntry = (containerId: string) => {
+    persist(entries.filter((entry) => entry.container_id !== containerId));
   };
 
   return (
@@ -125,15 +122,15 @@ export default function FollowContainerEditor({
       <div className="mb-2">
         <input
           className="form-control form-control-sm"
-          placeholder="0x... IDs (comma/newline)"
+          placeholder="0x... IDs"
           value={containerInput}
           onChange={(e) => setContainerInput(e.target.value)}
         />
       </div>
 
-      <div className="d-flex gap-2 mb-2">
+      <div className="d-flex flex-nowrap gap-2 mb-2">
         <button
-          className="btn btn-sm btn-outline-primary w-50"
+          className="btn btn-sm btn-success w-50"
           onClick={() => {
             void queueUpdates(true);
           }}
@@ -158,13 +155,23 @@ export default function FollowContainerEditor({
         </small>
       )}
 
-      <div className="mb-1 fw-semibold">Pending Follow Updates</div>
+      <div className="mb-1 fw-semibold">Pending</div>
       {entries.length > 0 ? (
         entries.map((entry, index) => (
-          <div key={`${entry.container_id}-${index}`} className="mb-1 p-2 border rounded">
-            <div className="small">
+          <div
+            key={`${entry.container_id}-${index}`}
+            className="mb-1 p-2 border rounded d-flex justify-content-between align-items-start gap-2"
+          >
+            <div className="small text-break">
               {entry.enabled ? 'Follow' : 'Unfollow'}: {entry.container_id}
             </div>
+            <button
+              className="btn btn-sm btn-outline-secondary py-0 px-2"
+              onClick={() => removeEntry(entry.container_id)}
+              title={`Remove ${entry.container_id}`}
+            >
+              X
+            </button>
           </div>
         ))
       ) : (
@@ -172,8 +179,7 @@ export default function FollowContainerEditor({
       )}
 
       <small className="muted d-block mt-2">
-        Stored in <code>easy_publish.follow_containers</code>. Submit a new data item to
-        apply follow/unfollow updates.
+        Stored in <code>easy_publish.follow_containers</code>. Applies on publish.
       </small>
     </div>
   );

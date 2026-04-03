@@ -8,6 +8,7 @@ import {
   FaChevronDown,
   FaBars,
   FaSyncAlt,
+  FaChartBar,
   FaPlus,
   FaList,
   FaEdit,
@@ -21,6 +22,7 @@ import { useDragResize } from '../hooks/useDragResize';
 
 export type PanelMenuSelection = Extract<
   PrimarySelection,
+  | 'dashboard'
   | 'createContainer'
   | 'addDataType'
   | 'addDataItem'
@@ -80,7 +82,7 @@ export function SidebarPanel({
     alignItems: 'center',
     cursor: 'pointer',
     fontWeight: 600,
-    padding: '6px 4px',
+    padding: '5px 3px',
     borderRadius: 4,
   };
 
@@ -91,18 +93,18 @@ export function SidebarPanel({
   ): React.CSSProperties => ({
     display: 'flex',
     alignItems: 'center',
-    gap: 8,
-    padding: '6px 8px',
+    gap: 7,
+    padding: '5px 7px',
     borderRadius: 6,
     cursor: disabled ? 'not-allowed' : 'pointer',
-    marginBottom: 6,
+    marginBottom: 4,
     paddingLeft: 8 + indent,
     background: active ? 'rgba(255,255,255,0.12)' : 'transparent',
     fontWeight: active ? 600 : 400,
     opacity: disabled ? 0.4 : 1,
   });
 
-  const panelSpacing = { marginBottom: 20 };
+  const panelSpacing = { marginBottom: 12 };
 
   const containerSecondary: SecondaryAction[] = [
     {
@@ -130,7 +132,7 @@ export function SidebarPanel({
         style={{
           width: collapsed ? 50 : mainWidth,
           background: 'var(--bg-alt)',
-          padding: '1rem',
+          padding: '0.6rem',
           borderRight: '1px solid var(--comment)',
           overflowY: 'auto',
           transition: 'width 0.2s ease',
@@ -248,6 +250,13 @@ export function SidebarPanel({
 
             <div style={panelSpacing}>
               <div
+                style={actionButtonStyle(primaryMenuSelection === 'dashboard')}
+                onClick={() => setPrimaryMenuSelection('dashboard')}
+              >
+                <FaChartBar /> Dashboard
+              </div>
+
+              <div
                 style={actionButtonStyle(showContainersPanel)}
                 onClick={() => setShowContainersPanel((p) => !p)}
               >
@@ -286,7 +295,7 @@ export function SidebarPanel({
             style={{
               width: containersWidth,
               background: 'var(--bg-alt)',
-              padding: '1rem',
+              padding: '0.55rem 0.6rem',
               borderRight: '1px solid var(--comment)',
               overflowY: 'auto',
               display: 'flex',
@@ -335,7 +344,7 @@ export function SidebarPanel({
           style={{
             width: dataTypesWidth,
             background: 'var(--bg-alt)',
-            padding: '1rem',
+            padding: '0.55rem 0.6rem',
             borderRight: '1px solid var(--comment)',
             overflowY: 'auto',
             display: 'flex',

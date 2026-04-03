@@ -1,7 +1,7 @@
 import { useSignAndExecuteTransaction } from '@iota/dapp-kit';
 import { useState } from 'react';
 import { Transaction } from '@iota/iota-sdk/transactions';
-import { FormRow } from './FormUi.tsx';
+import { FormInlineNotice, FormRow, useTimedFormNotice } from './FormUi.tsx';
 import { FormSectionRow } from './CollapsibleFormSectionRow.tsx';
 import { TxDigestResult } from './TxDigestResult.tsx';
 import { moveTarget, submitTx } from './TransactionUtils.tsx';
@@ -21,6 +21,12 @@ interface AttachChildFormState {
 export function AttachChildForm({ address }: { address: string }) {
   const { mutate: signAndExecuteTransaction } = useSignAndExecuteTransaction();
   const [digest, setDigest] = useState('');
+  const { notice, showNotice } = useTimedFormNotice(15000);
+  const [invalidFields, setInvalidFields] = useState({
+    parent: false,
+    child: false,
+    name: false,
+  });
 
   const [form, setForm] = useState<AttachChildFormState>({
     parent: '',
@@ -33,8 +39,16 @@ export function AttachChildForm({ address }: { address: string }) {
   });
 
   const submit = () => {
-    if (!form.parent.trim() || !form.child.trim() || !form.name.trim()) {
-      alert(t('messages.containerIdAndNameRequired'));
+    const missingParent = !form.parent.trim();
+    const missingChild = !form.child.trim();
+    const missingName = !form.name.trim();
+    if (missingParent || missingChild || missingName) {
+      setInvalidFields({
+        parent: missingParent,
+        child: missingChild,
+        name: missingName,
+      });
+      showNotice(t('messages.parentChildNameRequired'));
       return;
     }
 
@@ -68,19 +82,33 @@ export function AttachChildForm({ address }: { address: string }) {
         >
           <FormRow label={t('fields.parentContainerId') + ' *'}>
             <input
-              className="form-control form-control-sm w-100"
+              className={`form-control form-control-sm w-100 ${
+                invalidFields.parent ? 'is-invalid' : ''
+              }`}
               placeholder="0x..."
               value={form.parent}
-              onChange={(e) => setForm({ ...form, parent: e.target.value })}
+              onChange={(e) => {
+                setForm({ ...form, parent: e.target.value });
+                if (invalidFields.parent) {
+                  setInvalidFields((prev) => ({ ...prev, parent: false }));
+                }
+              }}
             />
           </FormRow>
 
           <FormRow label={t('fields.childContainerId') + ' *'}>
             <input
-              className="form-control form-control-sm w-100"
+              className={`form-control form-control-sm w-100 ${
+                invalidFields.child ? 'is-invalid' : ''
+              }`}
               placeholder="0x..."
               value={form.child}
-              onChange={(e) => setForm({ ...form, child: e.target.value })}
+              onChange={(e) => {
+                setForm({ ...form, child: e.target.value });
+                if (invalidFields.child) {
+                  setInvalidFields((prev) => ({ ...prev, child: false }));
+                }
+              }}
             />
           </FormRow>
         </FormSectionRow>
@@ -91,9 +119,16 @@ export function AttachChildForm({ address }: { address: string }) {
         >
           <FormRow label={t('fields.name') + ' *'}>
             <input
-              className="form-control form-control-sm w-100"
+              className={`form-control form-control-sm w-100 ${
+                invalidFields.name ? 'is-invalid' : ''
+              }`}
               value={form.name}
-              onChange={(e) => setForm({ ...form, name: e.target.value })}
+              onChange={(e) => {
+                setForm({ ...form, name: e.target.value });
+                if (invalidFields.name) {
+                  setInvalidFields((prev) => ({ ...prev, name: false }));
+                }
+              }}
             />
           </FormRow>
 
@@ -149,6 +184,8 @@ export function AttachChildForm({ address }: { address: string }) {
             >
               {t('actions.attach')} {t('container.child')}
             </button>
+
+            <FormInlineNotice notice={notice} />
 
             <TxDigestResult digest={digest} />
           </div>

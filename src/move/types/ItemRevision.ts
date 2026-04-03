@@ -1,4 +1,4 @@
 export type ItemRevision = {
   previousDataItemId: string;
-  source: 'revision_setting' | 'references';
+  source: 'revision_setting';
 };

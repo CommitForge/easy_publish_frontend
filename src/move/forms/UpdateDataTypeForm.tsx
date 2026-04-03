@@ -1,7 +1,7 @@
 import { useSignAndExecuteTransaction } from '@iota/dapp-kit';
 import { useState, useEffect, useCallback } from 'react';
 import { Transaction } from '@iota/iota-sdk/transactions';
-import { FormRow } from './FormUi.tsx';
+import { FormInlineNotice, FormRow, useTimedFormNotice } from './FormUi.tsx';
 import { FormSectionRow } from './CollapsibleFormSectionRow.tsx';
 import { TxDigestResult } from './TxDigestResult.tsx';
 import { moveTarget, submitTx } from './TransactionUtils.tsx';
@@ -30,6 +30,11 @@ export function UpdateDataTypeForm({ address }: { address: string }) {
 
   const { mutate: signAndExecuteTransaction } = useSignAndExecuteTransaction();
   const { selectedContainerId, selectedDataTypeId } = useSelection();
+  const { notice, showNotice, clearNotice } = useTimedFormNotice(15000);
+  const [invalidFields, setInvalidFields] = useState({
+    container: false,
+    dataType: false,
+  });
 
   const carsMode = isCarsInstance();
 
@@ -65,6 +70,11 @@ export function UpdateDataTypeForm({ address }: { address: string }) {
       externalIndex: 0,
     });
     setDigest('');
+    clearNotice();
+    setInvalidFields({
+      container: false,
+      dataType: false,
+    });
   };
 
   const valid = form.container.trim() && form.dataType.trim();
@@ -72,7 +82,7 @@ export function UpdateDataTypeForm({ address }: { address: string }) {
   const loadSelectedDataType = useCallback(async () => {
 
     if (!selectedDataTypeId) {
-      alert(t('messages.selectContainerOrType'));
+      showNotice(t('messages.selectContainerOrType'));
       return;
     }
 
@@ -103,14 +113,14 @@ export function UpdateDataTypeForm({ address }: { address: string }) {
     } catch (err) {
 
       console.error(err);
-      alert(t('messages.failedToLoadDataType'));
+      showNotice(t('messages.failedToLoadDataType'));
 
     } finally {
 
       setLoadingDataType(false);
 
     }
-  }, [selectedContainerId, selectedDataTypeId]);
+  }, [selectedContainerId, selectedDataTypeId, showNotice]);
 
   useEffect(() => {
     const shouldAutoLoad =
@@ -127,7 +137,11 @@ export function UpdateDataTypeForm({ address }: { address: string }) {
   const submit = () => {
 
     if (!valid) {
-      alert(t('messages.containerAndTypeRequired'));
+      setInvalidFields({
+        container: !form.container.trim(),
+        dataType: !form.dataType.trim(),
+      });
+      showNotice(t('messages.containerAndTypeRequired'));
       return;
     }
 
@@ -193,19 +207,33 @@ export function UpdateDataTypeForm({ address }: { address: string }) {
 
           <FormRow label={`${t('container.singular')} ID *`}>
             <input
-              className="form-control form-control-sm w-100"
+              className={`form-control form-control-sm w-100 ${
+                invalidFields.container ? 'is-invalid' : ''
+              }`}
               placeholder="0x..."
               value={form.container}
-              onChange={(e) => setForm({ ...form, container: e.target.value })}
+              onChange={(e) => {
+                setForm({ ...form, container: e.target.value });
+                if (invalidFields.container) {
+                  setInvalidFields((prev) => ({ ...prev, container: false }));
+                }
+              }}
             />
           </FormRow>
 
           <FormRow label={`${t('type.singular')} ID *`}>
             <input
-              className="form-control form-control-sm w-100"
+              className={`form-control form-control-sm w-100 ${
+                invalidFields.dataType ? 'is-invalid' : ''
+              }`}
               placeholder="0x..."
               value={form.dataType}
-              onChange={(e) => setForm({ ...form, dataType: e.target.value })}
+              onChange={(e) => {
+                setForm({ ...form, dataType: e.target.value });
+                if (invalidFields.dataType) {
+                  setInvalidFields((prev) => ({ ...prev, dataType: false }));
+                }
+              }}
             />
           </FormRow>
 
@@ -336,10 +364,11 @@ export function UpdateDataTypeForm({ address }: { address: string }) {
             <button
               className="btn btn-outline-primary btn-sm w-100"
               onClick={submit}
-              disabled={!valid}
             >
               {t('actions.updateDataType')}
             </button>
+
+            <FormInlineNotice notice={notice} />
 
             <TxDigestResult digest={digest} label={`${t('labels.transactionDigest')}:`} />
 

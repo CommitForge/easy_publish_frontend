@@ -1,7 +1,7 @@
 import { useSignAndExecuteTransaction } from '@iota/dapp-kit';
 import { useState } from 'react';
 import { Transaction } from '@iota/iota-sdk/transactions';
-import { FormRow } from './FormUi.tsx';
+import { FormInlineNotice, FormRow, useTimedFormNotice } from './FormUi.tsx';
 import { FormSectionRow } from './CollapsibleFormSectionRow.tsx';
 import { TxDigestResult } from './TxDigestResult.tsx';
 import { moveTarget, submitTx } from './TransactionUtils.tsx';
@@ -14,6 +14,11 @@ import {
 export function AddOwnerForm({ address }: { address: string }) {
   const { mutate: signAndExecuteTransaction } = useSignAndExecuteTransaction();
   const [digest, setDigest] = useState('');
+  const { notice, showNotice } = useTimedFormNotice(15000);
+  const [invalidFields, setInvalidFields] = useState({
+    containerId: false,
+    owner: false,
+  });
 
   const [form, setForm] = useState({
     containerId: '',
@@ -22,8 +27,14 @@ export function AddOwnerForm({ address }: { address: string }) {
   });
 
   const submit = () => {
-    if (!form.containerId.trim() || !form.owner.trim()) {
-      alert(t('messages.containerAndTypeRequired'));
+    const missingContainerId = !form.containerId.trim();
+    const missingOwner = !form.owner.trim();
+    if (missingContainerId || missingOwner) {
+      setInvalidFields({
+        containerId: missingContainerId,
+        owner: missingOwner,
+      });
+      showNotice(t('messages.containerAndOwnerRequired'));
       return;
     }
 
@@ -55,12 +66,17 @@ export function AddOwnerForm({ address }: { address: string }) {
           <FormRow label={`${t('container.singular')} ID *`}>
             <input
               type="text"
-              className="form-control form-control-sm w-100"
+              className={`form-control form-control-sm w-100 ${
+                invalidFields.containerId ? 'is-invalid' : ''
+              }`}
               placeholder="0x..."
               value={form.containerId}
-              onChange={(e) =>
-                setForm({ ...form, containerId: e.target.value })
-              }
+              onChange={(e) => {
+                setForm({ ...form, containerId: e.target.value });
+                if (invalidFields.containerId) {
+                  setInvalidFields((prev) => ({ ...prev, containerId: false }));
+                }
+              }}
             />
           </FormRow>
         </FormSectionRow>
@@ -73,12 +89,17 @@ export function AddOwnerForm({ address }: { address: string }) {
           <FormRow label={`${t('fields.owner')} *`}>
             <input
               type="text"
-              className="form-control form-control-sm w-100"
+              className={`form-control form-control-sm w-100 ${
+                invalidFields.owner ? 'is-invalid' : ''
+              }`}
               placeholder="0x..."
               value={form.owner}
-              onChange={(e) =>
-                setForm({ ...form, owner: e.target.value })
-              }
+              onChange={(e) => {
+                setForm({ ...form, owner: e.target.value });
+                if (invalidFields.owner) {
+                  setInvalidFields((prev) => ({ ...prev, owner: false }));
+                }
+              }}
             />
           </FormRow>
         </FormSectionRow>
@@ -113,6 +134,8 @@ export function AddOwnerForm({ address }: { address: string }) {
             >
               {t('actions.addOwner')}
             </button>
+
+            <FormInlineNotice notice={notice} />
 
             <TxDigestResult digest={digest} label={`${t('actions.update')}:`} />
           </div>

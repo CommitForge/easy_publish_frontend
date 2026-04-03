@@ -1,7 +1,7 @@
 import { useSignAndExecuteTransaction } from '@iota/dapp-kit';
 import { useState, useEffect, useCallback } from 'react';
 import { Transaction } from '@iota/iota-sdk/transactions';
-import { FormRow } from './FormUi.tsx';
+import { FormInlineNotice, FormRow, useTimedFormNotice } from './FormUi.tsx';
 import { FormSectionRow } from './CollapsibleFormSectionRow.tsx';
 import { TxDigestResult } from './TxDigestResult.tsx';
 import { moveTarget, submitTx } from './TransactionUtils.tsx';
@@ -11,13 +11,16 @@ import {
   extractRevisionChangeFromContent,
   extractRevisionIdsFromContent,
   ADD_DATA_ITEM_LOAD_SELECTED_INTENT_STORAGE_KEY,
+  FOLLOW_CONTAINERS_CLEARED_EVENT,
   FOLLOW_CONTAINERS_DRAFT_STORAGE_KEY,
   FOLLOW_CONTAINERS_PUBLISH_INTENT_STORAGE_KEY,
+  getFollowStorageItem,
   getCarsContentJson,
   isCarsInstance,
   mergeContentWithFollowContainers,
   mergeContentWithRevisions,
   parseAddressList,
+  removeFollowStorageItem,
   type FollowContainerUpdateEntry,
 } from './FormUtils.tsx';
 import {
@@ -35,6 +38,13 @@ export function PublishDataItemForm({ address }: { address: string }) {
   const [digest, setDigest] = useState('');
   const [loadingDataItem, setLoadingDataItem] = useState(false);
   const [validatingRevisions, setValidatingRevisions] = useState(false);
+  const { notice, showNotice, clearNotice } = useTimedFormNotice(15000);
+  const [invalidFields, setInvalidFields] = useState({
+    container: false,
+    dataType: false,
+    name: false,
+    revisionOf: false,
+  });
   const { selectedDataItemId, selectedContainerId, selectedDataTypeId } = useSelection();
 
   const carsMode = isCarsInstance();
@@ -66,11 +76,11 @@ export function PublishDataItemForm({ address }: { address: string }) {
 
   useEffect(() => {
     const publishIntent =
-      localStorage.getItem(FOLLOW_CONTAINERS_PUBLISH_INTENT_STORAGE_KEY) === '1';
+      getFollowStorageItem(FOLLOW_CONTAINERS_PUBLISH_INTENT_STORAGE_KEY) === '1';
     if (!publishIntent) return;
 
     setFollowTemplateMode(true);
-    const rawDraft = localStorage.getItem(FOLLOW_CONTAINERS_DRAFT_STORAGE_KEY);
+    const rawDraft = getFollowStorageItem(FOLLOW_CONTAINERS_DRAFT_STORAGE_KEY);
     const applyEntries = (entries: FollowContainerUpdateEntry[]) => {
       setForm((prev) => ({
         ...prev,
@@ -83,7 +93,7 @@ export function PublishDataItemForm({ address }: { address: string }) {
 
     if (!rawDraft) {
       applyEntries([]);
-      localStorage.removeItem(FOLLOW_CONTAINERS_PUBLISH_INTENT_STORAGE_KEY);
+      removeFollowStorageItem(FOLLOW_CONTAINERS_PUBLISH_INTENT_STORAGE_KEY);
       return;
     }
 
@@ -96,9 +106,17 @@ export function PublishDataItemForm({ address }: { address: string }) {
     } catch (err) {
       console.warn('Failed to load follow draft payload', err);
     } finally {
-      localStorage.removeItem(FOLLOW_CONTAINERS_PUBLISH_INTENT_STORAGE_KEY);
+      removeFollowStorageItem(FOLLOW_CONTAINERS_PUBLISH_INTENT_STORAGE_KEY);
     }
   }, [carsMode]);
+
+  useEffect(() => {
+    if (!digest || !followTemplateMode) return;
+
+    removeFollowStorageItem(FOLLOW_CONTAINERS_DRAFT_STORAGE_KEY);
+    removeFollowStorageItem(FOLLOW_CONTAINERS_PUBLISH_INTENT_STORAGE_KEY);
+    window.dispatchEvent(new Event(FOLLOW_CONTAINERS_CLEARED_EVENT));
+  }, [digest, followTemplateMode]);
 
   const clearForm = () => {
     setForm({
@@ -117,11 +135,19 @@ export function PublishDataItemForm({ address }: { address: string }) {
       revisionChange: '',
     });
     setDigest('');
+    clearNotice();
+    setInvalidFields({
+      container: false,
+      dataType: false,
+      name: false,
+      revisionOf: false,
+    });
   };
 
   const loadSelectedDataItem = useCallback(async (dataItemId: string) => {
     if (!dataItemId) {
-      return alert(t('messages.noDataItemId'));
+      showNotice(t('messages.noDataItemId'));
+      return;
     }
 
     try {
@@ -152,15 +178,16 @@ export function PublishDataItemForm({ address }: { address: string }) {
       });
     } catch (err) {
       console.error(err);
-      alert(t('messages.failedLoadDataItem'));
+      showNotice(t('messages.failedLoadDataItem'));
     } finally {
       setLoadingDataItem(false);
     }
-  }, []);
+  }, [showNotice]);
 
   const loadContainerAndType = useCallback(() => {
     if (!selectedContainerId || !selectedDataTypeId) {
-      return alert(t('messages.noContainerOrType'));
+      showNotice(t('messages.noContainerOrType'));
+      return;
     }
 
     setForm({
@@ -178,7 +205,7 @@ export function PublishDataItemForm({ address }: { address: string }) {
       revisionOf: '',
       revisionChange: '',
     });
-  }, [carsMode, followTemplateMode, selectedContainerId, selectedDataTypeId]);
+  }, [carsMode, followTemplateMode, selectedContainerId, selectedDataTypeId, showNotice]);
 
   useEffect(() => {
     const shouldAutoLoadSelected =
@@ -248,8 +275,18 @@ export function PublishDataItemForm({ address }: { address: string }) {
   };
 
   const submit = async () => {
-    if (!form.container.trim() || !form.dataType.trim() || !form.name.trim()) {
-      return alert(t('messages.containerTypeNameRequired'));
+    const missingContainer = !form.container.trim();
+    const missingDataType = !form.dataType.trim();
+    const missingName = !form.name.trim();
+    if (missingContainer || missingDataType || missingName) {
+      setInvalidFields((prev) => ({
+        ...prev,
+        container: missingContainer,
+        dataType: missingDataType,
+        name: missingName,
+      }));
+      showNotice(t('messages.containerTypeNameRequired'));
+      return;
     }
 
     const tx = new Transaction();
@@ -280,31 +317,27 @@ export function PublishDataItemForm({ address }: { address: string }) {
       }
 
       if (validationResult.missingIds.length > 0) {
-        return alert(
-          [
-            'Cannot publish this revision yet.',
-            'These replacement Data Item IDs are not indexed in backend DB:',
-            validationResult.missingIds.join(', '),
-          ].join('\n')
+        setInvalidFields((prev) => ({ ...prev, revisionOf: true }));
+        showNotice(
+          `Revision IDs are not indexed yet: ${validationResult.missingIds.join(', ')}`
         );
+        return;
       }
 
       if (validationResult.differentContainerIds.length > 0) {
-        return alert(
-          [
-            'Cannot publish this revision.',
-            'Revision replacements must belong to the same container as the new item.',
-            `Selected container: ${form.container.trim() || '-'}`,
-            'These IDs belong to a different container:',
-            validationResult.differentContainerIds.join(', '),
-          ].join('\n')
+        setInvalidFields((prev) => ({
+          ...prev,
+          container: true,
+          revisionOf: true,
+        }));
+        showNotice(
+          `Revision IDs belong to a different container: ${validationResult.differentContainerIds.join(', ')}`
         );
+        return;
       }
     }
 
-    const mergedReferences = followTemplateMode
-      ? reference
-      : Array.from(new Set([...reference, ...revisionIds]));
+    const txReferences = reference;
     const contentWithRevisions = followTemplateMode
       ? mergeContentWithFollowContainers(
           form.content,
@@ -328,7 +361,7 @@ export function PublishDataItemForm({ address }: { address: string }) {
         tx.pure.u128(BigInt(form.externalIndex)),
         tx.pure.option(
           'vector<address>',
-          mergedReferences.length > 0 ? mergedReferences : null
+          txReferences.length > 0 ? txReferences : null
         ),
         tx.object(CLOCK_ID),
       ],
@@ -368,20 +401,34 @@ export function PublishDataItemForm({ address }: { address: string }) {
           <FormRow label={t('container.singular') + ' ID *'}>
             <input
               type="text"
-              className="form-control form-control-sm w-100"
+              className={`form-control form-control-sm w-100 ${
+                invalidFields.container ? 'is-invalid' : ''
+              }`}
               placeholder="0x..."
               value={form.container}
-              onChange={(e) => setForm({ ...form, container: e.target.value })}
+              onChange={(e) => {
+                setForm({ ...form, container: e.target.value });
+                if (invalidFields.container) {
+                  setInvalidFields((prev) => ({ ...prev, container: false }));
+                }
+              }}
             />
           </FormRow>
 
           <FormRow label={t('type.singular') + ' ID *'}>
             <input
               type="text"
-              className="form-control form-control-sm w-100"
+              className={`form-control form-control-sm w-100 ${
+                invalidFields.dataType ? 'is-invalid' : ''
+              }`}
               placeholder="0x..."
               value={form.dataType}
-              onChange={(e) => setForm({ ...form, dataType: e.target.value })}
+              onChange={(e) => {
+                setForm({ ...form, dataType: e.target.value });
+                if (invalidFields.dataType) {
+                  setInvalidFields((prev) => ({ ...prev, dataType: false }));
+                }
+              }}
             />
           </FormRow>
         </FormSectionRow>
@@ -390,9 +437,16 @@ export function PublishDataItemForm({ address }: { address: string }) {
           <FormRow label={t('fields.name') + ' *'}>
             <input
               type="text"
-              className="form-control form-control-sm w-100"
+              className={`form-control form-control-sm w-100 ${
+                invalidFields.name ? 'is-invalid' : ''
+              }`}
               value={form.name}
-              onChange={(e) => setForm({ ...form, name: e.target.value })}
+              onChange={(e) => {
+                setForm({ ...form, name: e.target.value });
+                if (invalidFields.name) {
+                  setInvalidFields((prev) => ({ ...prev, name: false }));
+                }
+              }}
             />
           </FormRow>
 
@@ -433,9 +487,9 @@ export function PublishDataItemForm({ address }: { address: string }) {
         {followTemplateMode && (
           <FormSectionRow
             title="Follow & Unfollow"
-            description="Queue follow/unfollow updates. They are applied after publishing this item."
+            description="Queued updates apply on publish."
           >
-            <FormRow label="Follow Container Updates">
+            <FormRow label="Updates">
               <FollowContainerEditor
                 value={form.content}
                 onChange={(json) =>
@@ -492,38 +546,48 @@ export function PublishDataItemForm({ address }: { address: string }) {
                   onChange={(e) => setForm({ ...form, reference: e.target.value })}
                 />
               </FormRow>
-
-              {!followTemplateMode && (
-                <>
-                  <FormRow label="Revisions (previous Data Item IDs)">
-                    <input
-                      className="form-control form-control-sm w-100"
-                      placeholder="0x...,0x..."
-                      value={form.revisionOf}
-                      onChange={(e) => setForm({ ...form, revisionOf: e.target.value })}
-                    />
-                    <small className="muted">
-                      IDs entered here are written to <code>easy_publish.revisions</code> and
-                      automatically included in references.
-                    </small>
-                  </FormRow>
-
-                  <FormRow label="Revision change description">
-                    <textarea
-                      className="form-control form-control-sm w-100"
-                      rows={2}
-                      placeholder="What changed in this revision?"
-                      value={form.revisionChange}
-                      onChange={(e) => setForm({ ...form, revisionChange: e.target.value })}
-                    />
-                    <small className="muted">
-                      Stored as <code>easy_publish.revisions.change</code>.
-                    </small>
-                  </FormRow>
-                </>
-              )}
-
             </FormSectionRow>
+
+            {!followTemplateMode && (
+              <FormSectionRow
+                title="Revisions (Advanced)"
+                description="Special-case lineage metadata"
+                defaultCollapsed={true}
+              >
+                <FormRow label="Revisions (previous Data Item IDs)">
+                  <input
+                    className={`form-control form-control-sm w-100 ${
+                      invalidFields.revisionOf ? 'is-invalid' : ''
+                    }`}
+                    placeholder="0x...,0x..."
+                    value={form.revisionOf}
+                    onChange={(e) => {
+                      setForm({ ...form, revisionOf: e.target.value });
+                      if (invalidFields.revisionOf) {
+                        setInvalidFields((prev) => ({ ...prev, revisionOf: false }));
+                      }
+                    }}
+                  />
+                  <small className="muted">
+                    IDs entered here are written to <code>easy_publish.revisions</code> only.
+                    References are configured separately.
+                  </small>
+                </FormRow>
+
+                <FormRow label="Revision change description">
+                  <textarea
+                    className="form-control form-control-sm w-100"
+                    rows={2}
+                    placeholder="What changed in this revision?"
+                    value={form.revisionChange}
+                    onChange={(e) => setForm({ ...form, revisionChange: e.target.value })}
+                  />
+                  <small className="muted">
+                    Stored as <code>easy_publish.revisions.change</code>.
+                  </small>
+                </FormRow>
+              </FormSectionRow>
+            )}
             
         <div className="form-section-row">
           <div className="form-section-left">{t('actions.finalize')}</div>
@@ -540,6 +604,8 @@ export function PublishDataItemForm({ address }: { address: string }) {
                 ? 'Validating revisions...'
                 : `${t('actions.publish')} ${t('item.singular')}`}
             </button>
+
+            <FormInlineNotice notice={notice} />
 
             <TxDigestResult digest={digest} />
           </div>

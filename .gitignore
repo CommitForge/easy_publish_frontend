@@ -9,6 +9,7 @@ lerna-debug.log*
 
 node_modules
 dist
+dist-easy_publish_frontend*.zip
 dist-ssr
 *.local
 /.history/
@@ -25,3 +26,4 @@ dist-ssr
 *.njsproj
 *.sln
 *.sw?
+.lh/sync-cli-state.json

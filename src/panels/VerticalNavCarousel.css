@@ -1,0 +1,64 @@
+.vertical-nav-carousel {
+  position: relative;
+  width: 100%;
+  border-radius: 12px;
+  border: 1px solid rgba(98, 114, 164, 0.45);
+  background: linear-gradient(180deg, rgba(36, 37, 48, 0.96), rgba(27, 28, 38, 0.96));
+  overflow: hidden;
+}
+
+.vertical-nav-carousel-content {
+  padding: 14px 58px;
+}
+
+.vertical-nav-carousel-edge {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  width: 48px;
+  border: none;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  background: linear-gradient(180deg, rgba(7, 11, 18, 0.6), rgba(7, 11, 18, 0.9));
+  color: rgba(245, 247, 255, 0.86);
+  transition: background-color 0.15s ease, color 0.15s ease;
+}
+
+.vertical-nav-carousel-edge:hover {
+  background: linear-gradient(180deg, rgba(139, 233, 253, 0.2), rgba(139, 233, 253, 0.32));
+  color: var(--cyan);
+}
+
+.vertical-nav-carousel-edge:active {
+  background: linear-gradient(180deg, rgba(139, 233, 253, 0.28), rgba(139, 233, 253, 0.4));
+}
+
+.vertical-nav-carousel-edge--left {
+  left: 0;
+  border-right: 1px solid rgba(98, 114, 164, 0.45);
+}
+
+.vertical-nav-carousel-edge--right {
+  right: 0;
+  border-left: 1px solid rgba(98, 114, 164, 0.45);
+}
+
+.vertical-nav-carousel-edge-arrow {
+  font-size: 1rem;
+  line-height: 1;
+  user-select: none;
+  pointer-events: none;
+}
+
+@media (max-width: 720px) {
+  .vertical-nav-carousel-content {
+    padding-left: 44px;
+    padding-right: 44px;
+  }
+
+  .vertical-nav-carousel-edge {
+    width: 36px;
+  }
+}

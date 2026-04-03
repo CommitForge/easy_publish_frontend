@@ -1,7 +1,12 @@
 import { useSignAndExecuteTransaction } from '@iota/dapp-kit';
 import { useState, useEffect } from 'react';
 import { Transaction } from '@iota/iota-sdk/transactions';
-import { FormRow, CheckboxSection } from './FormUi.tsx';
+import {
+  FormInlineNotice,
+  FormRow,
+  CheckboxSection,
+  useTimedFormNotice,
+} from './FormUi.tsx';
 import { FormSectionRow } from './CollapsibleFormSectionRow.tsx';
 import { TxDigestResult } from './TxDigestResult.tsx';
 import { moveTarget, submitTx } from './TransactionUtils.tsx';
@@ -20,6 +25,10 @@ export function CreateContainerForm({ address }: { address: string }) {
   const { selectedContainerId } = useSelection();
   const [loadingContainer, setLoadingContainer] = useState(false);
   const [digest, setDigest] = useState('');
+  const { notice, showNotice, clearNotice } = useTimedFormNotice(15000);
+  const [invalidFields, setInvalidFields] = useState({
+    name: false,
+  });
 
   const carsMode = isCarsInstance();
   const carsContentJson = getCarsContentJson();
@@ -60,7 +69,10 @@ export function CreateContainerForm({ address }: { address: string }) {
   const toggle = (key: keyof typeof form) => setForm((f) => ({ ...f, [key]: !f[key] }));
 
   const loadSelectedContainer = async () => {
-    if (!selectedContainerId) return alert(t('messages.noContainerSelected'));
+    if (!selectedContainerId) {
+      showNotice(t('messages.noContainerSelected'));
+      return;
+    }
 
     try {
       setLoadingContainer(true);
@@ -93,7 +105,7 @@ export function CreateContainerForm({ address }: { address: string }) {
       });
     } catch (err) {
       console.error(err);
-      alert(t('messages.failedLoadContainer'));
+      showNotice(t('messages.failedLoadContainer'));
     } finally {
       setLoadingContainer(false);
     }
@@ -124,10 +136,16 @@ export function CreateContainerForm({ address }: { address: string }) {
       eventUpdate: false,
     });
     setDigest('');
+    clearNotice();
+    setInvalidFields({ name: false });
   };
 
   const submit = () => {
-    if (!form.name.trim()) return alert(t('messages.nameRequired'));
+    if (!form.name.trim()) {
+      setInvalidFields({ name: true });
+      showNotice(t('messages.nameRequired'));
+      return;
+    }
 
     const tx = new Transaction();
     tx.moveCall({
@@ -196,9 +214,16 @@ export function CreateContainerForm({ address }: { address: string }) {
           <FormRow label={t('fields.name') + ' *'}>
             <input
               type="text"
-              className="form-control form-control-sm w-100"
+              className={`form-control form-control-sm w-100 ${
+                invalidFields.name ? 'is-invalid' : ''
+              }`}
               value={form.name}
-              onChange={(e) => setForm({ ...form, name: e.target.value })}
+              onChange={(e) => {
+                setForm({ ...form, name: e.target.value });
+                if (invalidFields.name) {
+                  setInvalidFields({ name: false });
+                }
+              }}
             />
           </FormRow>
 
@@ -347,6 +372,8 @@ export function CreateContainerForm({ address }: { address: string }) {
             >
               {t('actions.create')} {t('container.singular')}
             </button>
+
+            <FormInlineNotice notice={notice} />
 
             <TxDigestResult digest={digest} />
           </div>

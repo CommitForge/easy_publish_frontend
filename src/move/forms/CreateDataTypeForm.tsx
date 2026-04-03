@@ -2,7 +2,7 @@
 import { useSignAndExecuteTransaction } from '@iota/dapp-kit';
 import { useState, useEffect } from 'react';
 import { Transaction } from '@iota/iota-sdk/transactions';
-import { FormRow } from './FormUi.tsx';
+import { FormInlineNotice, FormRow, useTimedFormNotice } from './FormUi.tsx';
 import { FormSectionRow } from './CollapsibleFormSectionRow.tsx';
 import { TxDigestResult } from './TxDigestResult.tsx';
 import { moveTarget, submitTx } from './TransactionUtils.tsx';
@@ -18,6 +18,11 @@ import { t } from '../../Config.ts';
 export function CreateDataTypeForm({ address }: { address: string }) {
   const { mutate: signAndExecuteTransaction } = useSignAndExecuteTransaction();
   const { selectedContainerId, selectedDataTypeId } = useSelection();
+  const { notice, showNotice, clearNotice } = useTimedFormNotice(15000);
+  const [invalidFields, setInvalidFields] = useState({
+    containerId: false,
+    name: false,
+  });
 
   const [digest, setDigest] = useState('');
   const [loadingDataType, setLoadingDataType] = useState(false);
@@ -71,10 +76,18 @@ export function CreateDataTypeForm({ address }: { address: string }) {
       externalIndex: 0,
     });
     setDigest('');
+    clearNotice();
+    setInvalidFields({
+      containerId: false,
+      name: false,
+    });
   };
 
   const useSelectedContainer = () => {
-    if (!selectedContainerId) return alert(t('messages.noSelectedContainer'));
+    if (!selectedContainerId) {
+      showNotice(t('messages.noSelectedContainer'));
+      return;
+    }
     setForm((f) => ({
       ...f,
       containerId: selectedContainerId
@@ -82,7 +95,10 @@ export function CreateDataTypeForm({ address }: { address: string }) {
   };
 
   const loadSelectedDataType = async () => {
-    if (!selectedContainerId || !selectedDataTypeId) return alert(t('messages.selectContainerOrType'));
+    if (!selectedContainerId || !selectedDataTypeId) {
+      showNotice(t('messages.selectContainerOrType'));
+      return;
+    }
 
     try {
       setLoadingDataType(true);
@@ -104,7 +120,7 @@ export function CreateDataTypeForm({ address }: { address: string }) {
       });
     } catch (err) {
       console.error(err);
-      alert(t('messages.failedLoadDataType'));
+      showNotice(t('messages.failedLoadDataType'));
     } finally {
       setLoadingDataType(false);
     }
@@ -115,7 +131,16 @@ export function CreateDataTypeForm({ address }: { address: string }) {
    * ------------------------- */
 
   const submit = () => {
-    if (!form.containerId.trim() || !form.name.trim()) return alert(t('messages.containerAndTypeRequired'));
+    const missingContainerId = !form.containerId.trim();
+    const missingName = !form.name.trim();
+    if (missingContainerId || missingName) {
+      setInvalidFields({
+        containerId: missingContainerId,
+        name: missingName,
+      });
+      showNotice(t('messages.containerIdAndNameRequired'));
+      return;
+    }
 
     const tx = new Transaction();
     tx.moveCall({
@@ -185,10 +210,17 @@ export function CreateDataTypeForm({ address }: { address: string }) {
           <FormRow label={t('container.singular') + ' ID *'}>
             <input
               type="text"
-              className="form-control form-control-sm w-100"
+              className={`form-control form-control-sm w-100 ${
+                invalidFields.containerId ? 'is-invalid' : ''
+              }`}
               placeholder="0x..."
               value={form.containerId}
-              onChange={(e) => setForm({ ...form, containerId: e.target.value })}
+              onChange={(e) => {
+                setForm({ ...form, containerId: e.target.value });
+                if (invalidFields.containerId) {
+                  setInvalidFields((prev) => ({ ...prev, containerId: false }));
+                }
+              }}
             />
           </FormRow>
         </FormSectionRow>
@@ -201,9 +233,16 @@ export function CreateDataTypeForm({ address }: { address: string }) {
           <FormRow label={t('fields.name') + ' *'}>
             <input
               type="text"
-              className="form-control form-control-sm w-100"
+              className={`form-control form-control-sm w-100 ${
+                invalidFields.name ? 'is-invalid' : ''
+              }`}
               value={form.name}
-              onChange={(e) => setForm({ ...form, name: e.target.value })}
+              onChange={(e) => {
+                setForm({ ...form, name: e.target.value });
+                if (invalidFields.name) {
+                  setInvalidFields((prev) => ({ ...prev, name: false }));
+                }
+              }}
             />
           </FormRow>
 
@@ -285,6 +324,8 @@ export function CreateDataTypeForm({ address }: { address: string }) {
             >
               {t('actions.new')} {t('type.singular')}
             </button>
+
+            <FormInlineNotice notice={notice} />
 
             <TxDigestResult digest={digest} />
           </div>

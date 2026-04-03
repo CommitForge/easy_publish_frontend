@@ -1,6 +1,5 @@
 // File: App.tsx
 import { useCurrentAccount, useDisconnectWallet } from '@iota/dapp-kit';
-import axios from 'axios';
 import { Suspense, lazy, useState, useEffect } from 'react';
 
 import { SelectionProvider } from './context/SelectionContext.tsx';
@@ -24,9 +23,9 @@ export default function App() {
   useEffect(() => {
     if (!account) return;
 
-    axios
-      .post(`${API_BASE}api/user/${account.address}/update`)
-      .catch(console.error);
+    void fetch(`${API_BASE}api/user/${account.address}/update`, {
+      method: 'POST',
+    }).catch(console.error);
   }, [account]);
 
   return (

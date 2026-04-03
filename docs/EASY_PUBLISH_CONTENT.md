@@ -64,10 +64,9 @@ Notes:
   - replacement IDs in `replaces` must belong to the same container as the new
     data item.
   - cross-container revision chains are invalid and are filtered/blocked in UI.
-- When publishing a revision, put the same IDs into transaction `references`
-  too. Revisions are a special semantic subset of references.
-- Regular references remain generic and can still be used for non-revision
-  links.
+- Revisions and transaction `references` are independent fields:
+  - `easy_publish.revisions.replaces` defines revision lineage.
+  - transaction `references` remains generic link metadata.
 
 ## Follow Containers Extension (Generic)
 
@@ -123,7 +122,7 @@ Notes:
 - Data items are immutable on-chain; older items cannot be updated later to
   point to newer ones.
 - Therefore, canonical on-chain revision direction is forward only:
-  newer item -> older item(s), via `revisions.replaces` (and references).
+  newer item -> older item(s), via `revisions.replaces`.
 - Reverse links (for example "superseded by") are off-chain derivations and
   are intentionally not required in `content`.
 
@@ -141,11 +140,10 @@ Follow these rules for stable long-term integration:
 - `targets[*].enabled` and `revisions.enabled` are both feature toggles.
 - For `revisions` object form, missing `enabled` is treated as `false`.
 
-3. Keep revision IDs in both places
-- For revision publishing, store IDs in:
-  - `easy_publish.revisions.replaces`
-  - transaction `references`
-- This keeps lineage usable even across tools that only read one source.
+3. Keep revisions and references independent
+- Use `easy_publish.revisions.replaces` only for revision lineage.
+- Use transaction `references` only for generic links/citations.
+- Do not assume one field is mirrored into the other.
 
 4. Preserve unknown keys
 - Consumers should ignore unknown `easy_publish.*` keys.
@@ -213,11 +211,12 @@ In Cars mode, the frontend also uses:
 - In Generic mode, all data items are still shown; newer items show their
   referenced previous revisions in the nested `Revisions` table.
 - If missing or invalid, the maintenance sub-table is not shown.
-- Publish Data Item form includes a `Revisions (previous Data Item IDs)` input.
+- Publish Data Item form includes a `Revisions (previous Data Item IDs)` input
+  in both Generic and Cars mode, inside a collapsed advanced section.
 - Before submit, revision `replaces` IDs are checked against indexed backend
   data (`/api/data-items/{id}`); missing IDs block submit.
-- Revision IDs are automatically merged into transaction `references` (Cars and
-  Generic mode), so revision linkage is preserved in both places.
+- Revision IDs are not automatically merged into transaction `references`.
+  References are submitted exactly as entered in the References field.
 - Cars editor keeps existing JSON where possible and ensures:
   - `easy_publish` exists
   - `easy_publish.publish.targets` exists

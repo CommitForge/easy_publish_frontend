@@ -59,6 +59,77 @@ function toVerifiedString(value: unknown): string {
   return value ? 'true' : 'false';
 }
 
+function normalizeEpochToMs(value: number): number | null {
+  if (!Number.isFinite(value) || value <= 0) return null;
+  if (value > 1e17) return Math.round(value / 1e6); // nanoseconds
+  if (value > 1e14) return Math.round(value / 1e3); // microseconds
+  if (value < 1e12) return Math.round(value * 1000); // seconds
+  return Math.round(value); // milliseconds
+}
+
+function toTimestampMs(value: unknown): number | null {
+  if (typeof value === 'number') return normalizeEpochToMs(value);
+  if (typeof value !== 'string') return null;
+
+  const trimmed = value.trim();
+  if (!trimmed) return null;
+
+  if (/^-?\d+(\.\d+)?$/.test(trimmed)) {
+    return normalizeEpochToMs(Number(trimmed));
+  }
+
+  const parsedDate = Date.parse(trimmed);
+  if (Number.isNaN(parsedDate)) return null;
+  return parsedDate;
+}
+
+type CreatedOnChain = {
+  createdOnChain: string;
+  createdOnChainMs: number | null;
+};
+
+function normalizeCreatedOnChain(dataItemNode: any, itemWrapper?: any): CreatedOnChain {
+  const candidates: unknown[] = [
+    dataItemNode?.createdOnChain,
+    dataItemNode?.created_on_chain,
+    dataItemNode?.createdOnChainMs,
+    dataItemNode?.created_on_chain_ms,
+    dataItemNode?.createdAt,
+    dataItemNode?.created_at,
+    dataItemNode?.createdTimestamp,
+    dataItemNode?.created_timestamp,
+    dataItemNode?.createdTime,
+    dataItemNode?.created_time,
+    dataItemNode?.timestamp,
+    itemWrapper?.createdOnChain,
+    itemWrapper?.created_on_chain,
+    itemWrapper?.createdOnChainMs,
+    itemWrapper?.created_on_chain_ms,
+    itemWrapper?.createdAt,
+    itemWrapper?.created_at,
+    itemWrapper?.createdTimestamp,
+    itemWrapper?.created_timestamp,
+    itemWrapper?.createdTime,
+    itemWrapper?.created_time,
+    itemWrapper?.timestamp,
+  ];
+
+  for (const candidate of candidates) {
+    const timestampMs = toTimestampMs(candidate);
+    if (timestampMs != null) {
+      return {
+        createdOnChain:
+          typeof candidate === 'string'
+            ? candidate
+            : new Date(timestampMs).toISOString(),
+        createdOnChainMs: timestampMs,
+      };
+    }
+  }
+
+  return { createdOnChain: '', createdOnChainMs: null };
+}
+
 function normalizeDataItemVerification(verificationNode: any) {
   const raw =
     verificationNode?.dataItemVerification ??
@@ -127,7 +198,6 @@ function extractRevisionSetting(content: unknown): {
         raw.previous_data_item_ids,
         raw.of,
         raw.items,
-        raw.references,
       ].flatMap((entry) => toObjectIdList(entry))
     );
 
@@ -144,28 +214,19 @@ function extractRevisionSetting(content: unknown): {
 
 function buildItemRevisions(
   content: unknown,
-  referenceIds: string[],
   sameContainerDataItemIds?: ReadonlySet<string>
 ): ItemRevision[] {
   const revisionSetting = extractRevisionSetting(content);
   if (!revisionSetting.enabled) return [];
 
-  const explicitSet = new Set(revisionSetting.explicitPreviousIds);
-  const effectivePreviousIds =
-    revisionSetting.explicitPreviousIds.length > 0
-      ? revisionSetting.explicitPreviousIds
-      : referenceIds;
-
-  const sameContainerFilteredIds = uniq(effectivePreviousIds).filter(
+  const sameContainerFilteredIds = uniq(revisionSetting.explicitPreviousIds).filter(
     (previousDataItemId) =>
       !sameContainerDataItemIds || sameContainerDataItemIds.has(previousDataItemId)
   );
 
   return sameContainerFilteredIds.map((previousDataItemId) => ({
     previousDataItemId,
-    source: explicitSet.has(previousDataItemId)
-      ? 'revision_setting'
-      : 'references',
+    source: 'revision_setting',
   }));
 }
 
@@ -242,8 +303,11 @@ export function extractItemsFromTree(
         const referenceIds = normalizeReferenceIds(di.dataItem);
         const revisions = buildItemRevisions(
           di.dataItem.content,
-          referenceIds,
           sameContainerDataItemIds
+        );
+        const { createdOnChain, createdOnChainMs } = normalizeCreatedOnChain(
+          di.dataItem,
+          di
         );
 
         rows.push({
@@ -259,6 +323,8 @@ export function extractItemsFromTree(
             verified: toVerifiedString(di.dataItem.verified),
             creatorAddr: di.dataItem.creator?.creatorAddr ?? '',
             externalIndex: di.dataItem.externalIndex ?? '',
+            createdOnChain,
+            createdOnChainMs,
             referenceIds,
             revisions,
             dataItemVerifications: Array.isArray(di.dataItemVerifications)

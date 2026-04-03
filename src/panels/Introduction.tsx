@@ -1,6 +1,7 @@
 import { Suspense, lazy, useEffect, useState } from "react";
 import { getBrandLogoPath, isCarsTranslation } from "../Config.ts";
 import { SectionFeatureTitle } from "../assets/section-icons/SectionFeatureTitle.tsx";
+import WorkflowDiagramSection from "./WorkflowDiagramSection.tsx";
 import {
   LuBadgeCheck,
   LuBoxes,
@@ -25,7 +26,7 @@ import {
 } from "react-icons/lu";
 
 interface IntroductionProps {
-  account: any | null;
+  account: unknown | null;
 }
 
 type ScriptMap = {
@@ -110,14 +111,14 @@ function YoutubeVideoConsentSection() {
 }
 
 export function Introduction({ account }: IntroductionProps) {
-  if (account) return null;
-
   const isCarsInstance = isCarsTranslation();
   const logoPath = getBrandLogoPath();
 
   const [loadApiSection, setLoadApiSection] = useState(false);
   const [loadScriptsSection, setLoadScriptsSection] = useState(false);
   const [scripts, setScripts] = useState<ScriptMap>(emptyScripts);
+  const showWorkflowAdvancedToolsNote = true;
+  const workflowIndexerGithubUrl = "https://github.com/CommitForge";
   const shareBaseUrl =
     typeof window !== "undefined" && window.location.href
       ? window.location.href
@@ -196,6 +197,8 @@ export function Introduction({ account }: IntroductionProps) {
     };
   }, [loadScriptsSection]);
 
+  if (account) return null;
+
   return (
     <div className="intro-wrapper">
       {isCarsInstance ? (
@@ -215,6 +218,25 @@ export function Introduction({ account }: IntroductionProps) {
               <div className="hero-right">
                 <img src={logoPath} alt="iziPublish Logo" className="hero-logo" />
               </div>
+            </div>
+          </section>
+
+          <section className="features share-strip">
+            <h2>Share iziPublish</h2>
+            <div className="share-strip-row">
+              {shareLinks.map((link) => (
+                <a
+                  key={link.label}
+                  className="share-strip-btn"
+                  href={link.href}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  title={`Share on ${link.label}`}
+                >
+                  <i className={link.iconClass} aria-hidden="true" />
+                  <span>{link.label}</span>
+                </a>
+              ))}
             </div>
           </section>
 
@@ -324,6 +346,12 @@ export function Introduction({ account }: IntroductionProps) {
               </div>
             </div>
           </section>
+
+          <WorkflowDiagramSection
+            carsMode={true}
+            showAdvancedToolsNote={showWorkflowAdvancedToolsNote}
+            indexerGithubUrl={workflowIndexerGithubUrl}
+          />
         </>
       ) : (
         <>
@@ -519,6 +547,13 @@ export function Introduction({ account }: IntroductionProps) {
               </div>
             </div>
           </section>
+
+          <WorkflowDiagramSection
+            carsMode={false}
+            showAdvancedToolsNote={showWorkflowAdvancedToolsNote}
+            indexerGithubUrl={workflowIndexerGithubUrl}
+          />
+
           <section id="features5" className="features">
             <h2>BETA version - transient era</h2>
             <div className="feature-grid">
@@ -548,7 +583,8 @@ export function Introduction({ account }: IntroductionProps) {
           <h2>Universal Output API</h2>
           <p style={{ marginBottom: 14 }}>
             Load comprehensive API instructions, request examples, and a sample
-            output on demand for a faster initial page load.
+            output on demand for a faster initial page load. The items endpoint
+            supports backend-side data-item search and ordering (default: latest created first).
           </p>
           <button
             type="button"

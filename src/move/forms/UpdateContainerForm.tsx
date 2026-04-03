@@ -1,7 +1,7 @@
 import { useSignAndExecuteTransaction, useCurrentAccount } from '@iota/dapp-kit';
 import { useState, useEffect, useCallback } from 'react';
 import { Transaction } from '@iota/iota-sdk/transactions';
-import { FormRow } from './FormUi.tsx';
+import { FormInlineNotice, FormRow, useTimedFormNotice } from './FormUi.tsx';
 import { FormSectionRow } from './CollapsibleFormSectionRow.tsx';
 import { TxDigestResult } from './TxDigestResult.tsx';
 import { moveTarget, submitTx } from './TransactionUtils.tsx';
@@ -34,6 +34,11 @@ export function UpdateContainerForm() {
 
   const [digest, setDigest] = useState('');
   const [loadingContainer, setLoadingContainer] = useState(false);
+  const { notice, showNotice, clearNotice } = useTimedFormNotice(15000);
+  const [invalidFields, setInvalidFields] = useState({
+    container: false,
+    name: false,
+  });
   const [form, setForm] = useState<UpdateFormState>({
     container: '',
     name: '',
@@ -61,11 +66,16 @@ export function UpdateContainerForm() {
       externalIndex: 0,
     });
     setDigest('');
+    clearNotice();
+    setInvalidFields({
+      container: false,
+      name: false,
+    });
   };
 
   const loadSelectedContainer = useCallback(async () => {
     if (!selectedContainerId) {
-      alert(t('messages.selectContainerOrType'));
+      showNotice(t('messages.selectContainerOrType'));
       return;
     }
 
@@ -91,11 +101,11 @@ export function UpdateContainerForm() {
       }));
     } catch (err) {
       console.error(err);
-      alert(t('messages.failedToLoad'));
+      showNotice(t('messages.failedToLoad'));
     } finally {
       setLoadingContainer(false);
     }
-  }, [selectedContainerId]);
+  }, [selectedContainerId, showNotice]);
 
   useEffect(() => {
     const shouldAutoLoad =
@@ -112,9 +122,16 @@ export function UpdateContainerForm() {
   const valid = account && form.container.trim() && form.name.trim();
 
   const submit = () => {
-    if (!account) return;
+    if (!account) {
+      showNotice(t('messages.connectWalletToAdd'));
+      return;
+    }
     if (!valid) {
-      alert(t('messages.containerAndTypeRequired'));
+      setInvalidFields({
+        container: !form.container.trim(),
+        name: !form.name.trim(),
+      });
+      showNotice(t('messages.containerIdAndNameRequired'));
       return;
     }
 
@@ -167,10 +184,17 @@ export function UpdateContainerForm() {
         <FormSectionRow title={t('container.singular')} description={t('messages.selectContainerOrType')}>
           <FormRow label={t('container.singular') + ' ID *'}>
             <input
-              className="form-control form-control-sm w-100"
+              className={`form-control form-control-sm w-100 ${
+                invalidFields.container ? 'is-invalid' : ''
+              }`}
               placeholder="0x..."
               value={form.container}
-              onChange={(e) => setForm({ ...form, container: e.target.value })}
+              onChange={(e) => {
+                setForm({ ...form, container: e.target.value });
+                if (invalidFields.container) {
+                  setInvalidFields((prev) => ({ ...prev, container: false }));
+                }
+              }}
             />
           </FormRow>
         </FormSectionRow>
@@ -179,9 +203,16 @@ export function UpdateContainerForm() {
         <FormSectionRow title={t('sections.basicInfo')} description={t('fields.description')}>
           <FormRow label={t('fields.name') + ' *'}>
             <input
-              className="form-control form-control-sm w-100"
+              className={`form-control form-control-sm w-100 ${
+                invalidFields.name ? 'is-invalid' : ''
+              }`}
               value={form.name}
-              onChange={(e) => setForm({ ...form, name: e.target.value })}
+              onChange={(e) => {
+                setForm({ ...form, name: e.target.value });
+                if (invalidFields.name) {
+                  setInvalidFields((prev) => ({ ...prev, name: false }));
+                }
+              }}
             />
           </FormRow>
 
@@ -277,6 +308,8 @@ export function UpdateContainerForm() {
             >
               {account ? t('actions.update') + ' ' + t('container.singular') : t('messages.connectWalletToAdd')}
             </button>
+
+            <FormInlineNotice notice={notice} />
 
             <TxDigestResult digest={digest} />
           </div>

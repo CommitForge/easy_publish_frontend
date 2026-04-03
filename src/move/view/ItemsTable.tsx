@@ -54,6 +54,10 @@ const ItemsTable: React.FC<ItemsTableProps> = ({
 }) => {
   const [expandedCells, setExpandedCells] = useState<Set<string>>(new Set());
   const [detailsExpanded, setDetailsExpanded] = useState(true);
+  const selectedLabel =
+    label === 'Container' || label === 'Data Type'
+      ? 'Selected:'
+      : `Selected ${label ?? 'Item'}:`;
 
   useEffect(() => {
     setExpandedCells(new Set());
@@ -70,7 +74,11 @@ const ItemsTable: React.FC<ItemsTableProps> = ({
   const toggleCell = (cellId: string) => {
     setExpandedCells(prev => {
       const next = new Set(prev);
-      next.has(cellId) ? next.delete(cellId) : next.add(cellId);
+      if (next.has(cellId)) {
+        next.delete(cellId);
+      } else {
+        next.add(cellId);
+      }
       return next;
     });
   };
@@ -82,26 +90,28 @@ const ItemsTable: React.FC<ItemsTableProps> = ({
     <div className="bp-items-root" style={{ position: 'relative' }}>
       {/* Top bar */}
       <div className="bp-items-toolbar" style={{ fontSize: collapsed ? 12 : 14 }}>
-        <span>
-          Selected {label ?? 'Item'}:{' '}
-          <strong>
-            {selectedId ? `${selectedId.slice(0, 6)}...${selectedId.slice(-4)}` : '(none)'}
-          </strong>
-        </span>
-        {selectedId && (
-          <>
-            <i className="bi bi-clipboard copy-icon" title="Copy ID" onClick={e => copyToClipboard(e, selectedId)} />
-            <a
-              href={explorerUrl(selectedId)}
-              target="_blank"
-              rel="noreferrer"
-              title="Open in IOTA Explorer"
-              className="explorer-icon"
-            >
-              <i className="bi bi-box-arrow-up-right" />
-            </a>
-          </>
-        )}
+        <div className="bp-selected-cluster">
+          <span>
+            {selectedLabel}{' '}
+            <strong>
+              {selectedId ? `${selectedId.slice(0, 6)}...${selectedId.slice(-4)}` : '(none)'}
+            </strong>
+          </span>
+          {selectedId && (
+            <>
+              <i className="bi bi-clipboard copy-icon" title="Copy ID" onClick={e => copyToClipboard(e, selectedId)} />
+              <a
+                href={explorerUrl(selectedId)}
+                target="_blank"
+                rel="noreferrer"
+                title="Open in IOTA Explorer"
+                className="explorer-icon"
+              >
+                <i className="bi bi-box-arrow-up-right" />
+              </a>
+            </>
+          )}
+        </div>
         <div className="bp-toolbar-actions">
           {onToggleLatestRevisionOnly && (
             <button

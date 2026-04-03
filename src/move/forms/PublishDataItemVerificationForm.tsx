@@ -2,7 +2,7 @@
 import { useSignAndExecuteTransaction } from '@iota/dapp-kit';
 import { useState, useEffect } from 'react';
 import { Transaction } from '@iota/iota-sdk/transactions';
-import { FormRow } from './FormUi.tsx';
+import { FormInlineNotice, FormRow, useTimedFormNotice } from './FormUi.tsx';
 import { FormSectionRow } from './CollapsibleFormSectionRow.tsx';
 import { TxDigestResult } from './TxDigestResult.tsx';
 import { moveTarget, submitTx } from './TransactionUtils.tsx';
@@ -27,6 +27,12 @@ export function PublishDataItemVerificationForm({ address }: { address: string }
 
   const [digest, setDigest] = useState('');
   const [loadingDataItem, setLoadingDataItem] = useState(false);
+  const { notice, showNotice, clearNotice } = useTimedFormNotice(15000);
+  const [invalidFields, setInvalidFields] = useState({
+    container: false,
+    dataItem: false,
+    name: false,
+  });
 
   const carsMode = isCarsInstance();
   const carsContentJson = getCarsContentJson();
@@ -69,11 +75,20 @@ export function PublishDataItemVerificationForm({ address }: { address: string }
       verified: false,
     });
     setDigest('');
+    clearNotice();
+    setInvalidFields({
+      container: false,
+      dataItem: false,
+      name: false,
+    });
   };
 
   /** Load selected Data Item and populate full form */
   const loadSelectedDataItem = async (dataItemId: string) => {
-    if (!dataItemId) return alert(t('messages.noSelectedItem'));
+    if (!dataItemId) {
+      showNotice(t('messages.noSelectedItem'));
+      return;
+    }
     setLoadingDataItem(true);
     try {
       const res = await fetch(`${API_BASE}api/data-items/${dataItemId}`);
@@ -94,7 +109,7 @@ export function PublishDataItemVerificationForm({ address }: { address: string }
       });
     } catch (err) {
       console.error(err);
-      alert(t('messages.failedLoadItem'));
+      showNotice(t('messages.failedLoadItem'));
     } finally {
       setLoadingDataItem(false);
     }
@@ -102,8 +117,17 @@ export function PublishDataItemVerificationForm({ address }: { address: string }
 
   /** Submit transaction */
   const submit = () => {
-    if (!form.container || !form.dataItem || !form.name) {
-      return alert(t('messages.containerItemNameRequired'));
+    const missingContainer = !form.container.trim();
+    const missingDataItem = !form.dataItem.trim();
+    const missingName = !form.name.trim();
+    if (missingContainer || missingDataItem || missingName) {
+      setInvalidFields({
+        container: missingContainer,
+        dataItem: missingDataItem,
+        name: missingName,
+      });
+      showNotice(t('messages.containerItemNameRequired'));
+      return;
     }
 
     const tx = new Transaction();
@@ -151,7 +175,10 @@ export function PublishDataItemVerificationForm({ address }: { address: string }
           <button
             className="btn btn-outline-info btn-sm"
             onClick={async () => {
-              if (!selectedDataItemId) return alert(t('messages.noSelectedItem'));
+              if (!selectedDataItemId) {
+                showNotice(t('messages.noSelectedItem'));
+                return;
+              }
               setLoadingDataItem(true);
               try {
                 const res = await fetch(`${API_BASE}api/data-items/${selectedDataItemId}`);
@@ -171,7 +198,7 @@ export function PublishDataItemVerificationForm({ address }: { address: string }
                 });
               } catch (err) {
                 console.error(err);
-                alert(t('messages.failedLoadItem'));
+                showNotice(t('messages.failedLoadItem'));
               } finally {
                 setLoadingDataItem(false);
               }
@@ -191,18 +218,32 @@ export function PublishDataItemVerificationForm({ address }: { address: string }
           <FormRow label={t('container.singular') + ' ID *'}>
             <input
               type="text"
-              className="form-control form-control-sm w-100"
+              className={`form-control form-control-sm w-100 ${
+                invalidFields.container ? 'is-invalid' : ''
+              }`}
               value={form.container}
-              onChange={(e) => setForm({ ...form, container: e.target.value })}
+              onChange={(e) => {
+                setForm({ ...form, container: e.target.value });
+                if (invalidFields.container) {
+                  setInvalidFields((prev) => ({ ...prev, container: false }));
+                }
+              }}
             />
           </FormRow>
 
           <FormRow label={t('item.singular') + ' ID *'}>
             <input
               type="text"
-              className="form-control form-control-sm w-100"
+              className={`form-control form-control-sm w-100 ${
+                invalidFields.dataItem ? 'is-invalid' : ''
+              }`}
               value={form.dataItem}
-              onChange={(e) => setForm({ ...form, dataItem: e.target.value })}
+              onChange={(e) => {
+                setForm({ ...form, dataItem: e.target.value });
+                if (invalidFields.dataItem) {
+                  setInvalidFields((prev) => ({ ...prev, dataItem: false }));
+                }
+              }}
             />
           </FormRow>
         </FormSectionRow>
@@ -212,9 +253,16 @@ export function PublishDataItemVerificationForm({ address }: { address: string }
           <FormRow label={t('fields.name') + ' *'}>
             <input
               type="text"
-              className="form-control form-control-sm w-100"
+              className={`form-control form-control-sm w-100 ${
+                invalidFields.name ? 'is-invalid' : ''
+              }`}
               value={form.name}
-              onChange={(e) => setForm({ ...form, name: e.target.value })}
+              onChange={(e) => {
+                setForm({ ...form, name: e.target.value });
+                if (invalidFields.name) {
+                  setInvalidFields((prev) => ({ ...prev, name: false }));
+                }
+              }}
             />
           </FormRow>
 
@@ -302,6 +350,8 @@ export function PublishDataItemVerificationForm({ address }: { address: string }
             <button className="btn btn-outline-primary btn-sm w-100" onClick={submit}>
               {t('actions.publish')} {t('itemVerification.singular')}
             </button>
+
+            <FormInlineNotice notice={notice} />
 
             <TxDigestResult digest={digest} />
           </div>

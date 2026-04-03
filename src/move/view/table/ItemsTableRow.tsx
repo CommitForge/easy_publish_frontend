@@ -49,7 +49,7 @@ const ItemsTableRow: React.FC<ItemsTableRowProps> = ({
               ? entry.previousDataItemId
               : '',
           source:
-            entry?.source === 'revision_setting' || entry?.source === 'references'
+            entry?.source === 'revision_setting'
               ? entry.source
               : 'revision_setting',
         }))

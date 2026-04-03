@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useRef, useState } from "react";
 import {
   PACKAGE_ID,
   CONTAINER_CHAIN_ID,
@@ -9,24 +9,34 @@ import {
 import { copyToClipboard } from '../utils/clipboard';
 import { buildObjectExplorerUrl } from '../utils/explorer';
 
-import {
-  TERMS_CONTENT,
-  PRIVACY_CONTENT,
-  COOKIE_CONTENT,
-  DISCLAIMER_CONTENT,
-  ABOUT_CONTENT,
-  CONTACT_CONTENT,
-  CAREERS_CONTENT,
-  PRESS_CONTENT,
-  FAQ_CONTENT,
-  DOCS_CONTENT,
-  SUPPORT_CONTENT,
-} from './FooterContent.tsx';
-
 type ModalLink = {
   title: string;
-  content: string;
+  contentKey: FooterContentKey;
 };
+
+type FooterContentKey =
+  | 'TERMS_CONTENT'
+  | 'PRIVACY_CONTENT'
+  | 'COOKIE_CONTENT'
+  | 'DISCLAIMER_CONTENT'
+  | 'ABOUT_CONTENT'
+  | 'CONTACT_CONTENT'
+  | 'CAREERS_CONTENT'
+  | 'PRESS_CONTENT'
+  | 'FAQ_CONTENT'
+  | 'DOCS_CONTENT'
+  | 'SUPPORT_CONTENT';
+
+type FooterContentModule = Record<FooterContentKey, string>;
+
+let footerContentPromise: Promise<FooterContentModule> | null = null;
+
+function loadFooterContent(): Promise<FooterContentModule> {
+  if (!footerContentPromise) {
+    footerContentPromise = import('./FooterContent.tsx') as Promise<FooterContentModule>;
+  }
+  return footerContentPromise;
+}
 
 const blockchainRows = [
   { label: 'Smart Contract', value: PACKAGE_ID },
@@ -39,23 +49,23 @@ const blockchainRows = [
 const isLikelyObjectId = (value: string) => /^0x[0-9a-fA-F]+$/.test(value);
 
 const aboutLinks: ModalLink[] = [
-  { title: 'About Us', content: ABOUT_CONTENT },
-  { title: 'Contact', content: CONTACT_CONTENT },
-  { title: 'Contribute', content: CAREERS_CONTENT },
-  { title: 'Press', content: PRESS_CONTENT },
+  { title: 'About Us', contentKey: 'ABOUT_CONTENT' },
+  { title: 'Contact', contentKey: 'CONTACT_CONTENT' },
+  { title: 'Contribute', contentKey: 'CAREERS_CONTENT' },
+  { title: 'Press', contentKey: 'PRESS_CONTENT' },
 ];
 
 const supportLinks: ModalLink[] = [
-  { title: 'FAQ', content: FAQ_CONTENT },
-  { title: 'Documentation', content: DOCS_CONTENT },
-  { title: 'Customer Support', content: SUPPORT_CONTENT },
+  { title: 'FAQ', contentKey: 'FAQ_CONTENT' },
+  { title: 'Documentation', contentKey: 'DOCS_CONTENT' },
+  { title: 'Customer Support', contentKey: 'SUPPORT_CONTENT' },
 ];
 
 const legalLinks: ModalLink[] = [
-  { title: 'Terms of Service', content: TERMS_CONTENT },
-  { title: 'Privacy Policy', content: PRIVACY_CONTENT },
-  { title: 'Cookie Policy', content: COOKIE_CONTENT },
-  { title: 'Disclaimer', content: DISCLAIMER_CONTENT },
+  { title: 'Terms of Service', contentKey: 'TERMS_CONTENT' },
+  { title: 'Privacy Policy', contentKey: 'PRIVACY_CONTENT' },
+  { title: 'Cookie Policy', contentKey: 'COOKIE_CONTENT' },
+  { title: 'Disclaimer', contentKey: 'DISCLAIMER_CONTENT' },
 ];
 
 const socialLinks = [
@@ -67,16 +77,33 @@ const socialLinks = [
   { label: 'GitHub Deploy (Shell)', href: 'https://github.com/CommitForge/easy_publish_deploy' },
 ];
 
+const donationAddress = '0x7c33d09b7b6ddbfed32bd945caae96719ae07f68863d8614c4d96d6d320af429';
+
 export function Footer() {
   const [modalContent, setModalContent] = useState<string | null>(null);
   const [modalTitle, setModalTitle] = useState<string>("");
+  const modalLoadSequence = useRef(0);
 
-  const openModal = (title: string, content: string) => {
+  const openModal = async (title: string, contentKey: FooterContentKey) => {
+    const seq = ++modalLoadSequence.current;
     setModalTitle(title);
-    setModalContent(content);
+    setModalContent('Loading content...');
+
+    try {
+      const footerContent = await loadFooterContent();
+      if (seq !== modalLoadSequence.current) return;
+      const content = footerContent[contentKey];
+      setModalContent(typeof content === 'string' ? content : 'Content unavailable.');
+    } catch {
+      if (seq !== modalLoadSequence.current) return;
+      setModalContent('Could not load this content right now. Please try again.');
+    }
   };
 
-  const closeModal = () => setModalContent(null);
+  const closeModal = () => {
+    modalLoadSequence.current += 1;
+    setModalContent(null);
+  };
 
   const sectionTitleStyle = { color: 'var(--purple)', marginBottom: '0.75rem' };
 
@@ -137,7 +164,9 @@ export function Footer() {
             <span
               key={link.title}
               className="footer-link"
-              onClick={() => openModal(link.title, link.content)}
+              onClick={() => {
+                void openModal(link.title, link.contentKey);
+              }}
             >
               {link.title}
             </span>
@@ -151,7 +180,9 @@ export function Footer() {
             <span
               key={link.title}
               className="footer-link"
-              onClick={() => openModal(link.title, link.content)}
+              onClick={() => {
+                void openModal(link.title, link.contentKey);
+              }}
             >
               {link.title}
             </span>
@@ -165,7 +196,9 @@ export function Footer() {
             <span
               key={link.title}
               className="footer-link"
-              onClick={() => openModal(link.title, link.content)}
+              onClick={() => {
+                void openModal(link.title, link.contentKey);
+              }}
             >
               {link.title}
             </span>
@@ -197,6 +230,20 @@ export function Footer() {
             color: 'var(--fg-muted)'
           }}
         >
+          <div
+            style={{ marginBottom: '0.4rem' }}
+          >
+            IOTA Donation Address: {donationAddress}
+            {' '}
+            <i
+              className="bi bi-clipboard copy-icon"
+              title="Copy donation address"
+              onClick={(e) => copyToClipboard(e, donationAddress)}
+            />
+          </div>
+          <div style={{ marginBottom: '0.4rem', fontSize: '0.82rem', color: 'var(--fg-muted)' }}>
+            Donations go to the developer and help cover server and other running costs.
+          </div>
           © 2026 izipublish.com · Built on IOTA
         </div>
       </footer>

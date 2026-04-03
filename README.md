@@ -45,6 +45,24 @@ npm run dev
 npm run build
 ```
 
+   Build and create a compressed deploy artifact (`dist-easy_publish_frontend.zip`):
+
+```bash
+npm run build:zip
+```
+
+   Create only the zip from an existing `dist/`:
+
+```bash
+npm run zip:dist
+```
+
+   Create a versioned artifact (optional):
+
+```bash
+ARTIFACT_VERSION=2026.04.03 npm run zip:dist
+```
+
 5. Preview production build locally:
 
 ```bash
@@ -129,6 +147,28 @@ Optional sync overrides:
 - `CLI_SOURCE_REF` (default: `main`)
 - `CLI_STRIP_VITE_COMPAT` (`true` by default; set to `false` to keep upstream VITE env compatibility text/aliases)
 
+## Deploy Scripts
+
+This repository includes one server deploy script and one properties file:
+
+- `scripts/deploy-server.sh`
+- `scripts/deploy-server.properties`
+
+Use it after uploading zip to server:
+
+```bash
+./scripts/deploy-server.sh
+./scripts/deploy-server.sh --version 2026.04.03
+./scripts/deploy-server.sh --zip /var/www/dist-easy_publish_frontend.zip
+```
+
+`deploy-server.sh` reads targets and deploy settings from
+`scripts/deploy-server.properties`.
+It auto-detects artifacts by newest modification date when path is not provided.
+Selected build must include `index.html`.
+
+Detailed usage is in `scripts/README.md`.
+
 ## Easy Publish Content Schema
 
 The `content.easy_publish` JSON structure used by the frontend is documented in:
@@ -141,6 +181,13 @@ Comprehensive `/api/items` usage (params, include modes, pagination behavior,
 request samples, and response sample) is documented in:
 
 - `docs/ITEMS_API.md`
+
+## Analytics Dashboard API (Beta)
+
+Read-only aggregated dashboard endpoint contract (`/api/analytics/dashboard`) is
+documented in:
+
+- `docs/ANALYTICS_API.md`
 
 ## Security Notes
 

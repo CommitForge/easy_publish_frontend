@@ -1,12 +1,22 @@
+import CodeViewer from "./CodeViewer";
+
 const requestExamples = `GET /izipublish/api/items?userAddress=0x...&include=CONTAINER
 GET /izipublish/api/items?userAddress=0x...&containerId=0xcontainer123&include=CONTAINER,DATA_TYPE
 GET /izipublish/api/items?userAddress=0x...&containerId=0xcontainer123&include=CONTAINER,DATA_TYPE,DATA_ITEM,DATA_ITEM_VERIFICATION
 GET /izipublish/api/items?userAddress=0x...&containerId=0xcontainer123&include=CONTAINER,DATA_TYPE,DATA_ITEM,DATA_ITEM_VERIFICATION&dataItemVerificationVerified=true
-GET /izipublish/api/items?userAddress=0x...&containerId=0xcontainer123&include=CONTAINER,DATA_TYPE,DATA_ITEM,DATA_ITEM_VERIFICATION&dataItemVerificationVerified=false`;
+GET /izipublish/api/items?userAddress=0x...&containerId=0xcontainer123&include=CONTAINER,DATA_TYPE,DATA_ITEM,DATA_ITEM_VERIFICATION&dataItemVerificationVerified=false
+GET /izipublish/api/items?userAddress=0x...&containerId=0xcontainer123&include=CONTAINER,DATA_TYPE,DATA_ITEM,DATA_ITEM_VERIFICATION&dataItemQuery=oil%20change&dataItemSearchFields=name,description,content,externalId,externalIndex&dataItemSortBy=created&dataItemSortDirection=desc`;
 
 const paginationExamples = `GET /izipublish/api/items?userAddress=0x...&include=CONTAINER&page=0&pageSize=20
 GET /izipublish/api/items?userAddress=0x...&containerId=0xcontainer123&include=CONTAINER,DATA_TYPE&page=1&pageSize=20
 GET /izipublish/api/items?userAddress=0x...&containerId=0xcontainer123&include=CONTAINER,DATA_TYPE,DATA_ITEM,DATA_ITEM_VERIFICATION&page=0&pageSize=50`;
+
+const dataItemFilterExamples = `GET /izipublish/api/items?userAddress=0x...&containerId=0xcontainer123&include=CONTAINER,DATA_TYPE,DATA_ITEM,DATA_ITEM_VERIFICATION&dataItemQuery=service
+GET /izipublish/api/items?userAddress=0x...&containerId=0xcontainer123&include=CONTAINER,DATA_TYPE,DATA_ITEM,DATA_ITEM_VERIFICATION&dataItemVerified=true
+GET /izipublish/api/items?userAddress=0x...&containerId=0xcontainer123&include=CONTAINER,DATA_TYPE,DATA_ITEM,DATA_ITEM_VERIFICATION&dataItemHasRevisions=true
+GET /izipublish/api/items?userAddress=0x...&containerId=0xcontainer123&include=CONTAINER,DATA_TYPE,DATA_ITEM,DATA_ITEM_VERIFICATION&dataItemHasVerifications=true
+GET /izipublish/api/items?userAddress=0x...&containerId=0xcontainer123&include=CONTAINER,DATA_TYPE,DATA_ITEM,DATA_ITEM_VERIFICATION&dataItemDataType=Maintenance
+GET /izipublish/api/items?userAddress=0x...&containerId=0xcontainer123&include=CONTAINER,DATA_TYPE,DATA_ITEM,DATA_ITEM_VERIFICATION&dataItemSortBy=name&dataItemSortDirection=asc`;
 
 const sampleResponse = `{
   "containers": [
@@ -67,8 +77,17 @@ const sampleResponse = `{
       "dataItemId": null,
       "dataItemVerificationId": null,
       "dataItemVerificationVerified": null,
+      "dataItemQuery": null,
+      "dataItemSearchFields": "name,description,content,externalId,externalIndex",
+      "dataItemVerified": null,
+      "dataItemHasRevisions": null,
+      "dataItemHasVerifications": null,
+      "dataItemDataType": null,
+      "dataItemSortBy": "created",
+      "dataItemSortDirection": "desc",
       "domain": null
-    }
+    },
+    "availableDataTypes": ["Maintenance", "Insurance"]
   }
 }`;
 
@@ -92,16 +111,15 @@ export default function ApiInstructions() {
       </div>
 
       <h3 style={{ marginBottom: "0.5rem" }}>Request Examples</h3>
-      <pre
-        className="code"
-        style={{
-          maxHeight: 260,
-          overflow: "auto",
-          marginBottom: "1rem",
-        }}
-      >
-        {requestExamples}
-      </pre>
+      <div style={{ marginBottom: "1rem" }}>
+        <CodeViewer
+          title="Request Examples"
+          code={requestExamples}
+          language="http"
+          maxHeight={260}
+          wrapLongLines
+        />
+      </div>
 
       <h3 style={{ marginBottom: "0.5rem" }}>Pagination</h3>
       <div style={{ marginBottom: "0.75rem", color: "var(--fg-muted)", lineHeight: 1.6 }}>
@@ -124,27 +142,40 @@ export default function ApiInstructions() {
           <code>meta.page</code>.
         </li>
       </ul>
-      <pre
-        className="code"
-        style={{
-          maxHeight: 210,
-          overflow: "auto",
-          marginBottom: "1rem",
-        }}
-      >
-        {paginationExamples}
-      </pre>
+      <div style={{ marginBottom: "1rem" }}>
+        <CodeViewer
+          title="Pagination Examples"
+          code={paginationExamples}
+          language="http"
+          maxHeight={210}
+          wrapLongLines
+        />
+      </div>
+
+      <h3 style={{ marginBottom: "0.5rem" }}>Data Item Search and Ordering</h3>
+      <div style={{ marginBottom: "0.75rem", color: "var(--fg-muted)", lineHeight: 1.6 }}>
+        In <code>DATA_ITEM</code> mode, search/filter/sort happens server-side before pagination.
+        Default ordering is <code>dataItemSortBy=created</code> and
+        <code>dataItemSortDirection=desc</code> (latest first).
+      </div>
+      <div style={{ marginBottom: "1rem" }}>
+        <CodeViewer
+          title="Data Item Filter Examples"
+          code={dataItemFilterExamples}
+          language="http"
+          maxHeight={250}
+          wrapLongLines
+        />
+      </div>
 
       <h3 style={{ marginBottom: "0.5rem" }}>Sample /api/items Output</h3>
-      <pre
-        className="code"
-        style={{
-          maxHeight: 320,
-          overflow: "auto",
-        }}
-      >
-        {sampleResponse}
-      </pre>
+      <CodeViewer
+        title="Sample Response"
+        code={sampleResponse}
+        language="json"
+        maxHeight={1000}
+        wrapLongLines
+      />
     </div>
   );
 }

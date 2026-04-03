@@ -9,7 +9,7 @@
 
 .follow-panel-body {
   margin-top: 6px;
-  padding-left: 8px;
+  padding-left: 0;
 }
 
 .follow-panel-input-row {
@@ -39,19 +39,7 @@
   min-width: 0;
   width: auto;
   flex: 1;
-}
-
-.follow-panel-actions .btn.btn-success,
-.follow-panel-actions .btn.btn-success:hover {
-  color: #fff;
-}
-
-.follow-panel-unfollow-inline-btn {
-  padding: 4px 10px;
-  font-size: 13px;
-  border-radius: 4px;
-  border: 1px solid transparent;
-  cursor: pointer;
+  text-align: center;
 }
 
 .follow-panel-feedback {
@@ -92,6 +80,8 @@
 .follow-panel-row {
   display: flex;
   justify-content: space-between;
+  align-items: flex-start;
+  gap: 8px;
   padding: 4px 6px;
   font-size: 13px;
   border-radius: 4px;
@@ -99,17 +89,32 @@
 
 .follow-panel-row-link {
   cursor: pointer;
+  flex: 1;
+  min-width: 0;
   overflow-wrap: anywhere;
 }
 
+.follow-panel-remove-btn,
 .follow-panel-unfollow-inline-btn {
   padding: 0 6px;
   height: 20px;
   font-size: 11px;
   line-height: 18px;
+  border-radius: 4px;
+  border: 1px solid transparent;
+  cursor: pointer;
+  flex: 0 0 auto;
+  background: transparent;
+}
+
+.follow-panel-remove-btn {
+  border-color: #999;
+  color: #888;
+}
+
+.follow-panel-unfollow-inline-btn {
   border-color: #d97706;
   color: #d97706;
-  background: transparent;
 }
 
 .follow-panel-empty {
@@ -128,4 +133,16 @@
 .follow-panel-page-btn {
   border: none;
   background: transparent;
+}
+
+.follow-panel-primary-buttons {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  margin-top: 8px;
+}
+
+.follow-panel-primary-buttons .btn {
+  width: 100%;
+  display: block;
 }

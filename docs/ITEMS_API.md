@@ -33,9 +33,20 @@ Examples:
 | `dataItemId` | No | Restrict to a specific data item. |
 | `dataItemVerificationId` | No | Restrict verifications by verification ID. |
 | `dataItemVerificationVerified` | No | Verification status filter: `true` or `false`. |
+| `dataItemQuery` | No | Data-item text search string (item mode). |
+| `dataItemSearchFields` | No | CSV search fields: `name,description,content,externalId,externalIndex,objectId,dataType,creatorAddr`. |
+| `dataItemVerified` | No | Data-item `verified` filter (`true` or `false`). |
+| `dataItemHasRevisions` | No | Filter items by revisions presence (`true` or `false`). |
+| `dataItemHasVerifications` | No | Filter items by attached verifications presence (`true` or `false`). |
+| `dataItemDataType` | No | Filter by data type name (exact, case-insensitive). |
+| `dataItemSortBy` | No | Item sort key: `created`, `name`, `external_index`, `external_id`. |
+| `dataItemSortDirection` | No | Sort direction: `asc` or `desc`. |
 | `domain` | No | Optional publish-domain scope. |
 | `page` | No | 0-based page index. |
 | `pageSize` | No | Page size (server may clamp). |
+
+Default data-item sort is `dataItemSortBy=created&dataItemSortDirection=desc`
+(latest on-chain sequence index first).
 
 Legacy aliases can still appear in integrations:
 
@@ -88,6 +99,12 @@ Browse data items and verifications:
 
 ```http
 GET /izipublish/api/items?userAddress=0x...&containerId=0xcontainer123&include=CONTAINER,DATA_TYPE,DATA_ITEM,DATA_ITEM_VERIFICATION&page=0&pageSize=20
+```
+
+Search data items server-side and keep latest-first order:
+
+```http
+GET /izipublish/api/items?userAddress=0x...&containerId=0xcontainer123&include=CONTAINER,DATA_TYPE,DATA_ITEM,DATA_ITEM_VERIFICATION&dataItemQuery=oil%20change&dataItemSearchFields=name,description,content,externalId,externalIndex&dataItemSortBy=created&dataItemSortDirection=desc&page=0&pageSize=20
 ```
 
 Only verified data item verifications:
@@ -164,8 +181,17 @@ GET /izipublish/api/items?userAddress=0x...&containerId=0xcontainer123&include=C
       "dataItemId": null,
       "dataItemVerificationId": null,
       "dataItemVerificationVerified": null,
+      "dataItemQuery": null,
+      "dataItemSearchFields": "name,description,content,externalId,externalIndex",
+      "dataItemVerified": null,
+      "dataItemHasRevisions": null,
+      "dataItemHasVerifications": null,
+      "dataItemDataType": null,
+      "dataItemSortBy": "created",
+      "dataItemSortDirection": "desc",
       "domain": null
-    }
+    },
+    "availableDataTypes": ["Maintenance", "Insurance"]
   }
 }
 ```
@@ -175,7 +201,10 @@ GET /izipublish/api/items?userAddress=0x...&containerId=0xcontainer123&include=C
 - Data items are rendered from `containers -> dataTypes -> dataItems`.
 - If `dataItemVerifications` exist for a data item, the UI can render a nested
   master-detail verification table.
+- Data-item search/filter/sort runs backend-side before pagination. Use
+  `meta.totalDataItems` as the total for the active filter set.
 - Revision UI (nested `Revisions` table) is driven by `easy_publish.revisions`
   in `dataItem.content` and requires `enabled: true` in object form.
+- Transaction `reference/references` fields are not used to derive revisions.
 - Revision rows are shown only when the referenced previous data item is inside
   the same container as the current row (container-local revision policy).

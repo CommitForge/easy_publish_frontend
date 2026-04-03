@@ -8,6 +8,24 @@ type SelectionIds = {
   selectedDataItemId: string | null;
 };
 
+type DataItemApiFilters = {
+  query?: string;
+  searchFields?: string[];
+  sortBy?:
+    | 'created_desc'
+    | 'created_asc'
+    | 'name_asc'
+    | 'name_desc'
+    | 'external_index_desc'
+    | 'external_index_asc'
+    | 'external_id_asc'
+    | 'external_id_desc';
+  verified?: 'all' | 'verified' | 'unverified';
+  revisions?: 'all' | 'with' | 'without';
+  verifications?: 'all' | 'with' | 'without';
+  dataType?: string;
+};
+
 type BuildItemsQueryParamsInput = {
   userAddress: string;
   page: number;
@@ -16,6 +34,7 @@ type BuildItemsQueryParamsInput = {
   include: string;
   effectiveContainerId?: string;
   effectiveDataTypeId?: string;
+  dataItemFilters?: DataItemApiFilters;
 };
 
 export const DEFAULT_INCLUDE_BY_TYPE: Record<ItemType, string> = {
@@ -55,9 +74,11 @@ export function resolveEffectiveContainerId(
 }
 
 export function resolveEffectiveDataTypeId(
+  type: ItemType,
   dataTypeId?: string,
   selectedDataTypeId?: string | null
 ): string | undefined {
+  if (type !== 'data_item') return undefined;
   return dataTypeId ?? selectedDataTypeId ?? undefined;
 }
 
@@ -79,6 +100,7 @@ export function buildItemsQueryParams({
   include,
   effectiveContainerId,
   effectiveDataTypeId,
+  dataItemFilters,
 }: BuildItemsQueryParamsInput): URLSearchParams {
   const params = new URLSearchParams({
     userAddress,
@@ -92,8 +114,85 @@ export function buildItemsQueryParams({
     params.set('containerId', effectiveContainerId);
   }
 
-  if (effectiveDataTypeId) {
+  if (type === 'data_item' && effectiveDataTypeId) {
     params.set('dataTypeId', effectiveDataTypeId);
+  }
+
+  if (type === 'data_item' && dataItemFilters) {
+    const trimmedQuery = dataItemFilters.query?.trim();
+    if (trimmedQuery) {
+      params.set('dataItemQuery', trimmedQuery);
+    }
+
+    const searchFields = (dataItemFilters.searchFields ?? [])
+      .map((entry) => entry.trim())
+      .filter(Boolean);
+    if (searchFields.length > 0) {
+      params.set('dataItemSearchFields', searchFields.join(','));
+    }
+
+    if (dataItemFilters.verified === 'verified') {
+      params.set('dataItemVerified', 'true');
+    } else if (dataItemFilters.verified === 'unverified') {
+      params.set('dataItemVerified', 'false');
+    }
+
+    if (dataItemFilters.revisions === 'with') {
+      params.set('dataItemHasRevisions', 'true');
+    } else if (dataItemFilters.revisions === 'without') {
+      params.set('dataItemHasRevisions', 'false');
+    }
+
+    if (dataItemFilters.verifications === 'with') {
+      params.set('dataItemHasVerifications', 'true');
+    } else if (dataItemFilters.verifications === 'without') {
+      params.set('dataItemHasVerifications', 'false');
+    }
+
+    const trimmedDataType = dataItemFilters.dataType?.trim();
+    if (trimmedDataType && trimmedDataType !== 'all') {
+      params.set('dataItemDataType', trimmedDataType);
+    }
+
+    const sortBy = dataItemFilters.sortBy ?? 'created_desc';
+    switch (sortBy) {
+      case 'created_desc':
+        params.set('dataItemSortBy', 'created');
+        params.set('dataItemSortDirection', 'desc');
+        break;
+      case 'created_asc':
+        params.set('dataItemSortBy', 'created');
+        params.set('dataItemSortDirection', 'asc');
+        break;
+      case 'name_asc':
+        params.set('dataItemSortBy', 'name');
+        params.set('dataItemSortDirection', 'asc');
+        break;
+      case 'name_desc':
+        params.set('dataItemSortBy', 'name');
+        params.set('dataItemSortDirection', 'desc');
+        break;
+      case 'external_index_asc':
+        params.set('dataItemSortBy', 'external_index');
+        params.set('dataItemSortDirection', 'asc');
+        break;
+      case 'external_index_desc':
+        params.set('dataItemSortBy', 'external_index');
+        params.set('dataItemSortDirection', 'desc');
+        break;
+      case 'external_id_asc':
+        params.set('dataItemSortBy', 'external_id');
+        params.set('dataItemSortDirection', 'asc');
+        break;
+      case 'external_id_desc':
+        params.set('dataItemSortBy', 'external_id');
+        params.set('dataItemSortDirection', 'desc');
+        break;
+      default:
+        params.set('dataItemSortBy', 'created');
+        params.set('dataItemSortDirection', 'desc');
+        break;
+    }
   }
 
   return params;

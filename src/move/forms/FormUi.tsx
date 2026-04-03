@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useCallback, useEffect, useRef, useState } from 'react';
 
 /* ============================================================
    Generic vertical-aligned form row
@@ -20,6 +20,69 @@ export const FormRow: React.FC<FormRowProps> = ({ label, children }) => (
     </div>
   </div>
 );
+
+export type FormNoticeTone = 'danger' | 'success' | 'info';
+
+export type FormNotice = {
+  message: string;
+  tone?: FormNoticeTone;
+};
+
+export function useTimedFormNotice(autoHideMs = 15000) {
+  const [notice, setNotice] = useState<FormNotice | null>(null);
+  const timerRef = useRef<number | null>(null);
+  const tokenRef = useRef(0);
+
+  const clearTimer = useCallback(() => {
+    if (timerRef.current != null) {
+      window.clearTimeout(timerRef.current);
+      timerRef.current = null;
+    }
+  }, []);
+
+  const clearNotice = useCallback(() => {
+    tokenRef.current += 1;
+    clearTimer();
+    setNotice(null);
+  }, [clearTimer]);
+
+  const showNotice = useCallback(
+    (message: string, tone: FormNoticeTone = 'danger') => {
+      const token = tokenRef.current + 1;
+      tokenRef.current = token;
+      clearTimer();
+      setNotice({ message, tone });
+
+      timerRef.current = window.setTimeout(() => {
+        if (tokenRef.current === token) {
+          setNotice(null);
+          timerRef.current = null;
+        }
+      }, autoHideMs);
+    },
+    [autoHideMs, clearTimer]
+  );
+
+  useEffect(
+    () => () => {
+      clearTimer();
+    },
+    [clearTimer]
+  );
+
+  return { notice, showNotice, clearNotice };
+}
+
+type FormInlineNoticeProps = {
+  notice: FormNotice | null;
+};
+
+export const FormInlineNotice: React.FC<FormInlineNoticeProps> = ({ notice }) =>
+  notice ? (
+    <small className={`form-inline-note text-${notice.tone ?? 'danger'}`}>
+      {notice.message}
+    </small>
+  ) : null;
 
 /* ============================================================
    Checkbox section (Permissions, Events, Flags, etc.)

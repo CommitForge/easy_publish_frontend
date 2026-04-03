@@ -5,6 +5,8 @@ export const FOLLOW_CONTAINERS_DRAFT_STORAGE_KEY =
   'easy_publish.follow_containers.draft.v1';
 export const FOLLOW_CONTAINERS_PUBLISH_INTENT_STORAGE_KEY =
   'easy_publish.follow_containers.publish_intent.v1';
+export const FOLLOW_CONTAINERS_CLEARED_EVENT =
+  'easy_publish.follow_containers.cleared.v1';
 export const UPDATE_CONTAINER_LOAD_SELECTED_INTENT_STORAGE_KEY =
   'easy_publish.intent.update_container.load_selected.v1';
 export const UPDATE_DATA_TYPE_LOAD_SELECTED_INTENT_STORAGE_KEY =
@@ -16,6 +18,29 @@ export type FollowContainerUpdateEntry = {
   container_id: string;
   enabled: boolean;
 };
+
+function hasBrowserStorage(): boolean {
+  return typeof window !== 'undefined';
+}
+
+export function getFollowStorageItem(key: string): string | null {
+  if (!hasBrowserStorage()) return null;
+  const value = window.sessionStorage.getItem(key);
+  window.localStorage.removeItem(key);
+  return value;
+}
+
+export function setFollowStorageItem(key: string, value: string): void {
+  if (!hasBrowserStorage()) return;
+  window.sessionStorage.setItem(key, value);
+  window.localStorage.removeItem(key);
+}
+
+export function removeFollowStorageItem(key: string): void {
+  if (!hasBrowserStorage()) return;
+  window.sessionStorage.removeItem(key);
+  window.localStorage.removeItem(key);
+}
 
 export function isValidObjectId(id: string): boolean {
   return OBJECT_ID_REGEX.test(id.trim());
@@ -222,7 +247,6 @@ function revisionIdsFromUnknown(input: unknown): string[] {
           raw.previous_data_item_ids,
           raw.of,
           raw.items,
-          raw.references,
         ].flatMap((entry) => revisionIdsFromUnknown(entry))
       )
     );

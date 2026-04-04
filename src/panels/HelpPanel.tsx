@@ -1,4 +1,11 @@
-import { FaBookOpen, FaCheckCircle, FaCompass, FaFilter, FaMagic } from 'react-icons/fa';
+import {
+  FaArrowRight,
+  FaBookOpen,
+  FaCheckCircle,
+  FaCompass,
+  FaFilter,
+  FaMagic,
+} from 'react-icons/fa';
 import { t } from '../Config.ts';
 import { useSelection } from '../context/SelectionContext.tsx';
 
@@ -27,24 +34,36 @@ const flowWrapStyle: React.CSSProperties = {
   display: 'flex',
   alignItems: 'center',
   flexWrap: 'wrap',
-  gap: 6,
+  gap: 8,
   margin: '0 0 0.55rem 0',
+  padding: '0.58rem 0.62rem',
+  border: '1px solid rgba(139, 233, 253, 0.35)',
+  borderRadius: 12,
+  background:
+    'linear-gradient(90deg, rgba(139, 233, 253, 0.08), rgba(98, 114, 164, 0.08))',
 };
 
 const flowStepStyle: React.CSSProperties = {
   border: '1px solid rgba(139, 233, 253, 0.4)',
-  background: 'rgba(139, 233, 253, 0.09)',
+  background: 'rgba(139, 233, 253, 0.14)',
   borderRadius: 999,
-  padding: '0.24rem 0.55rem',
-  fontSize: '0.8rem',
-  fontWeight: 600,
+  padding: '0.3rem 0.62rem',
+  fontSize: '0.84rem',
+  fontWeight: 700,
   whiteSpace: 'nowrap',
 };
 
 const flowArrowStyle: React.CSSProperties = {
-  color: 'var(--comment)',
-  opacity: 0.9,
-  fontSize: '0.82rem',
+  width: 24,
+  height: 24,
+  borderRadius: '50%',
+  display: 'inline-flex',
+  alignItems: 'center',
+  justifyContent: 'center',
+  color: 'var(--cyan)',
+  border: '1px solid rgba(139, 233, 253, 0.35)',
+  background: 'rgba(139, 233, 253, 0.12)',
+  opacity: 0.96,
   userSelect: 'none',
 };
 
@@ -143,19 +162,25 @@ export function HelpPanel({ accountAddress }: HelpPanelProps) {
           Quick Start Help
         </h2>
         <p style={introStyle}>
-          Use this checklist to get started quickly. Recommended flow:
+          Use this checklist to get started quickly. The required flow is usually:
         </p>
         <div style={flowWrapStyle} aria-label="Recommended data flow">
           <span style={flowStepStyle}>{t('container.singular')}</span>
-          <span style={flowArrowStyle}>→</span>
+          <span style={flowArrowStyle}>
+            <FaArrowRight />
+          </span>
           <span style={flowStepStyle}>{t('type.singular')}</span>
-          <span style={flowArrowStyle}>→</span>
+          <span style={flowArrowStyle}>
+            <FaArrowRight />
+          </span>
           <span style={flowStepStyle}>{t('item.singular')}</span>
-          <span style={flowArrowStyle}>→</span>
+          <span style={flowArrowStyle}>
+            <FaArrowRight />
+          </span>
           <span style={flowStepStyle}>{t('itemVerification.singular')}</span>
         </div>
         <p style={introNoteStyle}>
-          All data is published to the IOTA blockchain, then indexed and displayed here.
+          All data is published to the IOTA blockchain, then indexed and displayed on the website.
         </p>
 
         <div style={gridStyle}>

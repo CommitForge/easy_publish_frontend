@@ -191,8 +191,18 @@ export function HelpPanel({ accountAddress }: HelpPanelProps) {
             </h3>
             <ul style={listStyle}>
               <li>Connect your wallet first.</li>
-              <li>Select a {t('container.singular')} in {t('browse.containers')}.</li>
-              <li>Select a {t('type.singular')} in {t('browse.types')}.</li>
+              <li>
+                Use <strong>{t('menu')}</strong> to expand/collapse the sidebar and open{' '}
+                <strong>{t('help')}</strong> anytime for guidance.
+              </li>
+              <li>
+                Work through the main sections: <strong>ADD DATA</strong>, <strong>VIEW DATA</strong>,{' '}
+                <strong>RECEIVED DATA</strong>, and <strong>FOLLOW DATA</strong>.
+              </li>
+              <li>
+                Start with <strong>Dashboard</strong>, then select context in{' '}
+                <strong>{t('browse.containers')}</strong> and <strong>{t('browse.types')}</strong>.
+              </li>
               <li>Disabled menu entries show tooltips with exact requirements.</li>
             </ul>
           </article>
@@ -204,16 +214,23 @@ export function HelpPanel({ accountAddress }: HelpPanelProps) {
             </h3>
             <ul style={listStyle}>
               <li>
-                Use <strong>ADD DATA</strong> to create/publish records.
+                Create data from <strong>{t('actions.new')} {t('container.singular')}</strong>,{' '}
+                <strong>{t('actions.new')} {t('type.singular')}</strong>,{' '}
+                <strong>{t('actions.new')} {t('item.singular')}</strong>, and{' '}
+                <strong>{t('actions.new')} {t('itemVerification.singular')}</strong>.
               </li>
               <li>
-                Use <strong>Check content</strong> for JSON/XML detection and validation.
+                Container actions under the container sub-menu: <strong>{t('container.singular')} {t('actions.edit')}</strong>,{' '}
+                <strong>{t('actions.attach')}</strong>, <strong>{t('actions.addOwner')}</strong>, and{' '}
+                <strong>{t('actions.removeOwner')}</strong>.
               </li>
               <li>
-                Use <strong>Auto compact</strong> and optional <strong>Auto zip</strong> before
-                submit.
+                Type action under the type sub-menu: <strong>{t('type.singular')} {t('actions.edit')}</strong>.
               </li>
-              <li>Use Preview to inspect the exact payload before publishing.</li>
+              <li>
+                In publish forms, use <strong>Check content</strong>, <strong>Auto compact</strong>,{' '}
+                optional <strong>Auto zip</strong>, and <strong>Preview</strong> before submit.
+              </li>
             </ul>
           </article>
 
@@ -224,15 +241,19 @@ export function HelpPanel({ accountAddress }: HelpPanelProps) {
             </h3>
             <ul style={listStyle}>
               <li>
-                <strong>{t('browse.items')}</strong>: filtered by selected context.
+                Use <strong>{t('browse.containers')}</strong> to manage selected container context.
               </li>
               <li>
-                <strong>{t('browse.itemVerifications')}</strong>: requires selected{' '}
-                {t('container.singular')}.
+                Browse related metadata in <strong>{t('browse.containerChildLinks')}</strong> and{' '}
+                <strong>{t('browse.owners')}</strong>.
               </li>
               <li>
-                <strong>{t('browse.receivedItems')}</strong> and{' '}
-                <strong>{t('browse.receivedItemVerifications')}</strong>: review incoming data.
+                Use <strong>{t('browse.types')}</strong>, <strong>{t('browse.items')}</strong>, and{' '}
+                <strong>{t('browse.itemVerifications')}</strong> (requires selected {t('container.singular')}).
+              </li>
+              <li>
+                Review incoming data in <strong>{t('browse.receivedItems')}</strong> and{' '}
+                <strong>{t('browse.receivedItemVerifications')}</strong>.
               </li>
             </ul>
           </article>
@@ -240,13 +261,18 @@ export function HelpPanel({ accountAddress }: HelpPanelProps) {
           <article style={cardStyle}>
             <h3 style={cardTitleStyle}>
               <FaMagic />
-              4. Content Options
+              4. Content and Follow Options
             </h3>
             <ul style={listStyle}>
               <li>Auto compact minifies JSON/XML formatting before publish.</li>
               <li>Auto zip stores content as `EPZIP1:gzip+base64:...` (experimental).</li>
               <li>Auto unzip decodes those values for readable UI/tables.</li>
               <li>Orange hints indicate invalid JSON/XML or ineffective zip savings.</li>
+              <li>
+                In <strong>FOLLOW DATA</strong>, queue updates with <strong>Follow</strong> and{' '}
+                <strong>Unfollow</strong>, publish with <strong>Publish Pending</strong>, and inspect
+                with <strong>View Followed</strong> / <strong>Hide Followed</strong>.
+              </li>
             </ul>
           </article>
         </div>

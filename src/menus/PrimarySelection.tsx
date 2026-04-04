@@ -11,4 +11,7 @@ export type PrimarySelection =
   | 'attachChild'
   | 'addOwner'
   | 'removeOwner'
-  | 'items';
+  | 'items'
+  | 'receivedItems'
+  | 'itemVerifications'
+  | 'receivedItemVerifications';

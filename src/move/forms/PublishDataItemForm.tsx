@@ -1,7 +1,14 @@
 import { useSignAndExecuteTransaction } from '@iota/dapp-kit';
 import { useState, useEffect, useCallback } from 'react';
 import { Transaction } from '@iota/iota-sdk/transactions';
-import { FormInlineNotice, FormRow, useTimedFormNotice } from './FormUi.tsx';
+import {
+  ContentAutoCompressToggle,
+  ContentAutoZipToggle,
+  ContentCheckInline,
+  FormInlineNotice,
+  FormRow,
+  useTimedFormNotice,
+} from './FormUi.tsx';
 import { FormSectionRow } from './CollapsibleFormSectionRow.tsx';
 import { TxDigestResult } from './TxDigestResult.tsx';
 import { moveTarget, submitTx } from './TransactionUtils.tsx';
@@ -16,6 +23,7 @@ import {
   FOLLOW_CONTAINERS_PUBLISH_INTENT_STORAGE_KEY,
   getFollowStorageItem,
   getCarsContentJson,
+  formatAddressList,
   isCarsInstance,
   mergeContentWithFollowContainers,
   mergeContentWithRevisions,
@@ -23,6 +31,7 @@ import {
   removeFollowStorageItem,
   type FollowContainerUpdateEntry,
 } from './FormUtils.tsx';
+import { prepareContentForPublish } from './ContentCompaction.ts';
 import {
   CLOCK_ID,
   DATA_ITEM_CHAIN,
@@ -32,6 +41,8 @@ import { useSelection } from '../../context/SelectionContext';
 import { t } from '../../Config.ts';
 import CarMaintenanceEditor from './editor/CarMaintenanceEditor.tsx';
 import FollowContainerEditor from './editor/FollowContainerEditor.tsx';
+import ObjectIdListTextarea from './editor/ObjectIdListTextarea.tsx';
+import { RecipientsReferencesSection } from './RecipientsReferencesSection.tsx';
 
 export function PublishDataItemForm({ address }: { address: string }) {
   const { mutate: signAndExecuteTransaction } = useSignAndExecuteTransaction();
@@ -64,6 +75,26 @@ export function PublishDataItemForm({ address }: { address: string }) {
     revisionOf: '',
     revisionChange: '',
   });
+  const [contentCheckSignal, setContentCheckSignal] = useState(0);
+  const [autoCompressContent, setAutoCompressContent] = useState(true);
+  const [autoZipContent, setAutoZipContent] = useState(false);
+
+  const triggerContentCheck = useCallback(() => {
+    setContentCheckSignal((signal) => signal + 1);
+  }, []);
+
+  const renderContentPublishOptions = () => (
+    <>
+      <ContentAutoCompressToggle
+        enabled={autoCompressContent}
+        onChange={setAutoCompressContent}
+      />
+      <ContentAutoZipToggle
+        enabled={autoZipContent}
+        onChange={setAutoZipContent}
+      />
+    </>
+  );
 
   useEffect(() => {
     if (carsMode && !followTemplateMode) {
@@ -156,8 +187,10 @@ export function PublishDataItemForm({ address }: { address: string }) {
       if (!res.ok) throw new Error(t('messages.failedLoadDataItem'));
       const data = await res.json();
       const normalizeReferenceField = (value: unknown): string => {
-        if (Array.isArray(value)) return value.join(',');
-        if (typeof value === 'string') return value;
+        if (Array.isArray(value)) {
+          return formatAddressList(value.filter((entry): entry is string => typeof entry === 'string'));
+        }
+        if (typeof value === 'string') return formatAddressList([value]);
         return '';
       };
       const revisionIds = extractRevisionIdsFromContent(data.content ?? '');
@@ -173,7 +206,7 @@ export function PublishDataItemForm({ address }: { address: string }) {
         content: data.content ?? '',
         externalIndex: data.externalIndex ?? 0,
         reference: normalizeReferenceField(data.reference ?? data.references),
-        revisionOf: revisionIds.join(','),
+        revisionOf: formatAddressList(revisionIds),
         revisionChange,
       });
     } catch (err) {
@@ -346,6 +379,24 @@ export function PublishDataItemForm({ address }: { address: string }) {
       : revisionIdsFromInput.length > 0 || revisionIdsFromContent.length > 0
       ? mergeContentWithRevisions(form.content, revisionIds, form.revisionChange)
       : form.content;
+    let preparedContent;
+    try {
+      preparedContent = await prepareContentForPublish(contentWithRevisions, {
+        autoCompressEnabled: autoCompressContent,
+        autoZipEnabled: autoZipContent,
+      });
+    } catch (error) {
+      console.error(error);
+      showNotice('Failed to encode content for Auto zip.');
+      return;
+    }
+    if (autoZipContent && !preparedContent.zipSupported) {
+      showNotice(
+        'Auto zip is not supported in this browser/runtime. Disable Auto zip or use a newer browser.'
+      );
+      return;
+    }
+    const contentForPublish = preparedContent.content;
 
     tx.moveCall({
       target: moveTarget('publish_data_item'),
@@ -357,7 +408,7 @@ export function PublishDataItemForm({ address }: { address: string }) {
         tx.pure.option('vector<address>', recipientAddrs.length > 0 ? recipientAddrs : null),
         tx.pure.string(form.name.trim()),
         tx.pure.string(form.description.trim()),
-        tx.pure.string(contentWithRevisions.trim()),
+        tx.pure.string(contentForPublish),
         tx.pure.u128(BigInt(form.externalIndex)),
         tx.pure.option(
           'vector<address>',
@@ -375,9 +426,9 @@ export function PublishDataItemForm({ address }: { address: string }) {
       <div className="form-wrapper">
         <h5>{t('actions.publish')} {t('item.singular')}</h5>
 
-        <div className="mb-3 d-flex gap-2 justify-content-center">
+        <div className="mb-3 bp-form-top-actions">
           <button
-            className="btn btn-outline-secondary btn-sm w-50"
+            className="btn btn-outline-secondary btn-sm bp-form-top-action-btn"
             onClick={() => selectedDataItemId && loadSelectedDataItem(selectedDataItemId)}
             disabled={!selectedDataItemId}
           >
@@ -385,14 +436,14 @@ export function PublishDataItemForm({ address }: { address: string }) {
           </button>
 
           <button
-            className="btn btn-outline-info btn-sm w-50"
+            className="btn btn-outline-info btn-sm bp-form-top-action-btn"
             onClick={loadContainerAndType}
             disabled={!selectedContainerId || !selectedDataTypeId}
           >
             {t('container.singular')} & {t('type.singular')}
           </button>
 
-          <button className="btn btn-outline-danger btn-sm w-50" onClick={clearForm}>
+          <button className="btn btn-outline-danger btn-sm bp-form-top-action-btn" onClick={clearForm}>
             {t('actions.clearAll')}
           </button>
         </div>
@@ -462,24 +513,40 @@ export function PublishDataItemForm({ address }: { address: string }) {
           {!followTemplateMode &&
             (!carsMode ? (
               <FormRow label={t('fields.content') + ' (' + t('optional') + ')'}>
-                <textarea
-                  className="form-control form-control-sm w-100"
-                  rows={3}
-                  value={form.content}
-                  onChange={(e) => setForm({ ...form, content: e.target.value })}
-                />
+                <>
+                  <textarea
+                    className="form-control form-control-sm w-100"
+                    rows={3}
+                    value={form.content}
+                    onChange={(e) => setForm({ ...form, content: e.target.value })}
+                    onBlur={triggerContentCheck}
+                  />
+                  <ContentCheckInline
+                    content={form.content}
+                    autoCheckSignal={contentCheckSignal}
+                    rightControl={renderContentPublishOptions()}
+                  />
+                </>
               </FormRow>
             ) : (
               <FormRow label="Car Maintenance Entry">
-                <CarMaintenanceEditor
-                  value={form.content}
-                  onChange={(json) =>
-                    setForm((f) => ({
-                      ...f,
-                      content: json,
-                    }))
-                  }
-                />
+                <>
+                  <CarMaintenanceEditor
+                    value={form.content}
+                    onChange={(json) =>
+                      setForm((f) => ({
+                        ...f,
+                        content: json,
+                      }))
+                    }
+                    onBlur={triggerContentCheck}
+                  />
+                  <ContentCheckInline
+                    content={form.content}
+                    autoCheckSignal={contentCheckSignal}
+                    rightControl={renderContentPublishOptions()}
+                  />
+                </>
               </FormRow>
             ))}
         </FormSectionRow>
@@ -490,15 +557,23 @@ export function PublishDataItemForm({ address }: { address: string }) {
             description="Queued updates apply on publish."
           >
             <FormRow label="Updates">
-              <FollowContainerEditor
-                value={form.content}
-                onChange={(json) =>
-                  setForm((f) => ({
-                    ...f,
-                    content: json,
-                  }))
-                }
-              />
+              <>
+                <FollowContainerEditor
+                  value={form.content}
+                  onChange={(json) =>
+                    setForm((f) => ({
+                      ...f,
+                      content: json,
+                    }))
+                  }
+                  onBlur={triggerContentCheck}
+                />
+                <ContentCheckInline
+                  content={form.content}
+                  autoCheckSignal={contentCheckSignal}
+                  rightControl={renderContentPublishOptions()}
+                />
+              </>
             </FormRow>
           </FormSectionRow>
         )}
@@ -528,45 +603,39 @@ export function PublishDataItemForm({ address }: { address: string }) {
           </>
         )}
 
-            <FormSectionRow title={t('labels.recipientsAndReferences')} description={t('messages.optionalRecipientsReference')}>
-              <FormRow label={t('fields.recipients')}>
-                <input
-                  className="form-control form-control-sm w-100"
-                  placeholder="0x...,0x..."
-                  value={form.recipients}
-                  onChange={(e) => setForm({ ...form, recipients: e.target.value })}
-                />
-              </FormRow>
-
-              <FormRow label={t('fields.references')}>
-                <input
-                  className="form-control form-control-sm w-100"
-                  placeholder="0x...,0x..."
-                  value={form.reference}
-                  onChange={(e) => setForm({ ...form, reference: e.target.value })}
-                />
-              </FormRow>
-            </FormSectionRow>
+            <RecipientsReferencesSection
+              recipientsValue={form.recipients}
+              referencesValue={form.reference}
+              onRecipientsChange={(nextValue) =>
+                setForm({ ...form, recipients: nextValue })
+              }
+              onReferencesChange={(nextValue) =>
+                setForm({ ...form, reference: nextValue })
+              }
+              sourceType="data_item"
+              sourceContainerId={form.container}
+              sourceDataItemId={selectedDataItemId ?? undefined}
+            />
 
             {!followTemplateMode && (
               <FormSectionRow
-                title="Revisions (Advanced)"
-                description="Special-case lineage metadata"
+                title={t('labels.revisionsAdvanced')}
+                description={t('messages.revisionsAdvancedDescription')}
                 defaultCollapsed={true}
               >
-                <FormRow label="Revisions (previous Data Item IDs)">
-                  <input
-                    className={`form-control form-control-sm w-100 ${
-                      invalidFields.revisionOf ? 'is-invalid' : ''
-                    }`}
-                    placeholder="0x...,0x..."
+                <FormRow label={t('labels.revisionsPreviousItems')}>
+                  <ObjectIdListTextarea
                     value={form.revisionOf}
-                    onChange={(e) => {
-                      setForm({ ...form, revisionOf: e.target.value });
+                    onChange={(nextValue) => {
+                      setForm({ ...form, revisionOf: nextValue });
                       if (invalidFields.revisionOf) {
                         setInvalidFields((prev) => ({ ...prev, revisionOf: false }));
                       }
                     }}
+                    placeholder={t('messages.objectIdListPlaceholder')}
+                    rows={4}
+                    invalid={invalidFields.revisionOf}
+                    helperText={t('messages.idListDelimiterHint')}
                   />
                   <small className="muted">
                     IDs entered here are written to <code>easy_publish.revisions</code> only.
@@ -574,11 +643,11 @@ export function PublishDataItemForm({ address }: { address: string }) {
                   </small>
                 </FormRow>
 
-                <FormRow label="Revision change description">
+                <FormRow label={t('labels.revisionChangeDescription')}>
                   <textarea
                     className="form-control form-control-sm w-100"
                     rows={2}
-                    placeholder="What changed in this revision?"
+                    placeholder={t('messages.revisionChangePlaceholder')}
                     value={form.revisionChange}
                     onChange={(e) => setForm({ ...form, revisionChange: e.target.value })}
                   />
@@ -601,7 +670,7 @@ export function PublishDataItemForm({ address }: { address: string }) {
               disabled={validatingRevisions}
             >
               {validatingRevisions
-                ? 'Validating revisions...'
+                ? t('messages.validatingRevisions')
                 : `${t('actions.publish')} ${t('item.singular')}`}
             </button>
 

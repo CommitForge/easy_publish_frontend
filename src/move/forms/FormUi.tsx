@@ -1,4 +1,5 @@
 import React, { useCallback, useEffect, useRef, useState } from 'react';
+import { t } from '../../Config.ts';
 
 /* ============================================================
    Generic vertical-aligned form row
@@ -11,11 +12,11 @@ export type FormRowProps = {
 };
 
 export const FormRow: React.FC<FormRowProps> = ({ label, children }) => (
-  <div className="row align-items-center mb-3">
-    <label className="col-4 col-form-label text-end">
+  <div className="row g-1 g-sm-2 align-items-start mb-3 bp-form-row">
+    <label className="col-12 col-sm-4 col-form-label text-start text-sm-end bp-form-row-label">
       {label}
     </label>
-    <div className="col-8">
+    <div className="col-12 col-sm-8 bp-form-row-input">
       {children}
     </div>
   </div>
@@ -83,6 +84,212 @@ export const FormInlineNotice: React.FC<FormInlineNoticeProps> = ({ notice }) =>
       {notice.message}
     </small>
   ) : null;
+
+type ContentCheckResult = {
+  message: string;
+  tone: FormNoticeTone;
+};
+
+function isLikelyJson(content: string): boolean {
+  const trimmed = content.trim();
+  if (!trimmed) return false;
+  if (trimmed.startsWith('{') || trimmed.startsWith('[')) return true;
+  return /"\s*:\s*/.test(trimmed);
+}
+
+function isLikelyXml(content: string): boolean {
+  const trimmed = content.trim();
+  if (!trimmed) return false;
+  if (!trimmed.startsWith('<')) return false;
+  if (/^<\?xml[\s>]/i.test(trimmed)) return true;
+  return /<([A-Za-z_][\w:.-]*)(\s[^>]*)?>/.test(trimmed);
+}
+
+function isValidXml(content: string): boolean {
+  try {
+    const parser = new DOMParser();
+    const parsed = parser.parseFromString(content, 'application/xml');
+    return parsed.getElementsByTagName('parsererror').length === 0;
+  } catch {
+    return false;
+  }
+}
+
+function detectContentCheckResult(content: string): ContentCheckResult {
+  const trimmed = content.trim();
+  if (!trimmed) {
+    return { message: t('messages.contentCheckPlainText'), tone: 'info' };
+  }
+
+  const jsonLikely = isLikelyJson(trimmed);
+  const xmlLikely = isLikelyXml(trimmed);
+  const startsWith = trimmed[0] ?? '';
+
+  if (startsWith === '{' || startsWith === '[' || (jsonLikely && !xmlLikely)) {
+    try {
+      JSON.parse(trimmed);
+      return { message: t('messages.contentCheckJsonValid'), tone: 'success' };
+    } catch {
+      return { message: t('messages.contentCheckJsonInvalid'), tone: 'danger' };
+    }
+  }
+
+  if (startsWith === '<' || (xmlLikely && !jsonLikely)) {
+    const validXml = isValidXml(trimmed);
+    return {
+      message: validXml
+        ? t('messages.contentCheckXmlValid')
+        : t('messages.contentCheckXmlInvalid'),
+      tone: validXml ? 'success' : 'danger',
+    };
+  }
+
+  return { message: t('messages.contentCheckPlainText'), tone: 'info' };
+}
+
+type ContentCheckInlineProps = {
+  content: string;
+  autoCheckSignal?: number;
+  rightControl?: React.ReactNode;
+};
+
+export const ContentCheckInline: React.FC<ContentCheckInlineProps> = ({
+  content,
+  autoCheckSignal,
+  rightControl,
+}) => {
+  const [result, setResult] = useState<ContentCheckResult | null>(null);
+  const [isChecking, setIsChecking] = useState(false);
+  const isCheckingRef = useRef(false);
+  const runTokenRef = useRef(0);
+  const lastAutoCheckSignalRef = useRef<number | undefined>(autoCheckSignal);
+
+  const runCheck = useCallback(() => {
+    if (isCheckingRef.current) {
+      setResult({ message: t('messages.contentCheckAlreadyRunning'), tone: 'info' });
+      return;
+    }
+
+    isCheckingRef.current = true;
+    setIsChecking(true);
+    const runToken = runTokenRef.current + 1;
+    runTokenRef.current = runToken;
+    const contentSnapshot = content;
+
+    window.setTimeout(() => {
+      if (runTokenRef.current !== runToken) return;
+
+      setResult(detectContentCheckResult(contentSnapshot));
+      isCheckingRef.current = false;
+      setIsChecking(false);
+    }, 0);
+  }, [content]);
+
+  useEffect(() => {
+    runTokenRef.current += 1;
+    isCheckingRef.current = false;
+    setIsChecking(false);
+    setResult(null);
+  }, [content]);
+
+  useEffect(() => {
+    if (autoCheckSignal === undefined) return;
+    if (lastAutoCheckSignalRef.current === undefined) {
+      lastAutoCheckSignalRef.current = autoCheckSignal;
+      return;
+    }
+
+    if (lastAutoCheckSignalRef.current !== autoCheckSignal) {
+      lastAutoCheckSignalRef.current = autoCheckSignal;
+      runCheck();
+    }
+  }, [autoCheckSignal, runCheck]);
+
+  return (
+    <div className="form-content-check-inline">
+      <button
+        type="button"
+        className="form-content-check-trigger"
+        onClick={runCheck}
+        aria-busy={isChecking}
+      >
+        <i className="bi bi-check2-circle" aria-hidden="true" />
+        {t('actions.checkContent')}
+      </button>
+      <span
+        className="form-content-check-help"
+        title={t('messages.contentCheckHelp')}
+        aria-label={t('labels.contentCheckHelp')}
+      >
+        <i className="bi bi-info-circle" aria-hidden="true" />
+      </span>
+      {rightControl ? (
+        <span className="form-content-check-right-control">{rightControl}</span>
+      ) : null}
+      {result ? (
+        <small className={`form-content-check-result text-${result.tone}`}>
+          {result.message}
+        </small>
+      ) : null}
+    </div>
+  );
+};
+
+type ContentAutoCompressToggleProps = {
+  enabled: boolean;
+  onChange: (enabled: boolean) => void;
+};
+
+export const ContentAutoCompressToggle: React.FC<ContentAutoCompressToggleProps> = ({
+  enabled,
+  onChange,
+}) => (
+  <span className="form-content-compress-control">
+    <label className="form-content-compress-toggle">
+      <input
+        type="checkbox"
+        checked={enabled}
+        onChange={(event) => onChange(event.target.checked)}
+      />
+      {t('actions.autoCompress')}
+    </label>
+    <span
+      className="form-content-check-help"
+      title={t('messages.autoCompressHelp')}
+      aria-label={t('labels.autoCompressHelp')}
+    >
+      <i className="bi bi-info-circle" aria-hidden="true" />
+    </span>
+  </span>
+);
+
+type ContentAutoZipToggleProps = {
+  enabled: boolean;
+  onChange: (enabled: boolean) => void;
+};
+
+export const ContentAutoZipToggle: React.FC<ContentAutoZipToggleProps> = ({
+  enabled,
+  onChange,
+}) => (
+  <span className="form-content-compress-control">
+    <label className="form-content-compress-toggle">
+      <input
+        type="checkbox"
+        checked={enabled}
+        onChange={(event) => onChange(event.target.checked)}
+      />
+      {t('actions.autoZip')}
+    </label>
+    <span
+      className="form-content-check-help"
+      title={t('messages.autoZipHelp')}
+      aria-label={t('labels.autoZipHelp')}
+    >
+      <i className="bi bi-info-circle" aria-hidden="true" />
+    </span>
+  </span>
+);
 
 /* ============================================================
    Checkbox section (Permissions, Events, Flags, etc.)

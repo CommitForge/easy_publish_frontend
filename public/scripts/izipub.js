@@ -172,6 +172,10 @@ function printHelp(command = null) {
         '      --private-key <IOTAPRIVKEY>',
         '      Signer private key (or set IOTA_PRIVATE_KEY or IZIPUB_PRIVATE_KEY)',
         '',
+        '      --private-key-file <PATH>',
+        '      File with signer private key',
+        '      (or set IOTA_PRIVATE_KEY_FILE or IZIPUB_PRIVATE_KEY_FILE)',
+        '',
         '      --mnemonic "<words...>"',
         '      Signer mnemonic (or set IOTA_MNEMONIC)',
         '',
@@ -234,6 +238,7 @@ Global options:
   -s, --start-id <ID>   Start object ID, or null for latest
       --network <name>  IOTA network name (default: IOTA_NETWORK / IZIPUB_NETWORK / mainnet)
       --private-key     Signer key for write commands (or IOTA_PRIVATE_KEY or IZIPUB_PRIVATE_KEY)
+      --private-key-file  Path to signer key file (or IOTA_PRIVATE_KEY_FILE or IZIPUB_PRIVATE_KEY_FILE)
       --mnemonic        Signer mnemonic for write commands (or IOTA_MNEMONIC)
       --env-file        Optional env file path for network/signer/MOVE IDs
       --input-file      Optional JSON payload file for write commands
@@ -249,6 +254,7 @@ Examples:
   node izipub.js object 0x...
   node izipub.js container-links 0x... -n 50 -s null
   node izipub.js create-container --name "My Container" --private-key iotaprivkey...
+  node izipub.js create-container --name "My Container" --private-key-file ./.secrets/iota.key
   node izipub.js create-container --name "My Container" --env-file ./.env.cli
   node izipub.js create-data-type --container-id 0x... --name "Invoice" --private-key iotaprivkey...
   node izipub.js publish-data-item --container-id 0x... --data-type-id 0x... --name "Item A" --description "..." --content "..." --private-key iotaprivkey...

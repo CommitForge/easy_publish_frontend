@@ -2,6 +2,14 @@ import type { Item, ItemRevision } from '../move/types';
 
 const OBJECT_ID_REGEX = /^0x[a-fA-F0-9]{64}$/;
 
+type TreeExtractType =
+  | 'container'
+  | 'data_type'
+  | 'data_item'
+  | 'received_data_item'
+  | 'data_item_verification'
+  | 'received_data_item_verification';
+
 function uniq(values: string[]): string[] {
   return Array.from(new Set(values));
 }
@@ -56,6 +64,20 @@ function parseContentObject(content: unknown): Record<string, unknown> | null {
 
 function toVerifiedString(value: unknown): string {
   if (value == null) return '';
+  if (typeof value === 'boolean') return value ? 'true' : 'false';
+  if (typeof value === 'number') {
+    if (value === 1) return 'true';
+    if (value === 0) return 'false';
+  }
+  if (typeof value === 'string') {
+    const normalized = value.trim().toLowerCase();
+    if (normalized === 'true' || normalized === '1' || normalized === 'yes') {
+      return 'true';
+    }
+    if (normalized === 'false' || normalized === '0' || normalized === 'no') {
+      return 'false';
+    }
+  }
   return value ? 'true' : 'false';
 }
 
@@ -136,6 +158,7 @@ function normalizeDataItemVerification(verificationNode: any) {
     verificationNode?.verification ??
     verificationNode ??
     {};
+  const recipients = normalizeVerificationRecipients(raw, verificationNode ?? {});
 
   return {
     id: raw.id ?? raw.object_id ?? '',
@@ -145,9 +168,11 @@ function normalizeDataItemVerification(verificationNode: any) {
     description: raw.description ?? '',
     content: raw.content ?? '',
     verified: toVerifiedString(raw.verified),
-    creatorAddr: raw.creator?.creatorAddr ?? '',
+    creatorAddr: raw.creator?.creatorAddr ?? raw.creatorAddr ?? '',
     externalId: raw.externalId ?? raw.external_id ?? '',
     externalIndex: raw.externalIndex ?? raw.external_index ?? '',
+    recipients,
+    recipientCount: recipients.length,
   };
 }
 
@@ -161,6 +186,98 @@ function normalizeReferenceIds(rawDataItem: any): string[] {
       rawDataItem?.refs,
     ].flatMap((entry) => toObjectIdList(entry))
   );
+}
+
+function collectAddressLikeStrings(value: unknown): string[] {
+  if (value == null) return [];
+
+  if (Array.isArray(value)) {
+    return uniq(value.flatMap((entry) => collectAddressLikeStrings(entry)));
+  }
+
+  if (typeof value === 'string') {
+    return value
+      .split(',')
+      .map((part) => part.trim())
+      .filter(Boolean);
+  }
+
+  if (typeof value === 'object') {
+    const obj = value as Record<string, unknown>;
+    return uniq(
+      [
+        obj.address,
+        obj.value,
+        obj.recipient,
+        obj.recipients,
+        obj.recipientAddress,
+        obj.recipientAddresses,
+        obj.recipient_address,
+        obj.recipient_addresses,
+      ].flatMap((entry) => collectAddressLikeStrings(entry))
+    );
+  }
+
+  return [];
+}
+
+function normalizeRecipients(dataItemRaw: Record<string, unknown>, wrapperRaw: Record<string, unknown>): string[] {
+  return uniq(
+    [
+      dataItemRaw.recipients,
+      dataItemRaw.recipient,
+      dataItemRaw.recipientAddress,
+      dataItemRaw.recipientAddresses,
+      dataItemRaw.recipient_address,
+      dataItemRaw.recipient_addresses,
+      wrapperRaw.recipients,
+      wrapperRaw.recipient,
+      wrapperRaw.recipientAddress,
+      wrapperRaw.recipientAddresses,
+      wrapperRaw.recipient_address,
+      wrapperRaw.recipient_addresses,
+    ].flatMap((entry) => collectAddressLikeStrings(entry))
+  );
+}
+
+function normalizeVerificationRecipients(
+  verificationRaw: Record<string, unknown>,
+  wrapperRaw: Record<string, unknown>
+): string[] {
+  return uniq(
+    [
+      verificationRaw.recipients,
+      verificationRaw.recipient,
+      verificationRaw.recipientAddress,
+      verificationRaw.recipientAddresses,
+      verificationRaw.recipient_address,
+      verificationRaw.recipient_addresses,
+      wrapperRaw.recipients,
+      wrapperRaw.recipient,
+      wrapperRaw.recipientAddress,
+      wrapperRaw.recipientAddresses,
+      wrapperRaw.recipient_address,
+      wrapperRaw.recipient_addresses,
+    ].flatMap((entry) => collectAddressLikeStrings(entry))
+  );
+}
+
+function extractVerificationNodes(wrapperRaw: Record<string, unknown>): Record<string, unknown>[] {
+  const candidates = [
+    wrapperRaw.dataItemVerifications,
+    wrapperRaw.verifications,
+    wrapperRaw.data_item_verifications,
+  ];
+
+  for (const candidate of candidates) {
+    if (Array.isArray(candidate)) {
+      return candidate.filter(
+        (entry): entry is Record<string, unknown> => !!entry && typeof entry === 'object'
+      );
+    }
+  }
+
+  return [];
 }
 
 function extractRevisionSetting(content: unknown): {
@@ -203,8 +320,7 @@ function extractRevisionSetting(content: unknown): {
 
     // Keep semantics parallel with publish.targets[*].enabled:
     // object form is opt-in and requires explicit enabled=true.
-    const enabled =
-      typeof raw.enabled === 'boolean' ? raw.enabled : false;
+    const enabled = typeof raw.enabled === 'boolean' ? raw.enabled : false;
 
     return { enabled, explicitPreviousIds };
   }
@@ -232,19 +348,15 @@ function buildItemRevisions(
 
 /**
  * Extracts flattened UI records from the nested backend tree structure.
- * Handles different item types (container, data_type, data_item) with type-specific logic.
- *
- * @param tree - The nested tree structure from the API
- * @param type - The type of items to extract
- * @param effectiveContainerId - The selected container ID (for data_type and data_item)
- * @param effectiveDataTypeId - The selected data type ID (for data_item)
- * @returns Array of flattened Item objects for UI display
+ * Handles different item types (container, data_type, data_item, received_data_item,
+ * data_item_verification) with type-specific logic.
  */
 export function extractItemsFromTree(
   tree: any,
-  type: 'container' | 'data_type' | 'data_item',
+  type: TreeExtractType,
   effectiveContainerId?: string,
-  effectiveDataTypeId?: string
+  effectiveDataTypeId?: string,
+  effectiveDataItemId?: string
 ): Item[] {
   if (!tree?.containers) return [];
 
@@ -260,14 +372,17 @@ export function extractItemsFromTree(
     }));
   }
 
-  // Find the container node for data_type and data_item
-  const containerNode = tree.containers.find(
-    (c: any) => c.container.id === effectiveContainerId
-  );
-  if (!containerNode) return [];
+  const containerNodes = (
+    effectiveContainerId
+      ? tree.containers.filter((c: any) => c?.container?.id === effectiveContainerId)
+      : tree.containers
+  ) as any[];
+
+  if (containerNodes.length === 0) return [];
 
   if (type === 'data_type') {
-    return (containerNode.dataTypes ?? []).map((dt: any) => ({
+    const singleContainerNode = containerNodes[0];
+    return (singleContainerNode.dataTypes ?? []).map((dt: any) => ({
       object_id: dt.dataType.id,
       fields: {
         name: dt.dataType.name,
@@ -279,65 +394,140 @@ export function extractItemsFromTree(
     }));
   }
 
-  if (type === 'data_item') {
+  if (type === 'data_item' || type === 'received_data_item') {
     const rows: Item[] = [];
-    const sameContainerDataItemIds = new Set<string>();
 
-    (containerNode.dataTypes ?? []).forEach((dt: any) => {
-      (dt.dataItems ?? []).forEach((di: any) => {
-        const dataItemId = di?.dataItem?.id;
-        if (typeof dataItemId === 'string' && OBJECT_ID_REGEX.test(dataItemId)) {
-          sameContainerDataItemIds.add(dataItemId);
-        }
+    containerNodes.forEach((containerNode: any) => {
+      const sameContainerDataItemIds = new Set<string>();
+      (containerNode.dataTypes ?? []).forEach((dt: any) => {
+        (dt.dataItems ?? []).forEach((di: any) => {
+          const dataItemId = di?.dataItem?.id;
+          if (typeof dataItemId === 'string' && OBJECT_ID_REGEX.test(dataItemId)) {
+            sameContainerDataItemIds.add(dataItemId);
+          }
+        });
       });
-    });
 
-    (containerNode.dataTypes ?? []).forEach((dt: any) => {
-      const dtId = dt.dataType.id;
-      // Filter by dataTypeId if specified
-      if (effectiveDataTypeId && dtId !== effectiveDataTypeId) return;
+      const containerName = containerNode?.container?.name ?? '';
 
-      const dataTypeName = dt.dataType.name;
+      (containerNode.dataTypes ?? []).forEach((dt: any) => {
+        const dtId = dt.dataType.id;
+        if (effectiveDataTypeId && dtId !== effectiveDataTypeId) return;
 
-      (dt.dataItems ?? []).forEach((di: any) => {
-        const referenceIds = normalizeReferenceIds(di.dataItem);
-        const revisions = buildItemRevisions(
-          di.dataItem.content,
-          sameContainerDataItemIds
-        );
-        const { createdOnChain, createdOnChainMs } = normalizeCreatedOnChain(
-          di.dataItem,
-          di
-        );
+        const dataTypeName = dt.dataType.name;
 
-        rows.push({
-          object_id: di.dataItem.id,
-          fields: {
-            dataType: dataTypeName,
-            name: di.dataItem.name,
-            description: di.dataItem.description,
-            content: di.dataItem.content,
-            externalId: di.dataItem.externalId,
-            containerId: di.dataItem.containerId,
-            dataTypeId: di.dataItem.dataTypeId,
-            verified: toVerifiedString(di.dataItem.verified),
-            creatorAddr: di.dataItem.creator?.creatorAddr ?? '',
-            externalIndex: di.dataItem.externalIndex ?? '',
-            createdOnChain,
-            createdOnChainMs,
-            referenceIds,
-            revisions,
-            dataItemVerifications: Array.isArray(di.dataItemVerifications)
-              ? di.dataItemVerifications.map(normalizeDataItemVerification)
-              : Array.isArray(di.verifications)
-              ? di.verifications.map(normalizeDataItemVerification)
-              : Array.isArray(di.data_item_verifications)
-              ? di.data_item_verifications.map(normalizeDataItemVerification)
-              : [],
-          },
+        (dt.dataItems ?? []).forEach((di: any) => {
+          const dataItemRaw = (di?.dataItem ?? {}) as Record<string, unknown>;
+          const wrapperRaw = (di ?? {}) as Record<string, unknown>;
+
+          const referenceIds = normalizeReferenceIds(di.dataItem);
+          const revisions = buildItemRevisions(di.dataItem.content, sameContainerDataItemIds);
+          const { createdOnChain, createdOnChainMs } = normalizeCreatedOnChain(di.dataItem, di);
+          const recipients = normalizeRecipients(dataItemRaw, wrapperRaw);
+          const dataItemVerifications = extractVerificationNodes(wrapperRaw).map(
+            normalizeDataItemVerification
+          );
+
+          rows.push({
+            object_id: di.dataItem.id,
+            fields: {
+              containerName,
+              dataType: dataTypeName,
+              name: di.dataItem.name,
+              description: di.dataItem.description,
+              content: di.dataItem.content,
+              externalId: di.dataItem.externalId,
+              containerId: di.dataItem.containerId,
+              dataTypeId: di.dataItem.dataTypeId,
+              verified: toVerifiedString(di.dataItem.verified),
+              creatorAddr: di.dataItem.creator?.creatorAddr ?? '',
+              externalIndex: di.dataItem.externalIndex ?? '',
+              createdOnChain,
+              createdOnChainMs,
+              referenceIds,
+              revisions,
+              recipients,
+              hasRecipients: recipients.length > 0,
+              dataItemVerificationCount: dataItemVerifications.length,
+              dataItemVerifications,
+            },
+          });
         });
       });
     });
+
+    return rows;
+  }
+
+  if (
+    type === 'data_item_verification' ||
+    type === 'received_data_item_verification'
+  ) {
+    const rows: Item[] = [];
+
+    containerNodes.forEach((containerNode: any) => {
+      const containerName = containerNode?.container?.name ?? '';
+
+      (containerNode.dataTypes ?? []).forEach((dt: any) => {
+        const dtId = dt?.dataType?.id;
+        if (effectiveDataTypeId && dtId !== effectiveDataTypeId) return;
+
+        const dataTypeName = dt?.dataType?.name ?? '';
+
+        (dt.dataItems ?? []).forEach((di: any) => {
+          const dataItemId = di?.dataItem?.id ?? '';
+          if (effectiveDataItemId && dataItemId !== effectiveDataItemId) return;
+
+          const dataItemName = di?.dataItem?.name ?? '';
+          const dataItemDescription = di?.dataItem?.description ?? '';
+          const dataItemRaw = (di?.dataItem ?? {}) as Record<string, unknown>;
+          const wrapperRaw = (di ?? {}) as Record<string, unknown>;
+          const recipients = normalizeRecipients(dataItemRaw, wrapperRaw);
+
+          const verifications = extractVerificationNodes(wrapperRaw);
+          verifications.forEach((rawVerification, index) => {
+            const verification = normalizeDataItemVerification(rawVerification);
+            const normalizedVerificationRaw = (rawVerification?.dataItemVerification ??
+              rawVerification?.verification ??
+              rawVerification ??
+              {}) as Record<string, unknown>;
+            const verificationRecipients = normalizeVerificationRecipients(
+              normalizedVerificationRaw,
+              (rawVerification ?? {}) as Record<string, unknown>
+            );
+            const normalizedId =
+              typeof verification.id === 'string' && verification.id.trim().length > 0
+                ? verification.id.trim()
+                : `${dataItemId}-verification-${index}`;
+
+            rows.push({
+              object_id: normalizedId,
+              fields: {
+                containerName,
+                containerId: verification.containerId || di?.dataItem?.containerId || '',
+                dataType: dataTypeName,
+                dataTypeId: dtId ?? '',
+                dataItemId,
+                dataItemName,
+                dataItemDescription,
+                dataItemRecipients: recipients,
+                recipients: verificationRecipients,
+                hasRecipients: verificationRecipients.length > 0,
+                recipientCount: verificationRecipients.length,
+                name: verification.name,
+                description: verification.description,
+                content: verification.content,
+                verified: verification.verified,
+                creatorAddr: verification.creatorAddr,
+                externalId: verification.externalId,
+                externalIndex: verification.externalIndex,
+              },
+            });
+          });
+        });
+      });
+    });
+
     return rows;
   }
 

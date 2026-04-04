@@ -334,17 +334,92 @@ function resolveMoveConfig(args) {
   return config;
 }
 
-function resolveSigner(args) {
-  const privateKey = getOption(
+function stripWrappingQuotes(value) {
+  if (
+    (value.startsWith('"') && value.endsWith('"')) ||
+    (value.startsWith("'") && value.endsWith("'"))
+  ) {
+    return value.slice(1, -1);
+  }
+  return value;
+}
+
+function loadPrivateKeyFromFile(filePath) {
+  const normalizedPath = String(filePath ?? '').trim();
+  if (!normalizedPath) {
+    throw new Error('--private-key-file requires a file path');
+  }
+
+  const resolvedPath = path.resolve(process.cwd(), normalizedPath);
+  if (!fs.existsSync(resolvedPath)) {
+    throw new Error(`Private key file not found: ${resolvedPath}`);
+  }
+
+  const raw = fs.readFileSync(resolvedPath, 'utf8');
+  let fallback = '';
+
+  for (const line of raw.split(/\r?\n/)) {
+    const trimmed = line.trim();
+    if (!trimmed || trimmed.startsWith('#')) continue;
+
+    const eq = trimmed.indexOf('=');
+    if (eq > 0) {
+      const key = trimmed.slice(0, eq).trim();
+      const value = stripWrappingQuotes(trimmed.slice(eq + 1).trim());
+      if (!value) continue;
+      if (!fallback) fallback = value;
+
+      if (key === 'IOTA_PRIVATE_KEY' || key === 'IZIPUB_PRIVATE_KEY' || key === 'PRIVATE_KEY') {
+        return { privateKey: value, resolvedPath };
+      }
+      continue;
+    }
+
+    const value = stripWrappingQuotes(trimmed);
+    if (!value) continue;
+    if (!fallback) fallback = value;
+  }
+
+  if (!fallback) {
+    throw new Error(`Private key file is empty: ${resolvedPath}`);
+  }
+
+  return { privateKey: fallback, resolvedPath };
+}
+
+function resolveSigner(args, logger) {
+  const privateKeyValue = getOption(
     args,
     ['private-key', 'secret-key'],
     process.env.IOTA_PRIVATE_KEY ?? process.env.IZIPUB_PRIVATE_KEY ?? ''
   );
+  if (privateKeyValue === true) {
+    throw new Error('--private-key requires a value');
+  }
+
+  const privateKeyFileValue = getOption(
+    args,
+    ['private-key-file', 'secret-key-file'],
+    process.env.IOTA_PRIVATE_KEY_FILE ?? process.env.IZIPUB_PRIVATE_KEY_FILE ?? ''
+  );
+  if (privateKeyFileValue === true) {
+    throw new Error('--private-key-file requires a file path');
+  }
+
+  let privateKey = String(privateKeyValue ?? '').trim();
+  const privateKeyFile = String(privateKeyFileValue ?? '').trim();
+
+  if (!privateKey && privateKeyFile) {
+    const loaded = loadPrivateKeyFromFile(privateKeyFile);
+    privateKey = String(loaded.privateKey).trim();
+    logger?.debug?.('Loaded signer private key from file', { file: loaded.resolvedPath });
+  }
+
   const mnemonic = getOption(args, ['mnemonic'], process.env.IOTA_MNEMONIC ?? '');
   const derivationPath = getOption(args, ['derivation-path'], process.env.IOTA_DERIVATION_PATH ?? '');
 
   if (privateKey) {
-    return Ed25519Keypair.fromSecretKey(String(privateKey).trim());
+    return Ed25519Keypair.fromSecretKey(privateKey);
   }
 
   if (mnemonic) {
@@ -355,7 +430,7 @@ function resolveSigner(args) {
   }
 
   throw new Error(
-    'Missing signer. Provide --private-key (iotaprivkey...) or --mnemonic, or set IOTA_PRIVATE_KEY / IOTA_MNEMONIC'
+    'Missing signer. Provide --private-key, --private-key-file, or --mnemonic, or set IOTA_PRIVATE_KEY / IZIPUB_PRIVATE_KEY / IOTA_PRIVATE_KEY_FILE / IZIPUB_PRIVATE_KEY_FILE / IOTA_MNEMONIC'
   );
 }
 
@@ -700,7 +775,7 @@ async function executeWriteCommand(command, args, logger) {
       throw new Error(`Unsupported write command: ${command}`);
   }
 
-  const signer = resolveSigner(args);
+  const signer = resolveSigner(args, logger);
   const sender = signer.toIotaAddress();
   const client = createClient(args.network);
 

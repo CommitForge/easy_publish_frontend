@@ -1,20 +1,24 @@
-import { useEffect, useState } from 'react';
+import { type FocusEvent, useEffect, useState } from 'react';
 import { API_BASE } from '../../../Config.ts';
 import {
   extractFollowContainersFromContent,
   mergeContentWithFollowContainers,
-  OBJECT_ID_REGEX,
+  parseAddressList,
   type FollowContainerUpdateEntry,
 } from '../FormUtils.tsx';
+import RepeatableEditorSection from './RepeatableEditorSection.tsx';
+import ObjectIdListTextarea from './ObjectIdListTextarea.tsx';
 
 interface FollowContainerEditorProps {
   value: string;
   onChange: (json: string) => void;
+  onBlur?: () => void;
 }
 
 export default function FollowContainerEditor({
   value,
   onChange,
+  onBlur,
 }: FollowContainerEditorProps) {
   const [entries, setEntries] = useState<FollowContainerUpdateEntry[]>([]);
   const [containerInput, setContainerInput] = useState('');
@@ -31,11 +35,7 @@ export default function FollowContainerEditor({
     onChange(mergeContentWithFollowContainers(value, nextEntries));
   };
 
-  const parseInputIds = (): string[] =>
-    containerInput
-      .split(/[\n,]+/)
-      .map((s) => s.trim())
-      .filter((id) => OBJECT_ID_REGEX.test(id));
+  const parseInputIds = (): string[] => parseAddressList(containerInput);
 
   const showStatus = (message: string, color: 'green' | 'red') => {
     setFeedback(message);
@@ -101,7 +101,7 @@ export default function FollowContainerEditor({
     persist(next);
 
     if (missingIds.length > 0) {
-      setContainerInput(missingIds.join(','));
+      setContainerInput(missingIds.join('\n'));
       showStatus(
         `Queued ${idsToQueue.length} ${enabled ? 'follow' : 'unfollow'}. Not found: ${missingIds.join(', ')}`,
         'red'
@@ -113,38 +113,53 @@ export default function FollowContainerEditor({
     showStatus(`Queued ${idsToQueue.length} ${enabled ? 'follow' : 'unfollow'}.`, 'green');
   };
 
-  const removeEntry = (containerId: string) => {
-    persist(entries.filter((entry) => entry.container_id !== containerId));
+  const removeEntry = (index: number) => {
+    persist(entries.filter((_, currentIndex) => currentIndex !== index));
+  };
+
+  const handleBlurCapture = (event: FocusEvent<HTMLDivElement>) => {
+    if (!onBlur) return;
+
+    const nextTarget = event.relatedTarget;
+    if (nextTarget instanceof Node && event.currentTarget.contains(nextTarget)) {
+      return;
+    }
+
+    onBlur();
   };
 
   return (
-    <div>
+    <div onBlurCapture={handleBlurCapture}>
       <div className="mb-2">
-        <input
-          className="form-control form-control-sm"
-          placeholder="0x... IDs"
+        <ObjectIdListTextarea
           value={containerInput}
-          onChange={(e) => setContainerInput(e.target.value)}
+          onChange={setContainerInput}
+          placeholder="0x... IDs"
+          rows={4}
         />
       </div>
 
-      <div className="d-flex flex-nowrap gap-2 mb-2">
+      <div className="bp-inline-action-row mb-2">
         <button
-          className="btn btn-sm btn-success w-50"
+          type="button"
+          className="bp-inline-action-link is-success"
           onClick={() => {
             void queueUpdates(true);
           }}
           disabled={validatingInput}
         >
+          <i className="bi bi-plus-circle" aria-hidden="true" />
           Follow
         </button>
         <button
-          className="btn btn-sm btn-outline-warning w-50"
+          type="button"
+          className="bp-inline-action-link is-warning"
           onClick={() => {
             void queueUpdates(false);
           }}
           disabled={validatingInput}
         >
+          <i className="bi bi-dash-circle" aria-hidden="true" />
           Unfollow
         </button>
       </div>
@@ -156,27 +171,17 @@ export default function FollowContainerEditor({
       )}
 
       <div className="mb-1 fw-semibold">Pending</div>
-      {entries.length > 0 ? (
-        entries.map((entry, index) => (
-          <div
-            key={`${entry.container_id}-${index}`}
-            className="mb-1 p-2 border rounded d-flex justify-content-between align-items-start gap-2"
-          >
-            <div className="small text-break">
-              {entry.enabled ? 'Follow' : 'Unfollow'}: {entry.container_id}
-            </div>
-            <button
-              className="btn btn-sm btn-outline-secondary py-0 px-2"
-              onClick={() => removeEntry(entry.container_id)}
-              title={`Remove ${entry.container_id}`}
-            >
-              X
-            </button>
-          </div>
-        ))
-      ) : (
-        <small className="muted d-block mb-2">No queued updates.</small>
-      )}
+      <RepeatableEditorSection
+        items={entries}
+        emptyMessage="No queued updates."
+        onRemove={removeEntry}
+        getItemLabel={(entry) => (
+          <span className="text-break">
+            {entry.enabled ? 'Follow' : 'Unfollow'}: {entry.container_id}
+          </span>
+        )}
+        renderItemBody={() => null}
+      />
 
       <small className="muted d-block mt-2">
         Stored in <code>easy_publish.follow_containers</code>. Applies on publish.

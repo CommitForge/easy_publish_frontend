@@ -1,11 +1,26 @@
 import { APP_INSTANCE_DOMAIN } from '../Config.ts';
 
-export type ItemType = 'container' | 'data_type' | 'data_item';
+export type ItemType =
+  | 'container'
+  | 'data_type'
+  | 'data_item'
+  | 'received_data_item'
+  | 'data_item_verification'
+  | 'received_data_item_verification';
+
+export type ReceivedRecipientScope =
+  | 'mine'
+  | 'others'
+  | 'with_recipients'
+  | 'all';
+
+export type ReceivedContainerScope = 'accessible' | 'all';
 
 type SelectionIds = {
   selectedContainerId: string | null;
   selectedDataTypeId: string | null;
   selectedDataItemId: string | null;
+  selectedDataItemVerificationId: string | null;
 };
 
 type DataItemApiFilters = {
@@ -26,6 +41,10 @@ type DataItemApiFilters = {
   dataType?: string;
 };
 
+type DataItemVerificationApiFilters = {
+  verified?: 'all' | 'verified' | 'unverified';
+};
+
 type BuildItemsQueryParamsInput = {
   userAddress: string;
   page: number;
@@ -34,13 +53,21 @@ type BuildItemsQueryParamsInput = {
   include: string;
   effectiveContainerId?: string;
   effectiveDataTypeId?: string;
+  effectiveDataItemId?: string;
   dataItemFilters?: DataItemApiFilters;
+  dataItemVerificationFilters?: DataItemVerificationApiFilters;
+  receivedRecipientScope?: ReceivedRecipientScope;
+  receivedContainerScope?: ReceivedContainerScope;
 };
 
 export const DEFAULT_INCLUDE_BY_TYPE: Record<ItemType, string> = {
   container: 'CONTAINER',
   data_type: 'CONTAINER,DATA_TYPE',
   data_item: 'CONTAINER,DATA_TYPE,DATA_ITEM,DATA_ITEM_VERIFICATION',
+  received_data_item: 'CONTAINER,DATA_TYPE,DATA_ITEM,DATA_ITEM_VERIFICATION',
+  data_item_verification: 'CONTAINER,DATA_TYPE,DATA_ITEM,DATA_ITEM_VERIFICATION',
+  received_data_item_verification:
+    'CONTAINER,DATA_TYPE,DATA_ITEM,DATA_ITEM_VERIFICATION',
 };
 
 export const DEFAULT_FIELDS_BY_TYPE: Record<ItemType, string[]> = {
@@ -56,12 +83,48 @@ export const DEFAULT_FIELDS_BY_TYPE: Record<ItemType, string[]> = {
     'externalId',
     'externalIndex',
   ],
+  received_data_item: [
+    'containerName',
+    'dataType',
+    'name',
+    'description',
+    'verified',
+    'creatorAddr',
+    'externalId',
+    'externalIndex',
+  ],
+  data_item_verification: [
+    'containerName',
+    'dataType',
+    'dataItemName',
+    'name',
+    'description',
+    'verified',
+    'creatorAddr',
+    'externalId',
+    'externalIndex',
+  ],
+  received_data_item_verification: [
+    'containerName',
+    'dataType',
+    'dataItemName',
+    'name',
+    'description',
+    'verified',
+    'creatorAddr',
+    'recipientCount',
+    'externalId',
+    'externalIndex',
+  ],
 };
 
 export const ITEM_LABEL_BY_TYPE: Record<ItemType, string> = {
   container: 'Container',
   data_type: 'Data Type',
   data_item: 'Item',
+  received_data_item: 'Received Item',
+  data_item_verification: 'Item Verification',
+  received_data_item_verification: 'Received Item Verification',
 };
 
 export function resolveEffectiveContainerId(
@@ -70,7 +133,16 @@ export function resolveEffectiveContainerId(
   selectedContainerId?: string | null
 ): string | undefined {
   if (type === 'container') return containerId;
-  return containerId ?? selectedContainerId ?? undefined;
+  if (
+    type === 'data_type' ||
+    type === 'data_item' ||
+    type === 'data_item_verification' ||
+    type === 'received_data_item' ||
+    type === 'received_data_item_verification'
+  ) {
+    return containerId ?? selectedContainerId ?? undefined;
+  }
+  return containerId;
 }
 
 export function resolveEffectiveDataTypeId(
@@ -78,8 +150,15 @@ export function resolveEffectiveDataTypeId(
   dataTypeId?: string,
   selectedDataTypeId?: string | null
 ): string | undefined {
-  if (type !== 'data_item') return undefined;
-  return dataTypeId ?? selectedDataTypeId ?? undefined;
+  if (
+    type === 'data_item' ||
+    type === 'received_data_item' ||
+    type === 'data_item_verification' ||
+    type === 'received_data_item_verification'
+  ) {
+    return dataTypeId ?? selectedDataTypeId ?? undefined;
+  }
+  return dataTypeId;
 }
 
 export function canLoadItems(
@@ -89,7 +168,14 @@ export function canLoadItems(
 ): boolean {
   if (!userAddress) return false;
   if (type === 'container') return true;
-  return Boolean(effectiveContainerId);
+  if (
+    type === 'data_type' ||
+    type === 'data_item' ||
+    type === 'data_item_verification'
+  ) {
+    return Boolean(effectiveContainerId);
+  }
+  return true;
 }
 
 export function buildItemsQueryParams({
@@ -100,7 +186,11 @@ export function buildItemsQueryParams({
   include,
   effectiveContainerId,
   effectiveDataTypeId,
+  effectiveDataItemId,
   dataItemFilters,
+  dataItemVerificationFilters,
+  receivedRecipientScope,
+  receivedContainerScope,
 }: BuildItemsQueryParamsInput): URLSearchParams {
   const params = new URLSearchParams({
     userAddress,
@@ -114,11 +204,25 @@ export function buildItemsQueryParams({
     params.set('containerId', effectiveContainerId);
   }
 
-  if (type === 'data_item' && effectiveDataTypeId) {
+  if (
+    (type === 'data_item' ||
+      type === 'received_data_item' ||
+      type === 'data_item_verification' ||
+      type === 'received_data_item_verification') &&
+    effectiveDataTypeId
+  ) {
     params.set('dataTypeId', effectiveDataTypeId);
   }
 
-  if (type === 'data_item' && dataItemFilters) {
+  if (
+    (type === 'data_item_verification' ||
+      type === 'received_data_item_verification') &&
+    effectiveDataItemId
+  ) {
+    params.set('dataItemId', effectiveDataItemId);
+  }
+
+  if ((type === 'data_item' || type === 'received_data_item') && dataItemFilters) {
     const trimmedQuery = dataItemFilters.query?.trim();
     if (trimmedQuery) {
       params.set('dataItemQuery', trimmedQuery);
@@ -195,23 +299,62 @@ export function buildItemsQueryParams({
     }
   }
 
+  if (
+    (type === 'data_item_verification' ||
+      type === 'received_data_item_verification') &&
+    dataItemVerificationFilters
+  ) {
+    if (dataItemVerificationFilters.verified === 'verified') {
+      params.set('dataItemVerificationVerified', 'true');
+    } else if (dataItemVerificationFilters.verified === 'unverified') {
+      params.set('dataItemVerificationVerified', 'false');
+    }
+  }
+
+  if (type === 'received_data_item' || type === 'received_data_item_verification') {
+    const scope = receivedRecipientScope ?? 'mine';
+    if (type === 'received_data_item') {
+      params.set('dataItemRecipientScope', scope);
+    } else {
+      params.set('dataItemVerificationRecipientScope', scope);
+    }
+    params.set('recipientAddress', userAddress);
+    params.set('containerScope', receivedContainerScope ?? 'accessible');
+  }
+
   return params;
 }
 
 export function getSelectedIdByType(type: ItemType, ids: SelectionIds): string | null {
   if (type === 'container') return ids.selectedContainerId;
   if (type === 'data_type') return ids.selectedDataTypeId;
+  if (
+    type === 'data_item_verification' ||
+    type === 'received_data_item_verification'
+  ) {
+    return ids.selectedDataItemVerificationId;
+  }
   return ids.selectedDataItemId;
 }
 
 export function getResetKey(
   type: ItemType,
   effectiveContainerId?: string,
-  effectiveDataTypeId?: string
+  effectiveDataTypeId?: string,
+  effectiveDataItemId?: string
 ): string {
   if (type === 'container') return 'containers';
   if (type === 'data_item') {
     return `${effectiveContainerId ?? 'none'}-${effectiveDataTypeId ?? 'all'}`;
+  }
+  if (type === 'received_data_item') {
+    return `${effectiveContainerId ?? 'all'}-${effectiveDataTypeId ?? 'all'}-received`;
+  }
+  if (type === 'data_item_verification') {
+    return `${effectiveContainerId ?? 'all'}-${effectiveDataTypeId ?? 'all'}-${effectiveDataItemId ?? 'all'}-verification`;
+  }
+  if (type === 'received_data_item_verification') {
+    return `${effectiveContainerId ?? 'all'}-${effectiveDataTypeId ?? 'all'}-${effectiveDataItemId ?? 'all'}-received-verification`;
   }
   return effectiveContainerId ?? 'none';
 }

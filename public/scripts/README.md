@@ -1,5 +1,15 @@
 # iZiPublisher IOTA Scripts
 
+## Install TLDR
+
+```bash
+# 1) Install Node.js 18+ (LTS recommended): https://nodejs.org
+node -v
+
+# 2) Install dependencies (includes @iota/iota-sdk)
+npm install
+```
+
 ## Requirements
 
 - Node.js 18+
@@ -22,8 +32,8 @@ cp .env.cli.example .env.cli
 2. Fill these values in `.env.cli`:
 
 - `IZIPUB_NETWORK` (or `IOTA_NETWORK`)
-- signer: `IOTA_PRIVATE_KEY` or `IOTA_MNEMONIC`
-- move IDs: `PACKAGE_ID`, `MODULE_ID`, `CLOCK_ID`, `CONTAINER_CHAIN_ID`, `DATA_ITEM_CHAIN_ID`, `DATA_ITEM_VERIFICATION_CHAIN_ID`, `UPDATE_CHAIN_ID`
+- signer: `IOTA_PRIVATE_KEY`, `IOTA_PRIVATE_KEY_FILE`, or `IOTA_MNEMONIC`
+- move IDs: `PACKAGE_ID`, `MODULE_ID` (or `MODULE`), `CLOCK_ID`, `CONTAINER_CHAIN_ID`, `DATA_ITEM_CHAIN_ID` (or `DATA_ITEM_CHAIN`), `DATA_ITEM_VERIFICATION_CHAIN_ID` (or `DATA_ITEM_VERIFICATION_CHAIN`), `UPDATE_CHAIN_ID`
 
 3. Run commands (auto-loads `.env.cli`, `.env.cli.local`, `.env`, `.env.production`, `.env.local` from script/cwd/parent roots):
 
@@ -43,6 +53,12 @@ node izipub.js create-container --name "My Container" --env-file ./.env.cli
 
 ```bash
 node izipub.js publish-data-item --input-file ./payload.publish-data-item.json --private-key iotaprivkey...
+```
+
+6. Optional: load signer key from file:
+
+```bash
+node izipub.js create-container --name "My Container" --private-key-file ./.secrets/iota.key
 ```
 
 `--input-file` works for all write commands.
@@ -116,6 +132,7 @@ node izipub.js data-item-verifications 0xabc123 -n 10
 node izipub.js container-data-item-verifications 0xabc123 -n 50
 
 node izipub.js create-container --name "My Container" --private-key iotaprivkey...
+node izipub.js create-container --name "My Container" --private-key-file ./.secrets/iota.key
 node izipub.js update-container --container-id 0x... --name "Updated" --private-key iotaprivkey...
 node izipub.js create-data-type --container-id 0x... --name "Invoice" --private-key iotaprivkey...
 node izipub.js update-data-type --container-id 0x... --data-type-id 0x... --name "Invoice v2" --private-key iotaprivkey...
@@ -142,6 +159,7 @@ Use:
 ## Write Command Requirements
 
 - signer via `--private-key` / `IOTA_PRIVATE_KEY` (also `IZIPUB_PRIVATE_KEY`)
+- signer via `--private-key-file` / `IOTA_PRIVATE_KEY_FILE` (also `IZIPUB_PRIVATE_KEY_FILE`)
 - or signer via `--mnemonic` / `IOTA_MNEMONIC` (optional `IOTA_DERIVATION_PATH`)
 - write payload file via `--input-file <path>` (JSON object; CLI flags override file values)
 - move config IDs from env:

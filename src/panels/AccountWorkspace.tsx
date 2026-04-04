@@ -90,7 +90,36 @@ export default function AccountWorkspace({
         )}
 
         {primaryMenuSelection === 'items' && (
-          <MainPanel type="data_items" />
+          <MainPanel
+            type="data_items"
+            onOpenItemVerificationsView={() =>
+              setPrimaryMenuSelection('itemVerifications')
+            }
+          />
+        )}
+
+        {primaryMenuSelection === 'receivedItems' && (
+          <MainPanel
+            type="received_items"
+            account={account}
+            onOpenItemVerificationsView={() =>
+              setPrimaryMenuSelection('receivedItemVerifications')
+            }
+          />
+        )}
+
+        {primaryMenuSelection === 'itemVerifications' && (
+          <MainPanel
+            type="data_item_verifications"
+            onOpenItemsView={() => setPrimaryMenuSelection('items')}
+          />
+        )}
+
+        {primaryMenuSelection === 'receivedItemVerifications' && (
+          <MainPanel
+            type="received_item_verifications"
+            onOpenItemsView={() => setPrimaryMenuSelection('items')}
+          />
         )}
 
         {primaryMenuSelection === 'dashboard' && (

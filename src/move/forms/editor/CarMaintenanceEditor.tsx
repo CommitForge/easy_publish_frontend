@@ -1,13 +1,15 @@
-import { useEffect, useState } from "react";
+import { type FocusEvent, useEffect, useState } from "react";
 import type { CarMaintenance } from '../../types';
 export type { CarMaintenance } from '../../types';
+import RepeatableEditorSection from './RepeatableEditorSection.tsx';
 
 interface Props {
   value: string;
   onChange: (json: string) => void;
+  onBlur?: () => void;
 }
 
-export default function CarMaintenanceEditor({ value, onChange }: Props) {
+export default function CarMaintenanceEditor({ value, onChange, onBlur }: Props) {
   const [maintenances, setMaintenances] = useState<CarMaintenance[]>([]);
 
   // Initial empty maintenance entry
@@ -81,92 +83,100 @@ export default function CarMaintenanceEditor({ value, onChange }: Props) {
     updateJson(newArray);
   }
 
+  function handleBlurCapture(event: FocusEvent<HTMLDivElement>) {
+    if (!onBlur) return;
+
+    const nextTarget = event.relatedTarget;
+    if (nextTarget instanceof Node && event.currentTarget.contains(nextTarget)) {
+      return;
+    }
+
+    onBlur();
+  }
+
   return (
-    <div>
-      {maintenances.map((entry, i) => (
-        <div key={i} className="mb-3 p-2 border rounded">
-          <div className="mb-2 d-flex justify-content-between align-items-center">
-            <strong>Maintenance #{i + 1}</strong>
-            <button className="btn btn-sm btn-outline-danger" onClick={() => removeMaintenance(i)}>
-              Remove
-            </button>
-          </div>
+    <div onBlurCapture={handleBlurCapture}>
+      <RepeatableEditorSection
+        items={maintenances}
+        emptyMessage="No maintenances added yet."
+        addLabel="Add maintenance"
+        onAdd={addMaintenance}
+        onRemove={removeMaintenance}
+        getItemLabel={(_, index) => `Maintenance #${index + 1}`}
+        renderItemBody={(entry, index) => (
+          <>
+            <div className="mb-2">
+              Date
+              <input
+                type="date"
+                className="form-control form-control-sm"
+                value={entry.date}
+                onChange={(e) => updateMaintenance(index, "date", e.target.value)}
+              />
+            </div>
 
-          <div className="mb-2">
-            Date
-            <input
-              type="date"
-              className="form-control form-control-sm"
-              value={entry.date}
-              onChange={(e) => updateMaintenance(i, "date", e.target.value)}
-            />
-          </div>
+            <div className="mb-2">
+              Distance
+              <input
+                className="form-control form-control-sm"
+                placeholder="185000 km"
+                value={entry.distance}
+                onChange={(e) => updateMaintenance(index, "distance", e.target.value)}
+              />
+            </div>
 
-          <div className="mb-2">
-            Distance
-            <input
-              className="form-control form-control-sm"
-              placeholder="185000 km"
-              value={entry.distance}
-              onChange={(e) => updateMaintenance(i, "distance", e.target.value)}
-            />
-          </div>
+            <div className="mb-2">
+              Service
+              <input
+                className="form-control form-control-sm"
+                placeholder="Oil change"
+                value={entry.service}
+                onChange={(e) => updateMaintenance(index, "service", e.target.value)}
+              />
+            </div>
 
-          <div className="mb-2">
-            Service
-            <input
-              className="form-control form-control-sm"
-              placeholder="Oil change"
-              value={entry.service}
-              onChange={(e) => updateMaintenance(i, "service", e.target.value)}
-            />
-          </div>
+            <div className="mb-2">
+              Cost
+              <input
+                className="form-control form-control-sm"
+                placeholder="120 EUR"
+                value={entry.cost}
+                onChange={(e) => updateMaintenance(index, "cost", e.target.value)}
+              />
+            </div>
 
-          <div className="mb-2">
-            Cost
-            <input
-              className="form-control form-control-sm"
-              placeholder="120 EUR"
-              value={entry.cost}
-              onChange={(e) => updateMaintenance(i, "cost", e.target.value)}
-            />
-          </div>
+            <div className="mb-2">
+              Parts
+              <input
+                className="form-control form-control-sm"
+                placeholder="Oil filter, brake pads"
+                value={entry.parts}
+                onChange={(e) => updateMaintenance(index, "parts", e.target.value)}
+              />
+            </div>
 
-          <div className="mb-2">
-            Parts
-            <input
-              className="form-control form-control-sm"
-              placeholder="Oil filter, brake pads"
-              value={entry.parts}
-              onChange={(e) => updateMaintenance(i, "parts", e.target.value)}
-            />
-          </div>
+            <div className="mb-2">
+              Performed by
+              <input
+                className="form-control form-control-sm"
+                placeholder="Garage / mechanic"
+                value={entry.performed_by}
+                onChange={(e) => updateMaintenance(index, "performed_by", e.target.value)}
+              />
+            </div>
 
-          <div className="mb-2">
-            Performed by
-            <input
-              className="form-control form-control-sm"
-              placeholder="Garage / mechanic"
-              value={entry.performed_by}
-              onChange={(e) => updateMaintenance(i, "performed_by", e.target.value)}
-            />
-          </div>
-
-          <div className="mb-2">
-            Note
-            <textarea
-              className="form-control form-control-sm"
-              rows={2}
-              value={entry.note}
-              onChange={(e) => updateMaintenance(i, "note", e.target.value)}
-            />
-          </div>
-        </div>
-      ))}
-
-      <button className="btn btn-sm btn-outline-primary" onClick={addMaintenance}>
-        Add Maintenance
-      </button>
+            <div className="mb-2">
+              Note
+              <textarea
+                className="form-control form-control-sm"
+                rows={2}
+                value={entry.note}
+                onChange={(e) => updateMaintenance(index, "note", e.target.value)}
+              />
+            </div>
+          </>
+        )}
+      />
     </div>
   );
 }

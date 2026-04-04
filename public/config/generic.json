@@ -61,6 +61,9 @@
     "copy": "Copy",
     "open": "Open",
     "create": "Create",
+    "checkContent": "Check content",
+    "autoCompress": "Auto compress",
+    "autoZip": "Auto zip",
     "selected": "Selected",
     "loading": "Loading...",
     "updateType": "Update Type",
@@ -106,6 +109,12 @@
     "submitAndInspect": "Submit and Inspect",
     "finalize": "Finalize",
       "recipientsAndReferences": "Recipients & References",
+    "revisionsAdvanced": "Revisions (Advanced)",
+    "revisionsPreviousItems": "Revisions: previous items",
+    "revisionChangeDescription": "Revision change description",
+    "contentCheckHelp": "Content check help",
+    "autoCompressHelp": "Auto compress help",
+    "autoZipHelp": "Auto zip help",
                 "parentAndItem": "Parent Container and Item",
     "metadata": "Metadata"
 },
@@ -115,7 +124,10 @@
   "browse": {
     "containers": "Browse Containers",
     "types": "Browse Types",
-    "items": "Browse Items"
+    "items": "Browse Items",
+    "receivedItems": "Browse Received Items",
+    "itemVerifications": "Browse Item Verifications",
+    "receivedItemVerifications": "Browse Received Item Verifications"
   },
 
   "permissions": {
@@ -136,11 +148,26 @@
 
   "messages": {
     "selectContainerOrType": "Select a container or type to view items.",
+    "selectContainerForItemVerifications": "Select a container to browse item verifications.",
     "connectWalletToAdd": "Connect wallet to add objects.",
     "selectWhatToCreate": "Select what you want to create from the menu.",
     "selectActionSidebar": "Select an action from the sidebar.",
     "confirmClearFollowed": "Are you sure you want to unfollow all containers?",
     "experimentalFeature": "Experimental feature",
+    "contentCheckHelp": "Detects whether content is JSON or XML and validates it.",
+    "contentCheckAlreadyRunning": "Content check already running...",
+    "contentCheckJsonValid": "JSON detected, presumably valid.",
+    "contentCheckJsonInvalid": "JSON detected, invalid.",
+    "contentCheckXmlValid": "XML detected, presumably valid.",
+    "contentCheckXmlInvalid": "XML detected, invalid.",
+    "contentCheckPlainText": "Plain text content detected.",
+    "autoCompressHelp": "When enabled, JSON or XML content is compacted before publish.",
+    "autoZipHelp": "Experimental: wraps compacted content as ZIP+Base64 with a marker so backend can detect and unzip before indexing.",
+    "objectIdListPlaceholder": "0x... (comma, semicolon, or new line separated)",
+    "idListDelimiterHint": "Use comma, semicolon, or new line to separate IDs.",
+    "revisionsAdvancedDescription": "Optional revision metadata for easy_publish.revisions.",
+    "revisionChangePlaceholder": "Describe what changed in this revision (optional).",
+    "validatingRevisions": "Validating revisions...",
     "noFollowedContainers": "No followed containers",
     "failedToLoad": "Failed to load data.",
   "containerAndTypeRequired": "Container ID and Type ID are required.",

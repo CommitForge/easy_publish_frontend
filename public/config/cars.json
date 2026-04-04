@@ -62,6 +62,9 @@
     "copy": "Copy",
     "open": "Open",
     "create": "Create",
+    "checkContent": "Check content",
+    "autoCompress": "Auto compress",
+    "autoZip": "Auto zip",
     "selected": "Selected",
     "loading": "Loading...",
     "updateDataType": "Update Maintenance Type"
@@ -107,6 +110,12 @@
     "submitAndInspect": "Submit and Inspect",
     "finalize": "Finalize",
           "recipientsAndReferences": "Recipients & References",
+    "revisionsAdvanced": "Revisions (Advanced)",
+    "revisionsPreviousItems": "Revisions: previous items",
+    "revisionChangeDescription": "Revision change description",
+    "contentCheckHelp": "Content check help",
+    "autoCompressHelp": "Auto compress help",
+    "autoZipHelp": "Auto zip help",
 
                         "parentAndItem": "Parent Car and Maintenance Event",
     "metadata": "Metadata"
@@ -135,16 +144,34 @@
   "browse": {
     "containers": "Browse Cars",
     "types": "Browse Maintenance Types",
-    "items": "Browse Maintenance Events"
+    "items": "Browse Maintenance Events",
+    "receivedItems": "Browse Received Maintenance Events",
+    "itemVerifications": "Browse Maintenance Verifications",
+    "receivedItemVerifications": "Browse Received Maintenance Verifications"
   },
 
   "messages": {
     "selectContainerOrType": "Select a car or maintenance type to view maintenance events.",
+    "selectContainerForItemVerifications": "Select a car to browse maintenance verifications.",
     "connectWalletToAdd": "Connect wallet to add objects.",
     "selectWhatToCreate": "Select what you want to create from the menu.",
     "selectActionSidebar": "Select an action from the sidebar.",
     "confirmClearFollowed": "Are you sure you want to unfollow all cars?",
     "experimentalFeature": "Experimental feature",
+    "contentCheckHelp": "Detects whether content is JSON or XML and validates it.",
+    "contentCheckAlreadyRunning": "Content check already running...",
+    "contentCheckJsonValid": "JSON detected, presumably valid.",
+    "contentCheckJsonInvalid": "JSON detected, invalid.",
+    "contentCheckXmlValid": "XML detected, presumably valid.",
+    "contentCheckXmlInvalid": "XML detected, invalid.",
+    "contentCheckPlainText": "Plain text content detected.",
+    "autoCompressHelp": "When enabled, JSON or XML content is compacted before publish.",
+    "autoZipHelp": "Experimental: wraps compacted content as ZIP+Base64 with a marker so backend can detect and unzip before indexing.",
+    "objectIdListPlaceholder": "0x... (comma, semicolon, or new line separated)",
+    "idListDelimiterHint": "Use comma, semicolon, or new line to separate IDs.",
+    "revisionsAdvancedDescription": "Optional revision metadata for easy_publish.revisions.",
+    "revisionChangePlaceholder": "Describe what changed in this revision (optional).",
+    "validatingRevisions": "Validating revisions...",
     "noFollowedContainers": "No followed cars",
     "failedToLoad": "Failed to load data.",
   "containerAndTypeRequired": "Car ID and Maintenance Type ID are required.",

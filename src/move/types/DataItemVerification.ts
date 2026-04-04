@@ -9,4 +9,6 @@ export interface DataItemVerification {
   creatorAddr?: string;
   externalId?: string;
   externalIndex?: string | number;
+  recipients?: string[];
+  recipientCount?: number;
 }

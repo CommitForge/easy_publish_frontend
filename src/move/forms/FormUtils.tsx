@@ -88,13 +88,23 @@ export function defaultContent(isCars: boolean): string {
   return isCars ? CARS_CONTENT_JSON : '';
 }
 
+export function parseDelimitedValues(value?: string): string[] {
+  if (!value) return [];
+  return value
+    .split(/[\n,;]+/)
+    .map((v) => v.trim())
+    .filter(Boolean);
+}
+
 export function parseAddressList(value?: string): string[] {
-  return (
-    value
-      ?.split(',')
-      .map((v) => v.trim())
-      .filter((v) => OBJECT_ID_REGEX.test(v)) ?? []
+  return Array.from(
+    new Set(parseDelimitedValues(value).filter((v) => OBJECT_ID_REGEX.test(v)))
   );
+}
+
+export function formatAddressList(values?: string[]): string {
+  if (!Array.isArray(values)) return '';
+  return parseAddressList(values.join('\n')).join('\n');
 }
 
 function parseJsonObject(value: string): Record<string, any> {

@@ -338,20 +338,23 @@ export default function DataItemFilterBar({
   return (
     <div className="bp-data-item-filter" role="region" aria-label="Data item filters">
       <div className="bp-data-item-filter-primary">
-        <input
-          type="text"
-          value={state.query}
-          onChange={(event) => updateState({ query: event.target.value })}
-          onKeyDown={(event) => {
-            if (event.key === 'Enter' && onSubmit && !applyDisabled) {
-              event.preventDefault();
-              onSubmit();
-            }
-          }}
-          placeholder="Search by name, description, external ID or index..."
-          className="bp-data-item-filter-search"
-          aria-label="Search data items"
-        />
+        <label className="bp-data-item-filter-control bp-data-item-filter-search-control">
+          <span className="bp-data-item-filter-label">Search</span>
+          <input
+            type="text"
+            value={state.query}
+            onChange={(event) => updateState({ query: event.target.value })}
+            onKeyDown={(event) => {
+              if (event.key === 'Enter' && onSubmit && !applyDisabled) {
+                event.preventDefault();
+                onSubmit();
+              }
+            }}
+            placeholder="Search by name, description, external ID or index..."
+            className="bp-data-item-filter-search"
+            aria-label="Search data items"
+          />
+        </label>
 
         <label className="bp-data-item-filter-control">
           <span className="bp-data-item-filter-label">Order</span>
@@ -369,25 +372,28 @@ export default function DataItemFilterBar({
           </select>
         </label>
 
-        <div className="bp-data-item-filter-actions">
-          <button
-            type="button"
-            className="bp-toolbar-btn"
-            onClick={() => onChange(DEFAULT_DATA_ITEM_FILTER_STATE)}
-            disabled={isDefaultState(state)}
-          >
-            Reset
-          </button>
-          {onSubmit && (
+        <div className="bp-data-item-filter-control bp-data-item-filter-actions-control">
+          <span className="bp-data-item-filter-label">Actions</span>
+          <div className="bp-data-item-filter-actions">
             <button
               type="button"
-              className="bp-toolbar-btn bp-data-item-filter-apply"
-              onClick={onSubmit}
-              disabled={applyDisabled}
+              className="bp-toolbar-btn"
+              onClick={() => onChange(DEFAULT_DATA_ITEM_FILTER_STATE)}
+              disabled={isDefaultState(state)}
             >
-              Apply
+              Reset
             </button>
-          )}
+            {onSubmit && (
+              <button
+                type="button"
+                className="bp-toolbar-btn bp-data-item-filter-apply"
+                onClick={onSubmit}
+                disabled={applyDisabled}
+              >
+                Apply
+              </button>
+            )}
+          </div>
         </div>
       </div>
 

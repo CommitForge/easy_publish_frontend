@@ -19,6 +19,19 @@ export default function App() {
 
   const [primaryMenuSelection, setPrimaryMenuSelection] =
     useState<PanelMenuSelection>('items');
+  const [hasNavigatedPrimaryMenu, setHasNavigatedPrimaryMenu] = useState(false);
+
+  const handlePrimaryMenuSelection = (value: PanelMenuSelection) => {
+    setHasNavigatedPrimaryMenu(true);
+    setPrimaryMenuSelection(value);
+  };
+
+  useEffect(() => {
+    if (!account) return;
+    if (hasNavigatedPrimaryMenu) return;
+    if (primaryMenuSelection !== 'items') return;
+    setPrimaryMenuSelection('dashboard');
+  }, [account, hasNavigatedPrimaryMenu, primaryMenuSelection]);
 
   useEffect(() => {
     if (!account) return;
@@ -34,7 +47,7 @@ export default function App() {
         account={account}
         disconnect={disconnect}
         primaryMenuSelection={primaryMenuSelection}
-        setPrimaryMenuSelection={setPrimaryMenuSelection}
+        setPrimaryMenuSelection={handlePrimaryMenuSelection}
       />
     </SelectionProvider>
   );

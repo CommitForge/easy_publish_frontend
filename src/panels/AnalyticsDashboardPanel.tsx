@@ -85,15 +85,25 @@ type AnalyticsDashboardResponse = {
   drilldown?: AnalyticsDrilldown;
 };
 
+type VerificationReadinessBreakdown = {
+  totalDataItems: number;
+  noRecipients: number;
+  recipientsNoVerifications: number;
+  recipientsFailedVerifications: number;
+  recipientsSuccessfulVerifications: number;
+};
+
 type AnalyticsDashboardPanelProps = {
   accountAddress: string;
   selectedContainerId?: string | null;
   selectedDataTypeId?: string | null;
 };
 
-const TOP_N_MIN = 3;
-const TOP_N_MAX = 25;
+const TOP_N_MIN = 1;
+const TOP_N_MAX = 200;
 const DEFAULT_TOP_N = 8;
+const VERIFICATION_BREAKDOWN_PAGE_SIZE = 200;
+const VERIFICATION_BREAKDOWN_MAX_PAGES = 40;
 const QUICK_RANGES = ['30d', '90d', '365d', 'all'] as const;
 type QuickRange = (typeof QUICK_RANGES)[number];
 
@@ -167,6 +177,196 @@ function getBucketMetricValue(bucket: AnalyticsTimeBucket, metric: TrendMetric):
   }
 }
 
+function toTimestampMs(value: unknown): number | null {
+  if (typeof value === 'number' && Number.isFinite(value)) {
+    if (value > 1e17) return Math.round(value / 1e6);
+    if (value > 1e14) return Math.round(value / 1e3);
+    if (value < 1e12 && value > 0) return Math.round(value * 1000);
+    return Math.round(value);
+  }
+
+  if (typeof value !== 'string') return null;
+  const trimmed = value.trim();
+  if (!trimmed) return null;
+
+  if (/^-?\d+(\.\d+)?$/.test(trimmed)) {
+    return toTimestampMs(Number(trimmed));
+  }
+
+  const parsed = Date.parse(trimmed);
+  return Number.isNaN(parsed) ? null : parsed;
+}
+
+function dateInputToBoundaryMs(dateInput: string, endOfDay: boolean): number | null {
+  if (!dateInput) return null;
+  const match = /^(\d{4})-(\d{2})-(\d{2})$/.exec(dateInput.trim());
+  if (!match) return null;
+  const year = Number(match[1]);
+  const month = Number(match[2]) - 1;
+  const day = Number(match[3]);
+  if (!Number.isFinite(year) || !Number.isFinite(month) || !Number.isFinite(day)) return null;
+  return endOfDay
+    ? new Date(year, month, day, 23, 59, 59, 999).getTime()
+    : new Date(year, month, day, 0, 0, 0, 0).getTime();
+}
+
+function toBooleanLike(value: unknown): boolean | null {
+  if (typeof value === 'boolean') return value;
+  if (typeof value === 'number') {
+    if (value === 1) return true;
+    if (value === 0) return false;
+  }
+  if (typeof value !== 'string') return null;
+  const normalized = value.trim().toLowerCase();
+  if (normalized === 'true' || normalized === '1' || normalized === 'yes') return true;
+  if (normalized === 'false' || normalized === '0' || normalized === 'no') return false;
+  return null;
+}
+
+function uniqueStrings(values: string[]): string[] {
+  return Array.from(new Set(values));
+}
+
+function collectAddressLikeStrings(value: unknown): string[] {
+  if (value == null) return [];
+
+  if (Array.isArray(value)) {
+    return uniqueStrings(value.flatMap((entry) => collectAddressLikeStrings(entry)));
+  }
+
+  if (typeof value === 'string') {
+    return value
+      .split(',')
+      .map((part) => part.trim())
+      .filter(Boolean);
+  }
+
+  if (typeof value === 'object') {
+    const obj = value as Record<string, unknown>;
+    return uniqueStrings(
+      [
+        obj.address,
+        obj.value,
+        obj.recipient,
+        obj.recipients,
+        obj.recipientAddress,
+        obj.recipientAddresses,
+        obj.recipient_address,
+        obj.recipient_addresses,
+      ].flatMap((entry) => collectAddressLikeStrings(entry))
+    );
+  }
+
+  return [];
+}
+
+function extractRecipients(dataItemRaw: Record<string, unknown>, wrapperRaw: Record<string, unknown>): string[] {
+  return uniqueStrings(
+    [
+      dataItemRaw.recipients,
+      dataItemRaw.recipient,
+      dataItemRaw.recipientAddress,
+      dataItemRaw.recipientAddresses,
+      dataItemRaw.recipient_address,
+      dataItemRaw.recipient_addresses,
+      wrapperRaw.recipients,
+      wrapperRaw.recipient,
+      wrapperRaw.recipientAddress,
+      wrapperRaw.recipientAddresses,
+      wrapperRaw.recipient_address,
+      wrapperRaw.recipient_addresses,
+    ].flatMap((entry) => collectAddressLikeStrings(entry))
+  );
+}
+
+function extractVerificationNodes(wrapperRaw: Record<string, unknown>): Record<string, unknown>[] {
+  const candidates = [
+    wrapperRaw.dataItemVerifications,
+    wrapperRaw.verifications,
+    wrapperRaw.data_item_verifications,
+  ];
+
+  for (const candidate of candidates) {
+    if (Array.isArray(candidate)) {
+      return candidate
+        .filter((entry): entry is Record<string, unknown> => !!entry && typeof entry === 'object');
+    }
+  }
+
+  return [];
+}
+
+function verificationIsSuccessful(rawNode: Record<string, unknown>): boolean {
+  const node =
+    (rawNode.dataItemVerification as Record<string, unknown> | undefined) ??
+    (rawNode.verification as Record<string, unknown> | undefined) ??
+    rawNode;
+
+  const explicit =
+    toBooleanLike(node.verified) ??
+    toBooleanLike(node.success) ??
+    toBooleanLike(node.isVerified);
+  if (explicit != null) return explicit;
+
+  if (typeof node.status === 'string') {
+    const status = node.status.trim().toLowerCase();
+    if (['verified', 'success', 'succeeded', 'passed', 'ok'].includes(status)) return true;
+    if (['failed', 'error', 'rejected', 'invalid'].includes(status)) return false;
+  }
+
+  return false;
+}
+
+function resolveDataItemCreatedMs(
+  dataItemRaw: Record<string, unknown>,
+  wrapperRaw: Record<string, unknown>
+): number | null {
+  const candidates = [
+    dataItemRaw.createdOnChain,
+    dataItemRaw.created_on_chain,
+    dataItemRaw.createdOnChainMs,
+    dataItemRaw.created_on_chain_ms,
+    dataItemRaw.createdAt,
+    dataItemRaw.created_at,
+    dataItemRaw.createdTimestamp,
+    dataItemRaw.created_timestamp,
+    dataItemRaw.timestamp,
+    wrapperRaw.createdOnChain,
+    wrapperRaw.created_on_chain,
+    wrapperRaw.createdOnChainMs,
+    wrapperRaw.created_on_chain_ms,
+    wrapperRaw.createdAt,
+    wrapperRaw.created_at,
+    wrapperRaw.createdTimestamp,
+    wrapperRaw.created_timestamp,
+    wrapperRaw.timestamp,
+  ];
+
+  for (const candidate of candidates) {
+    const parsed = toTimestampMs(candidate);
+    if (parsed != null) return parsed;
+  }
+
+  return null;
+}
+
+function isWithinDateRange(timestampMs: number | null, fromMs: number | null, toMs: number | null): boolean {
+  if (timestampMs == null) return true;
+  if (fromMs != null && timestampMs < fromMs) return false;
+  if (toMs != null && timestampMs > toMs) return false;
+  return true;
+}
+
+function createEmptyVerificationReadinessBreakdown(): VerificationReadinessBreakdown {
+  return {
+    totalDataItems: 0,
+    noRecipients: 0,
+    recipientsNoVerifications: 0,
+    recipientsFailedVerifications: 0,
+    recipientsSuccessfulVerifications: 0,
+  };
+}
+
 export function AnalyticsDashboardPanel({
   accountAddress,
   selectedContainerId,
@@ -184,6 +384,12 @@ export function AnalyticsDashboardPanel({
   const [data, setData] = useState<AnalyticsDashboardResponse | null>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [verificationReadiness, setVerificationReadiness] =
+    useState<VerificationReadinessBreakdown>(createEmptyVerificationReadinessBreakdown);
+  const [verificationReadinessLoading, setVerificationReadinessLoading] =
+    useState(false);
+  const [verificationReadinessError, setVerificationReadinessError] =
+    useState<string | null>(null);
 
   const timezone = useMemo(
     () => Intl.DateTimeFormat().resolvedOptions().timeZone || 'UTC',
@@ -266,6 +472,141 @@ export function AnalyticsDashboardPanel({
     refreshKey,
   ]);
 
+  useEffect(() => {
+    let cancelled = false;
+    const controller = new AbortController();
+
+    const loadVerificationReadiness = async () => {
+      setVerificationReadinessLoading(true);
+      setVerificationReadinessError(null);
+
+      try {
+        let page = 0;
+        let hasNext = true;
+        let processedPages = 0;
+        const fromMs = dateInputToBoundaryMs(fromDate, false);
+        const toMs = dateInputToBoundaryMs(toDate, true);
+        const nextBreakdown = createEmptyVerificationReadinessBreakdown();
+
+        while (hasNext && processedPages < VERIFICATION_BREAKDOWN_MAX_PAGES) {
+          const params = new URLSearchParams({
+            userAddress: accountAddress,
+            include: 'CONTAINER,DATA_TYPE,DATA_ITEM,DATA_ITEM_VERIFICATION',
+            page: String(page),
+            pageSize: String(VERIFICATION_BREAKDOWN_PAGE_SIZE),
+          });
+
+          if (scopeMode === 'selectedContainer' && selectedContainerId) {
+            params.set('containerId', selectedContainerId);
+            if (selectedDataTypeId) {
+              params.set('dataTypeId', selectedDataTypeId);
+            }
+          }
+
+          const response = await fetch(`${API_BASE}api/items?${params.toString()}`, {
+            signal: controller.signal,
+          });
+
+          if (!response.ok) {
+            throw new Error(`Failed to load verification readiness (HTTP ${response.status}).`);
+          }
+
+          const payload = (await response.json()) as Record<string, unknown>;
+          const containers = Array.isArray(payload.containers) ? payload.containers : [];
+
+          containers.forEach((containerNode) => {
+            if (!containerNode || typeof containerNode !== 'object') return;
+            const dataTypes = Array.isArray((containerNode as Record<string, unknown>).dataTypes)
+              ? ((containerNode as Record<string, unknown>).dataTypes as unknown[])
+              : [];
+
+            dataTypes.forEach((dataTypeNode) => {
+              if (!dataTypeNode || typeof dataTypeNode !== 'object') return;
+              const dataItems = Array.isArray((dataTypeNode as Record<string, unknown>).dataItems)
+                ? ((dataTypeNode as Record<string, unknown>).dataItems as unknown[])
+                : [];
+
+              dataItems.forEach((dataItemWrapper) => {
+                if (!dataItemWrapper || typeof dataItemWrapper !== 'object') return;
+                const wrapperRaw = dataItemWrapper as Record<string, unknown>;
+                const dataItemRaw = (wrapperRaw.dataItem as Record<string, unknown> | undefined) ?? wrapperRaw;
+
+                const createdMs = resolveDataItemCreatedMs(dataItemRaw, wrapperRaw);
+                if (!isWithinDateRange(createdMs, fromMs, toMs)) return;
+
+                nextBreakdown.totalDataItems += 1;
+                const recipients = extractRecipients(dataItemRaw, wrapperRaw);
+                const hasRecipients = recipients.length > 0;
+
+                if (!hasRecipients) {
+                  nextBreakdown.noRecipients += 1;
+                  return;
+                }
+
+                const verifications = extractVerificationNodes(wrapperRaw);
+                if (verifications.length === 0) {
+                  nextBreakdown.recipientsNoVerifications += 1;
+                  return;
+                }
+
+                const hasSuccessfulVerification = verifications.some(verificationIsSuccessful);
+                if (hasSuccessfulVerification) {
+                  nextBreakdown.recipientsSuccessfulVerifications += 1;
+                } else {
+                  nextBreakdown.recipientsFailedVerifications += 1;
+                }
+              });
+            });
+          });
+
+          const meta = (payload.meta as Record<string, unknown> | undefined) ?? {};
+          hasNext = meta.hasNext === true;
+          page += 1;
+          processedPages += 1;
+        }
+
+        if (cancelled) return;
+        setVerificationReadiness(nextBreakdown);
+
+        if (hasNext) {
+          setVerificationReadinessError(
+            `Verification readiness limited to first ${
+              VERIFICATION_BREAKDOWN_MAX_PAGES * VERIFICATION_BREAKDOWN_PAGE_SIZE
+            } items.`
+          );
+        }
+      } catch (err) {
+        if (cancelled) return;
+        if (err instanceof DOMException && err.name === 'AbortError') return;
+        const message =
+          err instanceof Error
+            ? err.message
+            : 'Failed to load verification readiness.';
+        setVerificationReadinessError(message);
+        setVerificationReadiness(createEmptyVerificationReadinessBreakdown());
+      } finally {
+        if (!cancelled) {
+          setVerificationReadinessLoading(false);
+        }
+      }
+    };
+
+    void loadVerificationReadiness();
+
+    return () => {
+      cancelled = true;
+      controller.abort();
+    };
+  }, [
+    accountAddress,
+    fromDate,
+    toDate,
+    scopeMode,
+    selectedContainerId,
+    selectedDataTypeId,
+    refreshKey,
+  ]);
+
   const totals = data?.totals;
   const timeSeries = toSafeArray(data?.timeSeries);
   const topDataTypes = toSafeArray(data?.topDataTypes);
@@ -293,6 +634,10 @@ export function AnalyticsDashboardPanel({
 
   const topPoster = topAddressItems[0]?.address;
   const topVerifier = topAddressVerifications[0]?.address;
+  const verifiableItemsTotal =
+    verificationReadiness.recipientsNoVerifications +
+    verificationReadiness.recipientsFailedVerifications +
+    verificationReadiness.recipientsSuccessfulVerifications;
 
   const applyQuickRange = (range: QuickRange) => {
     if (range === 'all') {
@@ -360,7 +705,7 @@ export function AnalyticsDashboardPanel({
         </label>
 
         <label className="analytics-control analytics-control--small">
-          <span>Top N</span>
+          <span>Top Rows</span>
           <input
             type="number"
             min={TOP_N_MIN}
@@ -446,6 +791,59 @@ export function AnalyticsDashboardPanel({
           </div>
 
           <section className="analytics-section">
+            <h3>Verification Readiness</h3>
+            {verificationReadinessLoading ? (
+              <div className="analytics-muted">Loading verification readiness...</div>
+            ) : (
+              <>
+                <div className="analytics-kpi-grid analytics-kpi-grid--compact">
+                  <div className="analytics-kpi-card">
+                    <div className="analytics-kpi-label">
+                      No Recipients (Not Intended for Verification)
+                    </div>
+                    <div className="analytics-kpi-value">
+                      {formatCount(verificationReadiness.noRecipients)}
+                    </div>
+                  </div>
+                  <div className="analytics-kpi-card">
+                    <div className="analytics-kpi-label">
+                      Recipients Set, No Verifications
+                    </div>
+                    <div className="analytics-kpi-value">
+                      {formatCount(verificationReadiness.recipientsNoVerifications)}
+                    </div>
+                  </div>
+                  <div className="analytics-kpi-card">
+                    <div className="analytics-kpi-label">
+                      Recipients Set, Failed Verifications
+                    </div>
+                    <div className="analytics-kpi-value">
+                      {formatCount(verificationReadiness.recipientsFailedVerifications)}
+                    </div>
+                  </div>
+                  <div className="analytics-kpi-card">
+                    <div className="analytics-kpi-label">
+                      Recipients Set, Successful Verifications
+                    </div>
+                    <div className="analytics-kpi-value">
+                      {formatCount(verificationReadiness.recipientsSuccessfulVerifications)}
+                    </div>
+                  </div>
+                </div>
+
+                <div className="analytics-muted">
+                  Verifiable items in range: {formatCount(verifiableItemsTotal)} /{' '}
+                  {formatCount(verificationReadiness.totalDataItems)}
+                </div>
+              </>
+            )}
+
+            {verificationReadinessError ? (
+              <div className="analytics-muted">{verificationReadinessError}</div>
+            ) : null}
+          </section>
+
+          <section className="analytics-section">
             <div className="analytics-section-head">
               <h3>Trend</h3>
               <label className="analytics-control analytics-control--inline">
@@ -493,7 +891,7 @@ export function AnalyticsDashboardPanel({
 
           <div className="analytics-grid-2">
             <section className="analytics-section">
-              <h3>Top Types by Items</h3>
+              <h3>Top Types by Items (Top {topN})</h3>
               <table className="analytics-table">
                 <thead>
                   <tr>
@@ -542,7 +940,7 @@ export function AnalyticsDashboardPanel({
             </section>
 
             <section className="analytics-section">
-              <h3>Top Containers by Items</h3>
+              <h3>Top Containers by Items (Top {topN})</h3>
               <table className="analytics-table">
                 <thead>
                   <tr>
@@ -591,7 +989,7 @@ export function AnalyticsDashboardPanel({
             </section>
 
             <section className="analytics-section">
-              <h3>Top Item Posters</h3>
+              <h3>Top Item Posters (Top {topN})</h3>
               <table className="analytics-table">
                 <thead>
                   <tr>
@@ -635,7 +1033,7 @@ export function AnalyticsDashboardPanel({
             </section>
 
             <section className="analytics-section">
-              <h3>Top Verification Posters</h3>
+              <h3>Top Verification Posters (Top {topN})</h3>
               <table className="analytics-table">
                 <thead>
                   <tr>

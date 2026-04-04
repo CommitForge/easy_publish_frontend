@@ -33,6 +33,9 @@ Examples:
 | `dataItemId` | No | Restrict to a specific data item. |
 | `dataItemVerificationId` | No | Restrict verifications by verification ID. |
 | `dataItemVerificationVerified` | No | Verification status filter: `true` or `false`. |
+| `dataItemRecipientScope` | No | Recipient scope for data items: `mine`, `others`, `with_recipients`, `all`. |
+| `dataItemVerificationRecipientScope` | No | Recipient scope for data item verifications: `mine`, `others`, `with_recipients`, `all`. |
+| `recipientAddress` | No | Address used by recipient scopes (`mine`/`others`). |
 | `dataItemQuery` | No | Data-item text search string (item mode). |
 | `dataItemSearchFields` | No | CSV search fields: `name,description,content,externalId,externalIndex,objectId,dataType,creatorAddr`. |
 | `dataItemVerified` | No | Data-item `verified` filter (`true` or `false`). |
@@ -41,6 +44,7 @@ Examples:
 | `dataItemDataType` | No | Filter by data type name (exact, case-insensitive). |
 | `dataItemSortBy` | No | Item sort key: `created`, `name`, `external_index`, `external_id`. |
 | `dataItemSortDirection` | No | Sort direction: `asc` or `desc`. |
+| `containerScope` | No | Cross-container scope when `containerId` is omitted in item-level browsing: `accessible` (default) or `all`. |
 | `domain` | No | Optional publish-domain scope. |
 | `page` | No | 0-based page index. |
 | `pageSize` | No | Page size (server may clamp). |
@@ -52,6 +56,13 @@ Legacy aliases can still appear in integrations:
 
 - `verificationId` -> `dataItemVerificationId`
 - `verificationVerified` -> `dataItemVerificationVerified`
+
+Frontend behavior notes:
+
+- `Browse Item Verifications` (non-received) should provide a `containerId`.
+- `Browse Received Items` and `Browse Received Item Verifications` can omit
+  `containerId`; `containerScope` controls whether results are limited to
+  accessible containers (`accessible`) or expanded to all containers (`all`).
 
 ## Include Values
 
@@ -72,7 +83,9 @@ Frontend defaults:
 
 Pagination level is selected by backend mode and returned in `meta.paginationLevel`:
 
-- No `containerId`: pagination at `container` level.
+- No `containerId` + include only `CONTAINER`: pagination at `container` level.
+- No `containerId` + item-level include (`DATA_ITEM`): pagination at `data_item`
+  level across scoped containers.
 - `containerId` + type-level browsing: pagination at `data_type` level.
 - `containerId` + item browsing: pagination at `data_item` level.
 
@@ -117,6 +130,12 @@ Only failed data item verifications:
 
 ```http
 GET /izipublish/api/items?userAddress=0x...&containerId=0xcontainer123&include=CONTAINER,DATA_TYPE,DATA_ITEM,DATA_ITEM_VERIFICATION&dataItemVerificationVerified=false&page=0&pageSize=20
+```
+
+Browse received item verifications across all containers, only verifications received by current user:
+
+```http
+GET /izipublish/api/items?userAddress=0x...&include=CONTAINER,DATA_TYPE,DATA_ITEM,DATA_ITEM_VERIFICATION&dataItemVerificationRecipientScope=mine&recipientAddress=0x...&containerScope=all&page=0&pageSize=20
 ```
 
 ## Sample Response
@@ -181,6 +200,9 @@ GET /izipublish/api/items?userAddress=0x...&containerId=0xcontainer123&include=C
       "dataItemId": null,
       "dataItemVerificationId": null,
       "dataItemVerificationVerified": null,
+      "dataItemRecipientScope": null,
+      "dataItemVerificationRecipientScope": null,
+      "recipientAddress": null,
       "dataItemQuery": null,
       "dataItemSearchFields": "name,description,content,externalId,externalIndex",
       "dataItemVerified": null,
@@ -189,7 +211,8 @@ GET /izipublish/api/items?userAddress=0x...&containerId=0xcontainer123&include=C
       "dataItemDataType": null,
       "dataItemSortBy": "created",
       "dataItemSortDirection": "desc",
-      "domain": null
+      "domain": null,
+      "containerScope": "accessible"
     },
     "availableDataTypes": ["Maintenance", "Insurance"]
   }

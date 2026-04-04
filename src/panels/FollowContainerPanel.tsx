@@ -5,12 +5,13 @@ import {
   FOLLOW_CONTAINERS_CLEARED_EVENT,
   FOLLOW_CONTAINERS_DRAFT_STORAGE_KEY,
   FOLLOW_CONTAINERS_PUBLISH_INTENT_STORAGE_KEY,
-  OBJECT_ID_REGEX,
   getFollowStorageItem,
+  parseAddressList,
   removeFollowStorageItem,
   setFollowStorageItem,
   type FollowContainerUpdateEntry,
 } from '../move/forms/FormUtils.tsx';
+import ObjectIdListTextarea from '../move/forms/editor/ObjectIdListTextarea.tsx';
 import './FollowContainerPanel.css';
 
 interface FollowContainerPanelProps {
@@ -92,11 +93,7 @@ export function FollowContainerPanel({
     showFollowed,
   ]);
 
-  const parseInputIds = (): string[] =>
-    followInput
-      .split(/[\n,]+/)
-      .map((s) => s.trim())
-      .filter((id) => OBJECT_ID_REGEX.test(id));
+  const parseInputIds = (): string[] => parseAddressList(followInput);
 
   const filterExistingContainerIds = async (ids: string[]) => {
     const uniqueIds = Array.from(new Set(ids));
@@ -163,7 +160,7 @@ export function FollowContainerPanel({
     });
 
     if (!skipExistsCheck && missingIds.length > 0) {
-      setFollowInput(missingIds.join(','));
+      setFollowInput(missingIds.join('\n'));
       showFollowStatus(
         `Queued ${idsToQueue.length} ${enabled ? 'follow' : 'unfollow'}. Not found: ${missingIds.join(', ')}`,
         'red'
@@ -263,12 +260,13 @@ export function FollowContainerPanel({
       {showFollowPanel && (
         <div className="follow-panel-body">
           <div className="follow-panel-input-row">
-            <textarea
+            <ObjectIdListTextarea
               className="follow-panel-input"
               placeholder="0x... IDs"
               rows={3}
               value={followInput}
-              onChange={(e) => setFollowInput(e.target.value)}
+              onChange={setFollowInput}
+              helperText="Comma or new line separated IDs."
             />
           </div>
 

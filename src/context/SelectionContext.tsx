@@ -11,6 +11,12 @@ interface SelectionContextType {
   selectedDataItemId: string | null;
   setSelectedDataItemId: React.Dispatch<React.SetStateAction<string | null>>;
 
+  selectedDataItemVerificationId: string | null;
+  setSelectedDataItemVerificationId: React.Dispatch<React.SetStateAction<string | null>>;
+
+  verificationBrowseDataItemId: string | null;
+  setVerificationBrowseDataItemId: React.Dispatch<React.SetStateAction<string | null>>;
+
   // ===== Pagination =====
   containerPage: number;
   setContainerPage: React.Dispatch<React.SetStateAction<number>>;
@@ -20,6 +26,15 @@ interface SelectionContextType {
 
   dataItemPage: number;
   setDataItemPage: React.Dispatch<React.SetStateAction<number>>;
+
+  receivedDataItemPage: number;
+  setReceivedDataItemPage: React.Dispatch<React.SetStateAction<number>>;
+
+  dataItemVerificationPage: number;
+  setDataItemVerificationPage: React.Dispatch<React.SetStateAction<number>>;
+
+  receivedDataItemVerificationPage: number;
+  setReceivedDataItemVerificationPage: React.Dispatch<React.SetStateAction<number>>;
 }
 
 const SelectionContext = createContext<SelectionContextType>({
@@ -32,6 +47,12 @@ const SelectionContext = createContext<SelectionContextType>({
   selectedDataItemId: null,
   setSelectedDataItemId: () => {},
 
+  selectedDataItemVerificationId: null,
+  setSelectedDataItemVerificationId: () => {},
+
+  verificationBrowseDataItemId: null,
+  setVerificationBrowseDataItemId: () => {},
+
   containerPage: 0,
   setContainerPage: () => {},
 
@@ -40,16 +61,33 @@ const SelectionContext = createContext<SelectionContextType>({
 
   dataItemPage: 0,
   setDataItemPage: () => {},
+
+  receivedDataItemPage: 0,
+  setReceivedDataItemPage: () => {},
+
+  dataItemVerificationPage: 0,
+  setDataItemVerificationPage: () => {},
+
+  receivedDataItemVerificationPage: 0,
+  setReceivedDataItemVerificationPage: () => {},
 });
 
 export const SelectionProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const [selectedContainerId, setSelectedContainerId] = useState<string | null>(null);
   const [selectedDataTypeId, setSelectedDataTypeId] = useState<string | null>(null);
   const [selectedDataItemId, setSelectedDataItemId] = useState<string | null>(null);
+  const [selectedDataItemVerificationId, setSelectedDataItemVerificationId] =
+    useState<string | null>(null);
+  const [verificationBrowseDataItemId, setVerificationBrowseDataItemId] =
+    useState<string | null>(null);
 
   const [containerPage, setContainerPage] = useState(0);
   const [dataTypePage, setDataTypePage] = useState(0);
   const [dataItemPage, setDataItemPage] = useState(0);
+  const [receivedDataItemPage, setReceivedDataItemPage] = useState(0);
+  const [dataItemVerificationPage, setDataItemVerificationPage] = useState(0);
+  const [receivedDataItemVerificationPage, setReceivedDataItemVerificationPage] =
+    useState(0);
 
   return (
     <SelectionContext.Provider
@@ -63,6 +101,12 @@ export const SelectionProvider: React.FC<{ children: React.ReactNode }> = ({ chi
         selectedDataItemId,
         setSelectedDataItemId,
 
+        selectedDataItemVerificationId,
+        setSelectedDataItemVerificationId,
+
+        verificationBrowseDataItemId,
+        setVerificationBrowseDataItemId,
+
         containerPage,
         setContainerPage,
 
@@ -71,6 +115,15 @@ export const SelectionProvider: React.FC<{ children: React.ReactNode }> = ({ chi
 
         dataItemPage,
         setDataItemPage,
+
+        receivedDataItemPage,
+        setReceivedDataItemPage,
+
+        dataItemVerificationPage,
+        setDataItemVerificationPage,
+
+        receivedDataItemVerificationPage,
+        setReceivedDataItemVerificationPage,
       }}
     >
       {children}

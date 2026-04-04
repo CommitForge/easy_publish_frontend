@@ -45,6 +45,7 @@ const ZIP_FILES = [
   { source: 'public/scripts/package.json', path: 'package.json' },
   { source: 'public/scripts/README.md', path: 'README.md' },
 ];
+const ZIP_ENTRY_DATE = new Date('2000-01-01T00:00:00.000Z');
 
 function stateSignature() {
   return {
@@ -158,16 +159,28 @@ async function packCliZip() {
   const zip = new JSZip();
   for (const entry of ZIP_FILES) {
     const content = await readFile(entry.source, 'utf8');
-    zip.file(entry.path, content);
+    zip.file(entry.path, content, { createFolders: false, date: ZIP_ENTRY_DATE });
   }
 
   const buffer = await zip.generateAsync({
     type: 'nodebuffer',
     compression: 'DEFLATE',
     compressionOptions: { level: 9 },
+    platform: 'UNIX',
   });
+
+  try {
+    const existing = await readFile(ZIP_OUTPUT_PATH);
+    if (existing.equals(buffer)) {
+      return false;
+    }
+  } catch {
+    // file does not exist yet; write below
+  }
+
   await mkdir(dirname(ZIP_OUTPUT_PATH), { recursive: true });
   await writeFile(ZIP_OUTPUT_PATH, buffer);
+  return true;
 }
 
 async function resolveRemoteSha() {
@@ -241,9 +254,9 @@ async function main() {
     (hasRemoteMatch || !remoteSha);
 
   if (cacheEligible) {
-    await packCliZip();
+    const zipWritten = await packCliZip();
     console.log('[sync-cli] cache hit, skipped remote checks');
-    console.log(`[sync-cli] packed ${ZIP_OUTPUT_PATH}`);
+    console.log(`[sync-cli] ${zipWritten ? 'packed' : 'zip unchanged'} ${ZIP_OUTPUT_PATH}`);
     console.log('[sync-cli] done (updated=0, sanitized-local=0, kept-local=0, cache-hit=true)');
     return;
   }
@@ -275,7 +288,7 @@ async function main() {
     process.exit(1);
   }
 
-  await packCliZip();
+  const zipWritten = await packCliZip();
   await writeSyncState({
     updated,
     sanitizedLocal,
@@ -283,7 +296,7 @@ async function main() {
     cacheHit: false,
     remoteSha,
   });
-  console.log(`[sync-cli] packed ${ZIP_OUTPUT_PATH}`);
+  console.log(`[sync-cli] ${zipWritten ? 'packed' : 'zip unchanged'} ${ZIP_OUTPUT_PATH}`);
 
   console.log(
     `[sync-cli] done (updated=${updated}, sanitized-local=${sanitizedLocal}, kept-local=${keptLocal})`

@@ -10,6 +10,8 @@ lerna-debug.log*
 node_modules
 dist
 dist-easy_publish_frontend*.zip
+dist.zip
+easy_publish-dist.zip
 dist-ssr
 *.local
 /.history/

@@ -1,12 +1,22 @@
 // File: CreateDataTypeForm.tsx
 import { useSignAndExecuteTransaction } from '@iota/dapp-kit';
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { Transaction } from '@iota/iota-sdk/transactions';
-import { FormInlineNotice, FormRow, useTimedFormNotice } from './FormUi.tsx';
+import {
+  ContentCheckInline,
+  ContentPublishOptionsInline,
+  ContentZipSavingsNotice,
+  FormInlineNotice,
+  FormRow,
+  useSessionContentPublishOptions,
+  useTimedFormNotice,
+} from './FormUi.tsx';
 import { FormSectionRow } from './CollapsibleFormSectionRow.tsx';
 import { TxDigestResult } from './TxDigestResult.tsx';
 import { moveTarget, submitTx } from './TransactionUtils.tsx';
+import { prepareContentForPublish } from './ContentCompaction.ts';
 import { defaultContent, getCarsContentJson, isCarsInstance } from './FormUtils.tsx';
+import { useAutoUnzippedContent } from './useAutoUnzippedContent.ts';
 import {
   CLOCK_ID,
   UPDATE_CHAIN_ID,
@@ -43,6 +53,46 @@ export function CreateDataTypeForm({ address }: { address: string }) {
     resources: '',
     externalIndex: 0,
   });
+  const [contentCheckSignal, setContentCheckSignal] = useState(0);
+  const {
+    autoCompressContent,
+    setAutoCompressContent,
+    autoZipContent,
+    setAutoZipContent,
+  } = useSessionContentPublishOptions();
+  const setContent = useCallback((nextContent: string) => {
+    setForm((prev) => ({ ...prev, content: nextContent }));
+  }, []);
+  const {
+    applyLoadedContent,
+    clearLoadedContent,
+    setEditedContent,
+  } = useAutoUnzippedContent({
+    content: form.content,
+    setContent,
+  });
+
+  const triggerContentCheck = () => {
+    setContentCheckSignal((signal) => signal + 1);
+  };
+
+  const renderContentPublishOptions = () => (
+    <ContentPublishOptionsInline
+      content={form.content}
+      autoCompressEnabled={autoCompressContent}
+      onAutoCompressChange={setAutoCompressContent}
+      autoZipEnabled={autoZipContent}
+      onAutoZipChange={setAutoZipContent}
+    />
+  );
+
+  const zipSavingsNotice = (
+    <ContentZipSavingsNotice
+      content={form.content}
+      autoCompressEnabled={autoCompressContent}
+      autoZipEnabled={autoZipContent}
+    />
+  );
 
   /** -------------------------
    * Effects
@@ -51,18 +101,21 @@ export function CreateDataTypeForm({ address }: { address: string }) {
   // Prefill JSON if this is a cars instance
   useEffect(() => {
     if (carsMode) {
+      clearLoadedContent();
       setForm((f) => ({
         ...f,
         content: carsContentJson,
       }));
+      setEditedContent(carsContentJson);
     }
-  }, [carsMode, carsContentJson]);
+  }, [carsMode, carsContentJson, clearLoadedContent, setEditedContent]);
 
   /** -------------------------
    * Helpers
    * ------------------------- */
 
   const clearForm = () => {
+    clearLoadedContent();
     setForm({
       containerId: '',
       externalId: '',
@@ -105,19 +158,21 @@ export function CreateDataTypeForm({ address }: { address: string }) {
       const res = await fetch(`${API_BASE}api/data-types/${selectedDataTypeId}`);
       if (!res.ok) throw new Error(t('messages.failedLoadDataType'));
       const data = await res.json();
+      const loadedContent = carsMode ? carsContentJson : data.content ?? '';
 
       setForm({
         containerId: selectedContainerId,
         externalId: data.externalId ?? '',
         name: data.name ?? '',
         description: data.description ?? '',
-        content: carsMode ? carsContentJson : data.content ?? '',
+        content: loadedContent,
         version: data.specification?.version ?? '',
         schemas: data.specification?.schemas ?? '',
         apis: data.specification?.apis ?? '',
         resources: data.specification?.resources ?? '',
         externalIndex: data.externalIndex ?? 0,
       });
+      applyLoadedContent(loadedContent);
     } catch (err) {
       console.error(err);
       showNotice(t('messages.failedLoadDataType'));
@@ -130,7 +185,7 @@ export function CreateDataTypeForm({ address }: { address: string }) {
    * Submit
    * ------------------------- */
 
-  const submit = () => {
+  const submit = async () => {
     const missingContainerId = !form.containerId.trim();
     const missingName = !form.name.trim();
     if (missingContainerId || missingName) {
@@ -139,6 +194,22 @@ export function CreateDataTypeForm({ address }: { address: string }) {
         name: missingName,
       });
       showNotice(t('messages.containerIdAndNameRequired'));
+      return;
+    }
+
+    let preparedContent;
+    try {
+      preparedContent = await prepareContentForPublish(form.content, {
+        autoCompressEnabled: autoCompressContent,
+        autoZipEnabled: autoZipContent,
+      });
+    } catch (error) {
+      console.error(error);
+      showNotice(t('messages.autoZipEncodeFailed'));
+      return;
+    }
+    if (autoZipContent && !preparedContent.zipSupported) {
+      showNotice(t('messages.autoZipUnsupported'));
       return;
     }
 
@@ -151,7 +222,7 @@ export function CreateDataTypeForm({ address }: { address: string }) {
         tx.pure.string(form.externalId.trim()),
         tx.pure.string(form.name.trim()),
         tx.pure.string(form.description.trim()),
-        tx.pure.string(form.content.trim()),
+        tx.pure.string(preparedContent.content),
         tx.pure.string(form.version.trim()),
         tx.pure.string(form.schemas.trim()),
         tx.pure.string(form.apis.trim()),
@@ -258,12 +329,21 @@ export function CreateDataTypeForm({ address }: { address: string }) {
           {/* Prefilled JSON for cars */}
           {!carsMode && (
             <FormRow label={t('fields.content') + ' (' + t('optional') + ')'}>
-              <textarea
-                className="form-control form-control-sm w-100"
-                rows={3}
-                value={form.content}
-                onChange={(e) => setForm({ ...form, content: e.target.value })}
-              />
+              <>
+                <textarea
+                  className="form-control form-control-sm w-100"
+                  rows={3}
+                  value={form.content}
+                  onChange={(e) => setEditedContent(e.target.value)}
+                  onBlur={triggerContentCheck}
+                />
+                <ContentCheckInline
+                  content={form.content}
+                  autoCheckSignal={contentCheckSignal}
+                  rightControl={renderContentPublishOptions()}
+                  extraNotice={zipSavingsNotice}
+                />
+              </>
             </FormRow>
           )}
         </FormSectionRow>
@@ -320,7 +400,9 @@ export function CreateDataTypeForm({ address }: { address: string }) {
           <div className="form-section-middle text-center">
             <button
               className="btn btn-outline-primary btn-sm w-100"
-              onClick={submit}
+              onClick={() => {
+                void submit();
+              }}
             >
               {t('actions.new')} {t('type.singular')}
             </button>

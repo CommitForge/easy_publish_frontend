@@ -3,6 +3,7 @@ import { useSelection } from '../context/SelectionContext.tsx';
 import { SidebarPanel } from './SidebarPanel.tsx';
 import { MainPanel } from './MainPanel.tsx';
 import { AnalyticsDashboardPanel } from './AnalyticsDashboardPanel.tsx';
+import { HelpPanel } from './HelpPanel.tsx';
 import {
   AddOwnerForm,
   AttachChildForm,
@@ -98,6 +99,14 @@ export default function AccountWorkspace({
           />
         )}
 
+        {primaryMenuSelection === 'containerChildLinks' && (
+          <MainPanel type="container_child_links" />
+        )}
+
+        {primaryMenuSelection === 'owners' && (
+          <MainPanel type="owners" />
+        )}
+
         {primaryMenuSelection === 'receivedItems' && (
           <MainPanel
             type="received_items"
@@ -128,6 +137,10 @@ export default function AccountWorkspace({
             selectedContainerId={selectedContainerId}
             selectedDataTypeId={selectedDataTypeId}
           />
+        )}
+
+        {primaryMenuSelection === 'help' && (
+          <HelpPanel accountAddress={account.address} />
         )}
       </main>
     </div>

@@ -1,13 +1,14 @@
 // File: PublishDataItemVerificationForm.tsx
 import { useSignAndExecuteTransaction } from '@iota/dapp-kit';
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { Transaction } from '@iota/iota-sdk/transactions';
 import {
-  ContentAutoCompressToggle,
-  ContentAutoZipToggle,
   ContentCheckInline,
+  ContentPublishOptionsInline,
+  ContentZipSavingsNotice,
   FormInlineNotice,
   FormRow,
+  useSessionContentPublishOptions,
   useTimedFormNotice,
 } from './FormUi.tsx';
 import { FormSectionRow } from './CollapsibleFormSectionRow.tsx';
@@ -22,6 +23,7 @@ import {
 } from './FormUtils.tsx';
 import { prepareContentForPublish } from './ContentCompaction.ts';
 import { RecipientsReferencesSection } from './RecipientsReferencesSection.tsx';
+import { useAutoUnzippedContent } from './useAutoUnzippedContent.ts';
 import {
   CLOCK_ID,
   DATA_ITEM_VERIFICATION_CHAIN,
@@ -72,34 +74,56 @@ export function PublishDataItemVerificationForm({
     verified: false,
   });
   const [contentCheckSignal, setContentCheckSignal] = useState(0);
-  const [autoCompressContent, setAutoCompressContent] = useState(true);
-  const [autoZipContent, setAutoZipContent] = useState(false);
+  const {
+    autoCompressContent,
+    setAutoCompressContent,
+    autoZipContent,
+    setAutoZipContent,
+  } = useSessionContentPublishOptions();
+  const setContent = useCallback((nextContent: string) => {
+    setForm((prev) => ({ ...prev, content: nextContent }));
+  }, []);
+  const {
+    applyLoadedContent,
+    clearLoadedContent,
+    setEditedContent,
+  } = useAutoUnzippedContent({
+    content: form.content,
+    setContent,
+  });
 
   const triggerContentCheck = () => {
     setContentCheckSignal((signal) => signal + 1);
   };
 
   const renderContentPublishOptions = () => (
-    <>
-      <ContentAutoCompressToggle
-        enabled={autoCompressContent}
-        onChange={setAutoCompressContent}
-      />
-      <ContentAutoZipToggle
-        enabled={autoZipContent}
-        onChange={setAutoZipContent}
-      />
-    </>
+    <ContentPublishOptionsInline
+      content={form.content}
+      autoCompressEnabled={autoCompressContent}
+      onAutoCompressChange={setAutoCompressContent}
+      autoZipEnabled={autoZipContent}
+      onAutoZipChange={setAutoZipContent}
+    />
+  );
+
+  const zipSavingsNotice = (
+    <ContentZipSavingsNotice
+      content={form.content}
+      autoCompressEnabled={autoCompressContent}
+      autoZipEnabled={autoZipContent}
+    />
   );
 
   useEffect(() => {
     if (carsMode) {
+      clearLoadedContent();
       setForm((f) => ({
         ...f,
         content: carsContentJson,
       }));
+      setEditedContent(carsContentJson);
     }
-  }, [carsMode, carsContentJson]);
+  }, [carsMode, carsContentJson, clearLoadedContent, setEditedContent]);
 
   useEffect(() => {
     if (!initialDataItemId) return;
@@ -115,6 +139,7 @@ export function PublishDataItemVerificationForm({
   /** --- Helpers --- */
 
   const clearForm = () => {
+    clearLoadedContent();
     setForm({
       container: '',
       dataItem: '',
@@ -156,6 +181,7 @@ export function PublishDataItemVerificationForm({
         if (typeof value === 'string') return formatAddressList([value]);
         return '';
       };
+      const loadedContent = data.content ?? defaultContent(carsMode);
 
       setForm({
         container: data.containerId ?? '',
@@ -164,11 +190,12 @@ export function PublishDataItemVerificationForm({
         recipients: '',
         name: data.name ?? '',
         description: data.description ?? '',
-        content: data.content ?? defaultContent(carsMode),
+        content: loadedContent,
         externalIndex: data.externalIndex ?? 0,
         reference: normalizeAddressField(data.reference ?? data.references),
         verified: data.verified ?? false,
       });
+      applyLoadedContent(loadedContent);
     } catch (err) {
       console.error(err);
       showNotice(t('messages.failedLoadItem'));
@@ -203,13 +230,11 @@ export function PublishDataItemVerificationForm({
       });
     } catch (error) {
       console.error(error);
-      showNotice('Failed to encode content for Auto zip.');
+      showNotice(t('messages.autoZipEncodeFailed'));
       return;
     }
     if (autoZipContent && !preparedContent.zipSupported) {
-      showNotice(
-        'Auto zip is not supported in this browser/runtime. Disable Auto zip or use a newer browser.'
-      );
+      showNotice(t('messages.autoZipUnsupported'));
       return;
     }
     const contentForPublish = preparedContent.content;
@@ -264,6 +289,7 @@ export function PublishDataItemVerificationForm({
                 const res = await fetch(`${API_BASE}api/data-items/${selectedDataItemId}`);
                 if (!res.ok) throw new Error(t('messages.failedLoadItem'));
                 const data = await res.json();
+                clearLoadedContent();
                 setForm({
                   container: data.containerId ?? '',
                   dataItem: data.id ?? '',
@@ -276,6 +302,7 @@ export function PublishDataItemVerificationForm({
                   reference: '',
                   verified: false,
                 });
+                setEditedContent(defaultContent(carsMode));
               } catch (err) {
                 console.error(err);
                 showNotice(t('messages.failedLoadItem'));
@@ -363,13 +390,14 @@ export function PublishDataItemVerificationForm({
                 rows={3}
                 value={form.content}
                 readOnly={carsMode}
-                onChange={(e) => setForm({ ...form, content: e.target.value })}
+                onChange={(e) => setEditedContent(e.target.value)}
                 onBlur={triggerContentCheck}
               />
               <ContentCheckInline
                 content={form.content}
                 autoCheckSignal={contentCheckSignal}
                 rightControl={renderContentPublishOptions()}
+                extraNotice={zipSavingsNotice}
               />
             </>
           </FormRow>

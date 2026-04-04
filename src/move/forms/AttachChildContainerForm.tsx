@@ -1,10 +1,20 @@
 import { useSignAndExecuteTransaction } from '@iota/dapp-kit';
-import { useState } from 'react';
+import { useState, useCallback } from 'react';
 import { Transaction } from '@iota/iota-sdk/transactions';
-import { FormInlineNotice, FormRow, useTimedFormNotice } from './FormUi.tsx';
+import {
+  ContentCheckInline,
+  ContentPublishOptionsInline,
+  ContentZipSavingsNotice,
+  FormInlineNotice,
+  FormRow,
+  useSessionContentPublishOptions,
+  useTimedFormNotice,
+} from './FormUi.tsx';
 import { FormSectionRow } from './CollapsibleFormSectionRow.tsx';
 import { TxDigestResult } from './TxDigestResult.tsx';
 import { moveTarget, submitTx } from './TransactionUtils.tsx';
+import { prepareContentForPublish } from './ContentCompaction.ts';
+import { useAutoUnzippedContent } from './useAutoUnzippedContent.ts';
 import { CLOCK_ID, UPDATE_CHAIN_ID } from '../../Config.ts';
 import { t } from '../../Config.ts'; // i18n helper
 
@@ -37,8 +47,44 @@ export function AttachChildForm({ address }: { address: string }) {
     content: '',
     externalIndex: 0,
   });
+  const [contentCheckSignal, setContentCheckSignal] = useState(0);
+  const {
+    autoCompressContent,
+    setAutoCompressContent,
+    autoZipContent,
+    setAutoZipContent,
+  } = useSessionContentPublishOptions();
+  const setContent = useCallback((nextContent: string) => {
+    setForm((prev) => ({ ...prev, content: nextContent }));
+  }, []);
+  const { setEditedContent } = useAutoUnzippedContent({
+    content: form.content,
+    setContent,
+  });
 
-  const submit = () => {
+  const triggerContentCheck = () => {
+    setContentCheckSignal((signal) => signal + 1);
+  };
+
+  const renderContentPublishOptions = () => (
+    <ContentPublishOptionsInline
+      content={form.content}
+      autoCompressEnabled={autoCompressContent}
+      onAutoCompressChange={setAutoCompressContent}
+      autoZipEnabled={autoZipContent}
+      onAutoZipChange={setAutoZipContent}
+    />
+  );
+
+  const zipSavingsNotice = (
+    <ContentZipSavingsNotice
+      content={form.content}
+      autoCompressEnabled={autoCompressContent}
+      autoZipEnabled={autoZipContent}
+    />
+  );
+
+  const submit = async () => {
     const missingParent = !form.parent.trim();
     const missingChild = !form.child.trim();
     const missingName = !form.name.trim();
@@ -52,6 +98,22 @@ export function AttachChildForm({ address }: { address: string }) {
       return;
     }
 
+    let preparedContent;
+    try {
+      preparedContent = await prepareContentForPublish(form.content, {
+        autoCompressEnabled: autoCompressContent,
+        autoZipEnabled: autoZipContent,
+      });
+    } catch (error) {
+      console.error(error);
+      showNotice(t('messages.autoZipEncodeFailed'));
+      return;
+    }
+    if (autoZipContent && !preparedContent.zipSupported) {
+      showNotice(t('messages.autoZipUnsupported'));
+      return;
+    }
+
     const tx = new Transaction();
     tx.moveCall({
       target: moveTarget('attach_container_child'),
@@ -62,7 +124,7 @@ export function AttachChildForm({ address }: { address: string }) {
         tx.pure.string(form.externalId.trim()),
         tx.pure.string(form.name.trim()),
         tx.pure.string(form.description.trim()),
-        tx.pure.string(form.content.trim()),
+        tx.pure.string(preparedContent.content),
         tx.pure.u128(BigInt(form.externalIndex)),
         tx.object(CLOCK_ID),
       ],
@@ -141,12 +203,21 @@ export function AttachChildForm({ address }: { address: string }) {
           </FormRow>
 
           <FormRow label={t('fields.content')}>
-            <textarea
-              className="form-control form-control-sm w-100"
-              rows={3}
-              value={form.content}
-              onChange={(e) => setForm({ ...form, content: e.target.value })}
-            />
+            <>
+              <textarea
+                className="form-control form-control-sm w-100"
+                rows={3}
+                value={form.content}
+                onChange={(e) => setEditedContent(e.target.value)}
+                onBlur={triggerContentCheck}
+              />
+              <ContentCheckInline
+                content={form.content}
+                autoCheckSignal={contentCheckSignal}
+                rightControl={renderContentPublishOptions()}
+                extraNotice={zipSavingsNotice}
+              />
+            </>
           </FormRow>
         </FormSectionRow>
 
@@ -180,7 +251,9 @@ export function AttachChildForm({ address }: { address: string }) {
           <div className="form-section-middle text-center">
             <button
               className="btn btn-outline-primary btn-sm w-100"
-              onClick={submit}
+              onClick={() => {
+                void submit();
+              }}
             >
               {t('actions.attach')} {t('container.child')}
             </button>

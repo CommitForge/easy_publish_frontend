@@ -259,14 +259,18 @@ export function FollowContainerPanel({
 
       {showFollowPanel && (
         <div className="follow-panel-body">
+          <div className="follow-panel-input-hint">
+            <div className="follow-panel-input-title">0x... IDs</div>
+            <small className="muted d-block">Comma or new line separated IDs.</small>
+          </div>
           <div className="follow-panel-input-row">
             <ObjectIdListTextarea
               className="follow-panel-input"
-              placeholder="0x... IDs"
+              placeholder="0x..."
               rows={3}
               value={followInput}
               onChange={setFollowInput}
-              helperText="Comma or new line separated IDs."
+              helperText=""
             />
           </div>
 
@@ -320,7 +324,7 @@ export function FollowContainerPanel({
 
           <div className="follow-panel-primary-buttons">
             <button className="btn btn-sm btn-outline-primary" onClick={openPublishFollowForm}>
-              Open Input Form
+              Publish Pending
             </button>
 
             <button className="btn btn-sm btn-outline-secondary" onClick={toggleViewFollowed}>

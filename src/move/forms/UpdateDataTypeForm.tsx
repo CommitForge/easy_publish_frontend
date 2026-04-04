@@ -1,14 +1,24 @@
 import { useSignAndExecuteTransaction } from '@iota/dapp-kit';
 import { useState, useEffect, useCallback } from 'react';
 import { Transaction } from '@iota/iota-sdk/transactions';
-import { FormInlineNotice, FormRow, useTimedFormNotice } from './FormUi.tsx';
+import {
+  ContentCheckInline,
+  ContentPublishOptionsInline,
+  ContentZipSavingsNotice,
+  FormInlineNotice,
+  FormRow,
+  useSessionContentPublishOptions,
+  useTimedFormNotice,
+} from './FormUi.tsx';
 import { FormSectionRow } from './CollapsibleFormSectionRow.tsx';
 import { TxDigestResult } from './TxDigestResult.tsx';
 import { moveTarget, submitTx } from './TransactionUtils.tsx';
+import { prepareContentForPublish } from './ContentCompaction.ts';
 import {
   isCarsInstance,
   UPDATE_DATA_TYPE_LOAD_SELECTED_INTENT_STORAGE_KEY,
 } from './FormUtils.tsx';
+import { useAutoUnzippedContent } from './useAutoUnzippedContent.ts';
 import { CLOCK_ID, UPDATE_CHAIN_ID, API_BASE, t } from '../../Config.ts';
 import { useSelection } from '../../context/SelectionContext';
 
@@ -54,8 +64,49 @@ export function UpdateDataTypeForm({ address }: { address: string }) {
     resources: '',
     externalIndex: 0,
   });
+  const [contentCheckSignal, setContentCheckSignal] = useState(0);
+  const {
+    autoCompressContent,
+    setAutoCompressContent,
+    autoZipContent,
+    setAutoZipContent,
+  } = useSessionContentPublishOptions();
+  const setContent = useCallback((nextContent: string) => {
+    setForm((prev) => ({ ...prev, content: nextContent }));
+  }, []);
+  const {
+    applyLoadedContent,
+    clearLoadedContent,
+    setEditedContent,
+  } = useAutoUnzippedContent({
+    content: form.content,
+    setContent,
+  });
+
+  const triggerContentCheck = () => {
+    setContentCheckSignal((signal) => signal + 1);
+  };
+
+  const renderContentPublishOptions = () => (
+    <ContentPublishOptionsInline
+      content={form.content}
+      autoCompressEnabled={autoCompressContent}
+      onAutoCompressChange={setAutoCompressContent}
+      autoZipEnabled={autoZipContent}
+      onAutoZipChange={setAutoZipContent}
+    />
+  );
+
+  const zipSavingsNotice = (
+    <ContentZipSavingsNotice
+      content={form.content}
+      autoCompressEnabled={autoCompressContent}
+      autoZipEnabled={autoZipContent}
+    />
+  );
 
   const clearForm = () => {
+    clearLoadedContent();
     setForm({
       container: '',
       dataType: '',
@@ -95,6 +146,7 @@ export function UpdateDataTypeForm({ address }: { address: string }) {
       if (!res.ok) throw new Error(t('messages.failedToLoadDataType'));
 
       const data = await res.json();
+      const loadedContent = data.content || '';
 
       setForm({
         container: data.containerId ?? selectedContainerId ?? '',
@@ -102,13 +154,14 @@ export function UpdateDataTypeForm({ address }: { address: string }) {
         externalId: data.externalId || '',
         name: data.name || '',
         description: data.description || '',
-        content: data.content || '',
+        content: loadedContent,
         version: data.specification?.version || '',
         schemas: data.specification?.schemas || '',
         apis: data.specification?.apis || '',
         resources: data.specification?.resources || '',
         externalIndex: data.externalIndex || 0,
       });
+      applyLoadedContent(loadedContent);
 
     } catch (err) {
 
@@ -120,7 +173,7 @@ export function UpdateDataTypeForm({ address }: { address: string }) {
       setLoadingDataType(false);
 
     }
-  }, [selectedContainerId, selectedDataTypeId, showNotice]);
+  }, [applyLoadedContent, selectedContainerId, selectedDataTypeId, showNotice]);
 
   useEffect(() => {
     const shouldAutoLoad =
@@ -134,7 +187,7 @@ export function UpdateDataTypeForm({ address }: { address: string }) {
     }
   }, [selectedDataTypeId, loadSelectedDataType]);
 
-  const submit = () => {
+  const submit = async () => {
 
     if (!valid) {
       setInvalidFields({
@@ -142,6 +195,22 @@ export function UpdateDataTypeForm({ address }: { address: string }) {
         dataType: !form.dataType.trim(),
       });
       showNotice(t('messages.containerAndTypeRequired'));
+      return;
+    }
+
+    let preparedContent;
+    try {
+      preparedContent = await prepareContentForPublish(form.content, {
+        autoCompressEnabled: autoCompressContent,
+        autoZipEnabled: autoZipContent,
+      });
+    } catch (error) {
+      console.error(error);
+      showNotice(t('messages.autoZipEncodeFailed'));
+      return;
+    }
+    if (autoZipContent && !preparedContent.zipSupported) {
+      showNotice(t('messages.autoZipUnsupported'));
       return;
     }
 
@@ -156,7 +225,7 @@ export function UpdateDataTypeForm({ address }: { address: string }) {
         tx.pure.string(form.externalId.trim()),
         tx.pure.string(form.name.trim()),
         tx.pure.string(form.description.trim()),
-        tx.pure.string(form.content.trim()),
+        tx.pure.string(preparedContent.content),
         tx.pure.string(form.version.trim()),
         tx.pure.string(form.schemas.trim()),
         tx.pure.string(form.apis.trim()),
@@ -265,12 +334,21 @@ export function UpdateDataTypeForm({ address }: { address: string }) {
 
           <>
           <FormRow label={t('labels.newContent')}>
-            <textarea
-              className="form-control form-control-sm w-100"
-              rows={3}
-              value={form.content}
-              onChange={(e) => setForm({ ...form, content: e.target.value })}
-            />
+            <>
+              <textarea
+                className="form-control form-control-sm w-100"
+                rows={3}
+                value={form.content}
+                onChange={(e) => setEditedContent(e.target.value)}
+                onBlur={triggerContentCheck}
+              />
+              <ContentCheckInline
+                content={form.content}
+                autoCheckSignal={contentCheckSignal}
+                rightControl={renderContentPublishOptions()}
+                extraNotice={zipSavingsNotice}
+              />
+            </>
           </FormRow>
 </>
         )}
@@ -363,7 +441,9 @@ export function UpdateDataTypeForm({ address }: { address: string }) {
 
             <button
               className="btn btn-outline-primary btn-sm w-100"
-              onClick={submit}
+              onClick={() => {
+                void submit();
+              }}
             >
               {t('actions.updateDataType')}
             </button>

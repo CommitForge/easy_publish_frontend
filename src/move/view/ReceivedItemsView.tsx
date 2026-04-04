@@ -4,6 +4,7 @@ import { useSelection } from '../../context/SelectionContext.tsx';
 import { PublishDataItemVerificationForm } from '../forms';
 import { DEFAULT_FIELDS_BY_TYPE } from '../../utils/itemLoaderConfig';
 import { ItemsLoader } from './ItemsLoader.tsx';
+import { LinkGraphLaunchButton } from '../forms/LinkGraphVisualization.tsx';
 
 type ReceivedItemsViewProps = {
   address: string;
@@ -53,6 +54,13 @@ export function ReceivedItemsView({
           >
             Browse Verifications For Selected
           </button>
+
+          <LinkGraphLaunchButton
+            mode="references"
+            rawValue={selectedDataItemId ?? ''}
+            sourceType="data_item"
+            sourceDataItemId={selectedDataItemId ?? undefined}
+          />
         </div>
       </div>
 

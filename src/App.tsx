@@ -3,6 +3,7 @@ import { useCurrentAccount, useDisconnectWallet } from '@iota/dapp-kit';
 import { Suspense, lazy, useState, useEffect } from 'react';
 
 import { SelectionProvider } from './context/SelectionContext.tsx';
+import { ContentDisplayProvider } from './context/ContentDisplayContext.tsx';
 import { Navbar, Footer, CookieConsent } from './layout';
 import { Introduction } from './panels/Introduction.tsx';
 import type { PanelMenuSelection } from './panels/SidebarPanel.tsx';
@@ -43,12 +44,14 @@ export default function App() {
 
   return (
     <SelectionProvider>
-      <AppInner
-        account={account}
-        disconnect={disconnect}
-        primaryMenuSelection={primaryMenuSelection}
-        setPrimaryMenuSelection={handlePrimaryMenuSelection}
-      />
+      <ContentDisplayProvider>
+        <AppInner
+          account={account}
+          disconnect={disconnect}
+          primaryMenuSelection={primaryMenuSelection}
+          setPrimaryMenuSelection={handlePrimaryMenuSelection}
+        />
+      </ContentDisplayProvider>
     </SelectionProvider>
   );
 }

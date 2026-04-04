@@ -12,6 +12,11 @@ import DataItemVerificationFilterBar, {
   DEFAULT_DATA_ITEM_VERIFICATION_FILTER_STATE,
   type DataItemVerificationFilterState,
 } from './table/DataItemVerificationFilterBar.tsx';
+import EntityFilterBar, {
+  DEFAULT_ENTITY_FILTER_STATE,
+  filterAndSortEntityItems,
+  type EntityFilterState,
+} from './table/EntityFilterBar.tsx';
 import {
   extractItemsFromTree,
   filterSupersededRevisionItems,
@@ -39,6 +44,7 @@ interface ItemsLoaderProps {
   fieldsToShow?: string[];
   pageSize?: number;
   include?: string;
+  enableEntityFilter?: boolean;
 }
 
 export function ItemsLoader({
@@ -49,6 +55,7 @@ export function ItemsLoader({
   fieldsToShow,
   pageSize = 20,
   include,
+  enableEntityFilter = false,
 }: ItemsLoaderProps) {
   const account = useCurrentAccount();
   const {
@@ -85,10 +92,16 @@ export function ItemsLoader({
     useState<DataItemFilterState>(DEFAULT_DATA_ITEM_FILTER_STATE);
   const [dataItemFilterAppliedState, setDataItemFilterAppliedState] =
     useState<DataItemFilterState>(DEFAULT_DATA_ITEM_FILTER_STATE);
+  const [entityFilterDraftState, setEntityFilterDraftState] =
+    useState<EntityFilterState>(DEFAULT_ENTITY_FILTER_STATE);
+  const [entityFilterAppliedState, setEntityFilterAppliedState] =
+    useState<EntityFilterState>(DEFAULT_ENTITY_FILTER_STATE);
   const [receivedRecipientScope, setReceivedRecipientScope] =
     useState<ReceivedRecipientScope>('mine');
   const [receivedContainerScope, setReceivedContainerScope] =
     useState<ReceivedContainerScope>('accessible');
+  const [hideRespondedReceivedItems, setHideRespondedReceivedItems] =
+    useState(true);
   const [dataItemVerificationFilterState, setDataItemVerificationFilterState] =
     useState<DataItemVerificationFilterState>(
       DEFAULT_DATA_ITEM_VERIFICATION_FILTER_STATE
@@ -344,6 +357,12 @@ export function ItemsLoader({
   }, [type, effectiveContainerId, effectiveDataTypeId]);
 
   useEffect(() => {
+    if (type !== 'container' && type !== 'data_type') return;
+    setEntityFilterDraftState(DEFAULT_ENTITY_FILTER_STATE);
+    setEntityFilterAppliedState(DEFAULT_ENTITY_FILTER_STATE);
+  }, [type, effectiveContainerId]);
+
+  useEffect(() => {
     if (
       type !== 'data_item_verification' &&
       type !== 'received_data_item_verification'
@@ -556,6 +575,29 @@ export function ItemsLoader({
     );
   }, [account?.address, baseVisibleItems, receivedRecipientScope, type]);
 
+  const receivedRowsFilteredByResponseState = useMemo(() => {
+    if (type !== 'received_data_item') {
+      return receivedRowsFilteredByRecipientScope;
+    }
+    if (!hideRespondedReceivedItems) {
+      return receivedRowsFilteredByRecipientScope;
+    }
+
+    const normalizedAccountAddress = normalizeText(account?.address);
+    if (!normalizedAccountAddress) {
+      return receivedRowsFilteredByRecipientScope;
+    }
+
+    return receivedRowsFilteredByRecipientScope.filter(
+      (item) => !hasVerificationByAddress(item, normalizedAccountAddress)
+    );
+  }, [
+    account?.address,
+    hideRespondedReceivedItems,
+    receivedRowsFilteredByRecipientScope,
+    type,
+  ]);
+
   const verificationItemsFiltered = useMemo(() => {
     if (
       type !== 'data_item_verification' &&
@@ -628,9 +670,22 @@ export function ItemsLoader({
     type,
   ]);
 
+  const entityItemsFiltered = useMemo(() => {
+    if (type !== 'container' && type !== 'data_type') return baseVisibleItems;
+    if (!enableEntityFilter) return baseVisibleItems;
+    return filterAndSortEntityItems(baseVisibleItems, entityFilterAppliedState);
+  }, [
+    baseVisibleItems,
+    enableEntityFilter,
+    entityFilterAppliedState,
+    type,
+  ]);
+
   const visibleItems =
-    type === 'received_data_item'
-      ? receivedRowsFilteredByRecipientScope
+    type === 'container' || type === 'data_type'
+      ? entityItemsFiltered
+      : type === 'received_data_item'
+      ? receivedRowsFilteredByResponseState
       : type === 'data_item_verification' ||
         type === 'received_data_item_verification'
       ? verificationItemsFiltered
@@ -654,6 +709,21 @@ export function ItemsLoader({
     setReceivedDataItemPage,
   ]);
 
+  const handleEntityFilterChange = useCallback((next: EntityFilterState) => {
+    setEntityFilterDraftState(next);
+  }, []);
+
+  const handleEntityFilterSubmit = useCallback(() => {
+    setEntityFilterAppliedState(entityFilterDraftState);
+    if (type === 'container') setContainerPage(0);
+    if (type === 'data_type') setDataTypePage(0);
+  }, [
+    entityFilterDraftState,
+    setContainerPage,
+    setDataTypePage,
+    type,
+  ]);
+
   const dataItemVisibleCount = visibleItems.length;
   const dataItemTotalVisibleBase =
     type === 'received_data_item'
@@ -663,7 +733,19 @@ export function ItemsLoader({
       : dataItemTotalCount;
 
   const filterBar =
-    type === 'data_item' || type === 'received_data_item' ? (
+    (type === 'container' || type === 'data_type') && enableEntityFilter ? (
+      <EntityFilterBar
+        state={entityFilterDraftState}
+        onChange={handleEntityFilterChange}
+        onSubmit={handleEntityFilterSubmit}
+        applyDisabled={areEntityFiltersEqual(
+          entityFilterDraftState,
+          entityFilterAppliedState
+        )}
+        totalCount={baseVisibleItems.length}
+        visibleCount={visibleItems.length}
+      />
+    ) : type === 'data_item' || type === 'received_data_item' ? (
       <>
         {type === 'received_data_item' ? (
           <div className="bp-data-item-filter bp-data-item-filter-condensed">
@@ -700,10 +782,27 @@ export function ItemsLoader({
                   </option>
                 </select>
               </label>
+              <label className="bp-data-item-filter-checkbox">
+                <input
+                  type="checkbox"
+                  checked={hideRespondedReceivedItems}
+                  onChange={(event) =>
+                    setHideRespondedReceivedItems(event.target.checked)
+                  }
+                />
+                <span>Hide items already verified by me</span>
+              </label>
               <div className="bp-data-item-filter-count" aria-live="polite">
                 Showing {receivedRowsFilteredByRecipientScope.length} / {baseVisibleItems.length}{' '}
                 after recipient scope
               </div>
+              {hideRespondedReceivedItems ? (
+                <div className="bp-data-item-filter-count" aria-live="polite">
+                  Showing {receivedRowsFilteredByResponseState.length} /{' '}
+                  {receivedRowsFilteredByRecipientScope.length} after verification
+                  response filter
+                </div>
+              ) : null}
             </div>
           </div>
         ) : null}
@@ -842,6 +941,34 @@ function normalizeVerifiedString(value: unknown): 'true' | 'false' | '' {
   return '';
 }
 
+function hasVerificationByAddress(item: Item, normalizedAddress: string): boolean {
+  if (!normalizedAddress) return false;
+
+  const candidateCollections = [
+    item.fields?.dataItemVerifications,
+    item.fields?.verifications,
+    item.fields?.data_item_verifications,
+  ];
+
+  for (const collection of candidateCollections) {
+    if (!Array.isArray(collection)) continue;
+    for (const entry of collection) {
+      if (!entry || typeof entry !== 'object') continue;
+      const verification = entry as Record<string, unknown>;
+      const creatorCandidate =
+        verification.creatorAddr ??
+        verification.creator_addr ??
+        (verification.creator as Record<string, unknown> | undefined)?.creatorAddr ??
+        (verification.creator as Record<string, unknown> | undefined)?.creator_addr;
+      if (normalizeText(creatorCandidate) === normalizedAddress) {
+        return true;
+      }
+    }
+  }
+
+  return false;
+}
+
 function getRecipients(item: Item): string[] {
   const raw = item.fields?.recipients;
   if (!Array.isArray(raw)) return [];
@@ -884,6 +1011,19 @@ function areDataItemFiltersEqual(
     left.revisions === right.revisions &&
     left.verifications === right.verifications &&
     left.dataType === right.dataType &&
+    left.searchFields.length === right.searchFields.length &&
+    left.searchFields.every((entry, index) => entry === right.searchFields[index])
+  );
+}
+
+function areEntityFiltersEqual(
+  left: EntityFilterState,
+  right: EntityFilterState
+): boolean {
+  return (
+    left.query === right.query &&
+    left.sortBy === right.sortBy &&
+    left.verified === right.verified &&
     left.searchFields.length === right.searchFields.length &&
     left.searchFields.every((entry, index) => entry === right.searchFields[index])
   );

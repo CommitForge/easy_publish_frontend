@@ -1,4 +1,5 @@
 export type PrimarySelection =
+  | 'help'
   | 'dashboard'
   | 'createContainer'
   | 'updateContainer'
@@ -6,6 +7,8 @@ export type PrimarySelection =
   | 'updateDataType'
   | 'addDataItem'
   | 'browseContainers'
+  | 'containerChildLinks'
+  | 'owners'
   | 'browseTypes'
   | 'publishDataItemVerification'
   | 'attachChild'

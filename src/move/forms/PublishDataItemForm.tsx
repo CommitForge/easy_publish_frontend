@@ -2,11 +2,12 @@ import { useSignAndExecuteTransaction } from '@iota/dapp-kit';
 import { useState, useEffect, useCallback } from 'react';
 import { Transaction } from '@iota/iota-sdk/transactions';
 import {
-  ContentAutoCompressToggle,
-  ContentAutoZipToggle,
   ContentCheckInline,
+  ContentPublishOptionsInline,
+  ContentZipSavingsNotice,
   FormInlineNotice,
   FormRow,
+  useSessionContentPublishOptions,
   useTimedFormNotice,
 } from './FormUi.tsx';
 import { FormSectionRow } from './CollapsibleFormSectionRow.tsx';
@@ -43,6 +44,7 @@ import CarMaintenanceEditor from './editor/CarMaintenanceEditor.tsx';
 import FollowContainerEditor from './editor/FollowContainerEditor.tsx';
 import ObjectIdListTextarea from './editor/ObjectIdListTextarea.tsx';
 import { RecipientsReferencesSection } from './RecipientsReferencesSection.tsx';
+import { useAutoUnzippedContent } from './useAutoUnzippedContent.ts';
 
 export function PublishDataItemForm({ address }: { address: string }) {
   const { mutate: signAndExecuteTransaction } = useSignAndExecuteTransaction();
@@ -76,34 +78,72 @@ export function PublishDataItemForm({ address }: { address: string }) {
     revisionChange: '',
   });
   const [contentCheckSignal, setContentCheckSignal] = useState(0);
-  const [autoCompressContent, setAutoCompressContent] = useState(true);
-  const [autoZipContent, setAutoZipContent] = useState(false);
+  const {
+    autoCompressContent,
+    setAutoCompressContent,
+    autoZipContent,
+    setAutoZipContent,
+  } = useSessionContentPublishOptions();
+  const setContent = useCallback((nextContent: string) => {
+    setForm((prev) => ({ ...prev, content: nextContent }));
+  }, []);
+  const {
+    applyLoadedContent,
+    clearLoadedContent,
+    setEditedContent,
+  } = useAutoUnzippedContent({
+    content: form.content,
+    setContent,
+  });
 
   const triggerContentCheck = useCallback(() => {
     setContentCheckSignal((signal) => signal + 1);
   }, []);
 
+  const revisionIdsForPreview = followTemplateMode
+    ? []
+    : (() => {
+        const idsFromInput = parseAddressList(form.revisionOf);
+        if (idsFromInput.length > 0) return idsFromInput;
+        return extractRevisionIdsFromContent(form.content);
+      })();
+  const contentForPreview = followTemplateMode
+    ? mergeContentWithFollowContainers(
+        form.content,
+        extractFollowContainersFromContent(form.content)
+      )
+    : revisionIdsForPreview.length > 0
+    ? mergeContentWithRevisions(form.content, revisionIdsForPreview, form.revisionChange)
+    : form.content;
+
   const renderContentPublishOptions = () => (
-    <>
-      <ContentAutoCompressToggle
-        enabled={autoCompressContent}
-        onChange={setAutoCompressContent}
-      />
-      <ContentAutoZipToggle
-        enabled={autoZipContent}
-        onChange={setAutoZipContent}
-      />
-    </>
+    <ContentPublishOptionsInline
+      content={contentForPreview}
+      autoCompressEnabled={autoCompressContent}
+      onAutoCompressChange={setAutoCompressContent}
+      autoZipEnabled={autoZipContent}
+      onAutoZipChange={setAutoZipContent}
+    />
+  );
+
+  const zipSavingsNotice = (
+    <ContentZipSavingsNotice
+      content={contentForPreview}
+      autoCompressEnabled={autoCompressContent}
+      autoZipEnabled={autoZipContent}
+    />
   );
 
   useEffect(() => {
     if (carsMode && !followTemplateMode) {
+      clearLoadedContent();
       setForm((f) => ({
         ...f,
         content: carsContentJson,
       }));
+      setEditedContent(carsContentJson);
     }
-  }, [carsMode, carsContentJson, followTemplateMode]);
+  }, [carsMode, carsContentJson, clearLoadedContent, followTemplateMode, setEditedContent]);
 
   useEffect(() => {
     const publishIntent =
@@ -113,6 +153,7 @@ export function PublishDataItemForm({ address }: { address: string }) {
     setFollowTemplateMode(true);
     const rawDraft = getFollowStorageItem(FOLLOW_CONTAINERS_DRAFT_STORAGE_KEY);
     const applyEntries = (entries: FollowContainerUpdateEntry[]) => {
+      clearLoadedContent();
       setForm((prev) => ({
         ...prev,
         content: mergeContentWithFollowContainers(
@@ -120,6 +161,12 @@ export function PublishDataItemForm({ address }: { address: string }) {
           entries
         ),
       }));
+      setEditedContent(
+        mergeContentWithFollowContainers(
+          form.content || defaultContent(carsMode),
+          entries
+        )
+      );
     };
 
     if (!rawDraft) {
@@ -139,7 +186,7 @@ export function PublishDataItemForm({ address }: { address: string }) {
     } finally {
       removeFollowStorageItem(FOLLOW_CONTAINERS_PUBLISH_INTENT_STORAGE_KEY);
     }
-  }, [carsMode]);
+  }, [carsMode, clearLoadedContent, form.content, setEditedContent]);
 
   useEffect(() => {
     if (!digest || !followTemplateMode) return;
@@ -150,6 +197,10 @@ export function PublishDataItemForm({ address }: { address: string }) {
   }, [digest, followTemplateMode]);
 
   const clearForm = () => {
+    const clearedContent = followTemplateMode
+      ? mergeContentWithFollowContainers(defaultContent(carsMode), [])
+      : defaultContent(carsMode);
+    clearLoadedContent();
     setForm({
       container: '',
       dataType: '',
@@ -157,14 +208,13 @@ export function PublishDataItemForm({ address }: { address: string }) {
       recipients: '',
       name: '',
       description: '',
-      content: followTemplateMode
-        ? mergeContentWithFollowContainers(defaultContent(carsMode), [])
-        : defaultContent(carsMode),
+      content: clearedContent,
       externalIndex: 0,
       reference: '',
       revisionOf: '',
       revisionChange: '',
     });
+    setEditedContent(clearedContent);
     setDigest('');
     clearNotice();
     setInvalidFields({
@@ -195,6 +245,7 @@ export function PublishDataItemForm({ address }: { address: string }) {
       };
       const revisionIds = extractRevisionIdsFromContent(data.content ?? '');
       const revisionChange = extractRevisionChangeFromContent(data.content ?? '');
+      const loadedContent = data.content ?? '';
 
       setForm({
         container: data.containerId ?? '',
@@ -203,25 +254,31 @@ export function PublishDataItemForm({ address }: { address: string }) {
         recipients: '',
         name: data.name ?? '',
         description: data.description ?? '',
-        content: data.content ?? '',
+        content: loadedContent,
         externalIndex: data.externalIndex ?? 0,
         reference: normalizeReferenceField(data.reference ?? data.references),
         revisionOf: formatAddressList(revisionIds),
         revisionChange,
       });
+      applyLoadedContent(loadedContent);
     } catch (err) {
       console.error(err);
       showNotice(t('messages.failedLoadDataItem'));
     } finally {
       setLoadingDataItem(false);
     }
-  }, [showNotice]);
+  }, [applyLoadedContent, showNotice]);
 
   const loadContainerAndType = useCallback(() => {
     if (!selectedContainerId || !selectedDataTypeId) {
       showNotice(t('messages.noContainerOrType'));
       return;
     }
+
+    const defaultModeContent = followTemplateMode
+      ? mergeContentWithFollowContainers(defaultContent(carsMode), [])
+      : defaultContent(carsMode);
+    clearLoadedContent();
 
     setForm({
       container: selectedContainerId,
@@ -230,15 +287,22 @@ export function PublishDataItemForm({ address }: { address: string }) {
       recipients: '',
       name: '',
         description: '',
-      content: followTemplateMode
-        ? mergeContentWithFollowContainers(defaultContent(carsMode), [])
-        : defaultContent(carsMode),
+      content: defaultModeContent,
       externalIndex: 0,
       reference: '',
       revisionOf: '',
       revisionChange: '',
     });
-  }, [carsMode, followTemplateMode, selectedContainerId, selectedDataTypeId, showNotice]);
+    setEditedContent(defaultModeContent);
+  }, [
+    carsMode,
+    clearLoadedContent,
+    followTemplateMode,
+    selectedContainerId,
+    selectedDataTypeId,
+    setEditedContent,
+    showNotice,
+  ]);
 
   useEffect(() => {
     const shouldAutoLoadSelected =
@@ -387,13 +451,11 @@ export function PublishDataItemForm({ address }: { address: string }) {
       });
     } catch (error) {
       console.error(error);
-      showNotice('Failed to encode content for Auto zip.');
+      showNotice(t('messages.autoZipEncodeFailed'));
       return;
     }
     if (autoZipContent && !preparedContent.zipSupported) {
-      showNotice(
-        'Auto zip is not supported in this browser/runtime. Disable Auto zip or use a newer browser.'
-      );
+      showNotice(t('messages.autoZipUnsupported'));
       return;
     }
     const contentForPublish = preparedContent.content;
@@ -518,13 +580,14 @@ export function PublishDataItemForm({ address }: { address: string }) {
                     className="form-control form-control-sm w-100"
                     rows={3}
                     value={form.content}
-                    onChange={(e) => setForm({ ...form, content: e.target.value })}
+                    onChange={(e) => setEditedContent(e.target.value)}
                     onBlur={triggerContentCheck}
                   />
                   <ContentCheckInline
                     content={form.content}
                     autoCheckSignal={contentCheckSignal}
                     rightControl={renderContentPublishOptions()}
+                    extraNotice={zipSavingsNotice}
                   />
                 </>
               </FormRow>
@@ -533,18 +596,14 @@ export function PublishDataItemForm({ address }: { address: string }) {
                 <>
                   <CarMaintenanceEditor
                     value={form.content}
-                    onChange={(json) =>
-                      setForm((f) => ({
-                        ...f,
-                        content: json,
-                      }))
-                    }
+                    onChange={(json) => setEditedContent(json)}
                     onBlur={triggerContentCheck}
                   />
                   <ContentCheckInline
                     content={form.content}
                     autoCheckSignal={contentCheckSignal}
                     rightControl={renderContentPublishOptions()}
+                    extraNotice={zipSavingsNotice}
                   />
                 </>
               </FormRow>
@@ -560,18 +619,14 @@ export function PublishDataItemForm({ address }: { address: string }) {
               <>
                 <FollowContainerEditor
                   value={form.content}
-                  onChange={(json) =>
-                    setForm((f) => ({
-                      ...f,
-                      content: json,
-                    }))
-                  }
+                  onChange={(json) => setEditedContent(json)}
                   onBlur={triggerContentCheck}
                 />
                 <ContentCheckInline
                   content={form.content}
                   autoCheckSignal={contentCheckSignal}
                   rightControl={renderContentPublishOptions()}
+                  extraNotice={zipSavingsNotice}
                 />
               </>
             </FormRow>

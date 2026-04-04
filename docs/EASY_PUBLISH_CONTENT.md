@@ -200,6 +200,28 @@ In Cars mode, the frontend also uses:
   `cars`).
 - `easy_publish.cars.maintenances`: Array used by the Cars table UI.
 
+## Encoded Content Marker (Auto Zip)
+
+When frontend `Auto zip` is enabled, submitted content is wrapped as:
+
+```text
+EPZIP1:gzip+base64:<payload>
+```
+
+Where:
+
+- prefix: `EPZIP1:gzip+base64:`
+- payload: `Base64(gzip(UTF-8(content)))`
+
+Backend processing behavior:
+
+1. If content starts with `EPZIP1:gzip+base64:`, backend decodes it before
+   content parsing/indexing.
+2. If prefix is not present, content is treated as normal plain JSON/XML/text.
+
+This marker is intentionally explicit so encoded content is never confused with
+other archive formats (`zip`, `7z`, `tar.gz`, etc.).
+
 ## Behavior In Frontend
 
 - If `easy_publish.cars.maintenances` exists and is an array, the items table

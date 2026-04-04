@@ -2,6 +2,7 @@ import { useSelection } from '../../context/SelectionContext.tsx';
 import { DEFAULT_FIELDS_BY_TYPE } from '../../utils/itemLoaderConfig';
 import { ItemsLoader } from './ItemsLoader.tsx';
 import type { ItemType } from '../../utils/itemLoaderConfig';
+import { LinkGraphLaunchButton } from '../forms/LinkGraphVisualization.tsx';
 
 type DataItemVerificationsViewProps = {
   onBrowseItems?: () => void;
@@ -28,6 +29,9 @@ export function DataItemVerificationsView({
   const selectedDataItemLabel = selectedDataItemId
     ? `${selectedDataItemId.slice(0, 10)}...${selectedDataItemId.slice(-8)}`
     : '(none)';
+  const graphSeedInput = [selectedDataItemVerificationId, selectedDataItemId]
+    .filter((value): value is string => !!value)
+    .join('\n');
 
   return (
     <div className="bp-browse-page">
@@ -56,6 +60,13 @@ export function DataItemVerificationsView({
           >
             Clear Item Drill-down
           </button>
+
+          <LinkGraphLaunchButton
+            mode="references"
+            rawValue={graphSeedInput}
+            sourceType="data_item_verification"
+            sourceDataItemId={selectedDataItemId ?? undefined}
+          />
         </div>
       </div>
 

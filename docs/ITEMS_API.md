@@ -64,6 +64,136 @@ Frontend behavior notes:
   `containerId`; `containerScope` controls whether results are limited to
   accessible containers (`accessible`) or expanded to all containers (`all`).
 
+## Auxiliary Browse APIs (Non-Primary Data)
+
+These endpoints are intentionally separate from `/api/items` because they serve
+special-purpose, non-primary browse data.
+
+### `GET /api/container-child-links`
+
+Browse indexed container-child links with server-side search/sort/pagination.
+
+| Param | Required | Description |
+|---|---|---|
+| `userAddress` | Yes | Address used for accessible-container scope. |
+| `containerId` | No | Restrict to one parent container. |
+| `containerScope` | No | `accessible` (default) or `all`. |
+| `query` | No | Full-text query split into tokens. |
+| `searchFields` | No | CSV: `name,description,content,externalId,externalIndex,parentContainerId,childContainerId,creatorAddr,objectId`. |
+| `sortBy` | No | `created`, `name`, `external_index`, `external_id`. |
+| `sortDirection` | No | `asc` or `desc` (default desc). |
+| `domain` | No | Optional publish-domain scope. |
+| `page` | No | 0-based page index. |
+| `pageSize` | No | Page size (server clamps to max). |
+
+Defaults:
+
+- `containerScope=accessible`
+- `sortBy=created`
+- `sortDirection=desc`
+
+Response shape:
+
+```json
+{
+  "content": [
+    {
+      "object_id": "0x...",
+      "fields": {
+        "id": "0x...",
+        "containerParentId": "0x...",
+        "containerParentName": "Main Container",
+        "containerChildId": "0x...",
+        "containerChildName": "Child Container",
+        "name": "Link Name",
+        "description": "Link description",
+        "content": "{}",
+        "externalId": "link-1",
+        "externalIndex": 12,
+        "sequenceIndex": 345,
+        "creatorAddr": "0x..."
+      }
+    }
+  ],
+  "page": 0,
+  "pageSize": 20,
+  "totalElements": 1,
+  "totalPages": 1,
+  "hasNext": false,
+  "filters": {
+    "containerId": null,
+    "containerScope": "accessible",
+    "query": "child",
+    "searchFields": "name,description,parentContainerId,childContainerId",
+    "sortBy": "created",
+    "sortDirection": "desc",
+    "domain": null
+  }
+}
+```
+
+### `GET /api/owners`
+
+Browse container owners (active/removed/all) with server-side search/sort/pagination.
+
+| Param | Required | Description |
+|---|---|---|
+| `userAddress` | Yes | Address used for accessible-container scope. |
+| `containerId` | No | Restrict to one container. |
+| `containerScope` | No | `accessible` (default) or `all`. |
+| `ownerStatus` | No | `active` (default), `removed`, or `all`. |
+| `query` | No | Full-text query split into tokens. |
+| `searchFields` | No | CSV: `addr,role,containerId,containerName,creatorAddr,removed,objectId`. |
+| `sortBy` | No | `created`, `address`, `role`, `container_name`. |
+| `sortDirection` | No | `asc` or `desc` (default desc). |
+| `domain` | No | Optional publish-domain scope. |
+| `page` | No | 0-based page index. |
+| `pageSize` | No | Page size (server clamps to max). |
+
+Defaults:
+
+- `containerScope=accessible`
+- `ownerStatus=active`
+- `sortBy=created`
+- `sortDirection=desc`
+
+Response shape:
+
+```json
+{
+  "content": [
+    {
+      "object_id": "0x...",
+      "fields": {
+        "id": "0x...",
+        "containerId": "0x...",
+        "containerName": "Main Container",
+        "addr": "0x...",
+        "role": "editor",
+        "removed": false,
+        "sequenceIndex": 77,
+        "creatorAddr": "0x..."
+      }
+    }
+  ],
+  "page": 0,
+  "pageSize": 20,
+  "totalElements": 1,
+  "totalPages": 1,
+  "hasNext": false,
+  "filters": {
+    "containerId": null,
+    "containerScope": "accessible",
+    "ownerStatus": "active",
+    "query": "",
+    "searchFields": "addr,role,containerName",
+    "sortBy": "created",
+    "sortDirection": "desc",
+    "domain": null
+  }
+}
+```
+
 ## Include Values
 
 Supported include values:

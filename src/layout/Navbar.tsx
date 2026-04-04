@@ -2,11 +2,13 @@ import { useWallets, useConnectWallet } from '@iota/dapp-kit';
 import { useEffect, useState } from 'react';
 import { copyToClipboard } from '../utils/clipboard';
 import { useSelection } from '../context/SelectionContext.tsx';
+import { useContentDisplay } from '../context/ContentDisplayContext.tsx';
 import { API_BASE, getBrandLogoPath, t } from '../Config.ts';
 import { useSyncStatus } from '../hooks/useSyncStatus';
 import type { SyncStatus } from '../hooks/useSyncStatus';
 import { buildObjectExplorerUrl } from '../utils/explorer';
 import type { PanelMenuSelection } from '../panels/SidebarPanel.tsx';
+import { InfoTooltip } from '../move/forms/FormUi.tsx';
 import {
   ADD_DATA_ITEM_LOAD_SELECTED_INTENT_STORAGE_KEY,
   UPDATE_CONTAINER_LOAD_SELECTED_INTENT_STORAGE_KEY,
@@ -262,6 +264,7 @@ export function Navbar({
   const wallets = useWallets();
   const { mutate: connect } = useConnectWallet();
   const { selectedContainerId, selectedDataTypeId, selectedDataItemId } = useSelection();
+  const { autoUnzipContent, setAutoUnzipContent } = useContentDisplay();
   const { syncStatus, splash } = useSyncStatus();
   const logoPath = getBrandLogoPath();
   const [selectedNames, setSelectedNames] = useState<{
@@ -461,14 +464,27 @@ export function Navbar({
         {account && (
           <>
             <div className="wallet-connected">
-              <span>
-                Connected as: {shortByAddressStyle(account.address)}
+              <span className="wallet-connected-row">
+                <span>Connected as: {shortByAddressStyle(account.address)}</span>
+                <i
+                  className="bi bi-clipboard copy-icon"
+                  title="Copy address"
+                  onClick={(e) => copyToClipboard(e, account.address)}
+                />
               </span>
-              <i
-                className="bi bi-clipboard copy-icon"
-                title="Copy address"
-                onClick={(e) => copyToClipboard(e, account.address)}
-              />
+              <label className="wallet-auto-unzip-toggle">
+                <input
+                  type="checkbox"
+                  checked={autoUnzipContent}
+                  onChange={(event) => setAutoUnzipContent(event.target.checked)}
+                />
+                <span>{t('actions.autoUnzip')}</span>
+                <InfoTooltip
+                  className="form-content-check-help form-content-help-tooltip-up"
+                  message={t('messages.autoUnzipHelp')}
+                  ariaLabel={t('labels.autoUnzipHelp')}
+                />
+              </label>
             </div>
 
             <button className="btn primary" onClick={() => disconnect()}>

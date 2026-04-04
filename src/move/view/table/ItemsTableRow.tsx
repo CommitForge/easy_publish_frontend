@@ -1,11 +1,13 @@
 // File: ItemsTableRow.tsx
-import React from 'react';
+import React, { useEffect, useState } from 'react';
 import type {
   CarMaintenance,
   DataItemVerification,
   Item,
   ItemRevision,
 } from '../../types';
+import { useContentDisplay } from '../../../context/ContentDisplayContext.tsx';
+import { decodeContentForDisplay } from '../../forms/ContentCompaction.ts';
 import CarMaintenanceTable from './CarMaintenanceTable.tsx';
 import DataItemVerificationTable from './DataItemVerificationTable.tsx';
 import RevisionsTable from './RevisionsTable.tsx';
@@ -26,6 +28,59 @@ type ItemsTableRowProps = {
 const resolvePath = (obj: any, path: string) =>
   path.split('.').reduce((acc, key) => acc?.[key], obj);
 
+const normalizeCellValue = (value: unknown): string => {
+  if (value === null || value === undefined || value === '') return '-';
+  if (typeof value === 'object') {
+    try {
+      return JSON.stringify(value, null, 2);
+    } catch {
+      return String(value);
+    }
+  }
+  return String(value);
+};
+
+const parseMaintenancesFromContent = (rawContent: string): CarMaintenance[] => {
+  try {
+    const contentObj = rawContent ? JSON.parse(rawContent) : {};
+    const maintenances = contentObj?.easy_publish?.cars?.maintenances;
+    if (!Array.isArray(maintenances)) return [];
+    return maintenances as CarMaintenance[];
+  } catch {
+    return [];
+  }
+};
+
+const DecodedCellValue: React.FC<{ rawValue: unknown }> = ({ rawValue }) => {
+  const { autoUnzipContent } = useContentDisplay();
+  const [displayValue, setDisplayValue] = useState<string>(() =>
+    normalizeCellValue(rawValue)
+  );
+
+  useEffect(() => {
+    let cancelled = false;
+    const rawAsString = normalizeCellValue(rawValue);
+
+    if (!autoUnzipContent || rawAsString === '-') {
+      setDisplayValue(rawAsString);
+      return () => {
+        cancelled = true;
+      };
+    }
+
+    void decodeContentForDisplay(rawAsString).then((decoded) => {
+      if (cancelled) return;
+      setDisplayValue(decoded.content);
+    });
+
+    return () => {
+      cancelled = true;
+    };
+  }, [autoUnzipContent, rawValue]);
+
+  return <>{displayValue}</>;
+};
+
 const ItemsTableRow: React.FC<ItemsTableRowProps> = ({
   item,
   columns,
@@ -38,9 +93,10 @@ const ItemsTableRow: React.FC<ItemsTableRowProps> = ({
   showObjectIdColumn = true,
   detailsExpanded = true,
 }) => {
+  const { autoUnzipContent } = useContentDisplay();
   const objectId = item.object_id ?? item.fields.id ?? '-';
   const isSelected = selectedId === objectId;
-  let maintenances: CarMaintenance[] = [];
+  const [maintenances, setMaintenances] = useState<CarMaintenance[]>([]);
   const revisions: ItemRevision[] = Array.isArray(item.fields.revisions)
     ? item.fields.revisions
         .map((entry: any) => ({
@@ -61,12 +117,34 @@ const ItemsTableRow: React.FC<ItemsTableRowProps> = ({
     ? item.fields.dataItemVerifications
     : [];
 
-  try {
-    const contentObj = item.fields.content ? JSON.parse(item.fields.content) : {};
-    maintenances = contentObj?.easy_publish?.cars?.maintenances ?? [];
-  } catch (err) {
-    console.warn(`Failed to parse maintenances for item ${objectId}`, err);
-  }
+  useEffect(() => {
+    let cancelled = false;
+    const rawContent =
+      typeof item.fields.content === 'string' ? item.fields.content : '';
+
+    if (!rawContent) {
+      setMaintenances([]);
+      return () => {
+        cancelled = true;
+      };
+    }
+
+    if (!autoUnzipContent) {
+      setMaintenances(parseMaintenancesFromContent(rawContent));
+      return () => {
+        cancelled = true;
+      };
+    }
+
+    void decodeContentForDisplay(rawContent).then((decoded) => {
+      if (cancelled) return;
+      setMaintenances(parseMaintenancesFromContent(decoded.content));
+    });
+
+    return () => {
+      cancelled = true;
+    };
+  }, [autoUnzipContent, item.fields.content]);
 
   const rowExplorerUrl = explorerUrl ? explorerUrl(objectId) : undefined;
 
@@ -128,8 +206,7 @@ const ItemsTableRow: React.FC<ItemsTableRowProps> = ({
         {/* Dynamic columns */}
         {columns.map((col, idx) => {
           const cellId = `${objectId}-${idx}`;
-          let value = resolvePath(item.fields, col);
-          if (value && typeof value === 'object') value = JSON.stringify(value, null, 2);
+          const value = resolvePath(item.fields, col);
 
           return (
             <td key={idx} className="bp-value-cell">
@@ -137,7 +214,7 @@ const ItemsTableRow: React.FC<ItemsTableRowProps> = ({
                 className={`collapsible ${expandedCells.has(cellId) ? 'expanded' : ''}`}
                 onClick={() => toggleCell(cellId)}
               >
-                {value ?? '-'}
+                <DecodedCellValue rawValue={value} />
               </div>
             </td>
           );

@@ -1,14 +1,24 @@
 import { useSignAndExecuteTransaction, useCurrentAccount } from '@iota/dapp-kit';
 import { useState, useEffect, useCallback } from 'react';
 import { Transaction } from '@iota/iota-sdk/transactions';
-import { FormInlineNotice, FormRow, useTimedFormNotice } from './FormUi.tsx';
+import {
+  ContentCheckInline,
+  ContentPublishOptionsInline,
+  ContentZipSavingsNotice,
+  FormInlineNotice,
+  FormRow,
+  useSessionContentPublishOptions,
+  useTimedFormNotice,
+} from './FormUi.tsx';
 import { FormSectionRow } from './CollapsibleFormSectionRow.tsx';
 import { TxDigestResult } from './TxDigestResult.tsx';
 import { moveTarget, submitTx } from './TransactionUtils.tsx';
+import { prepareContentForPublish } from './ContentCompaction.ts';
 import {
   isCarsInstance,
   UPDATE_CONTAINER_LOAD_SELECTED_INTENT_STORAGE_KEY,
 } from './FormUtils.tsx';
+import { useAutoUnzippedContent } from './useAutoUnzippedContent.ts';
 import { UPDATE_CHAIN_ID, CLOCK_ID, API_BASE, t } from '../../Config.ts';
 import { useSelection } from '../../context/SelectionContext';
 
@@ -51,8 +61,49 @@ export function UpdateContainerForm() {
     resources: '',
     externalIndex: 0,
   });
+  const [contentCheckSignal, setContentCheckSignal] = useState(0);
+  const {
+    autoCompressContent,
+    setAutoCompressContent,
+    autoZipContent,
+    setAutoZipContent,
+  } = useSessionContentPublishOptions();
+  const setContent = useCallback((nextContent: string) => {
+    setForm((prev) => ({ ...prev, content: nextContent }));
+  }, []);
+  const {
+    applyLoadedContent,
+    clearLoadedContent,
+    setEditedContent,
+  } = useAutoUnzippedContent({
+    content: form.content,
+    setContent,
+  });
+
+  const triggerContentCheck = () => {
+    setContentCheckSignal((signal) => signal + 1);
+  };
+
+  const renderContentPublishOptions = () => (
+    <ContentPublishOptionsInline
+      content={form.content}
+      autoCompressEnabled={autoCompressContent}
+      onAutoCompressChange={setAutoCompressContent}
+      autoZipEnabled={autoZipContent}
+      onAutoZipChange={setAutoZipContent}
+    />
+  );
+
+  const zipSavingsNotice = (
+    <ContentZipSavingsNotice
+      content={form.content}
+      autoCompressEnabled={autoCompressContent}
+      autoZipEnabled={autoZipContent}
+    />
+  );
 
   const clearForm = () => {
+    clearLoadedContent();
     setForm({
       container: '',
       name: '',
@@ -85,6 +136,7 @@ export function UpdateContainerForm() {
       if (!res.ok) throw new Error(t('messages.failedToLoad'));
       const raw = await res.json();
       const data = raw.container ?? raw.data ?? raw;
+      const loadedContent = data.content ?? '';
 
       setForm(prev => ({
         ...prev,
@@ -92,20 +144,21 @@ export function UpdateContainerForm() {
         externalId: data.externalId ?? '',
         name: data.name ?? '',
         description: data.description ?? '',
-        content: data.content ?? '',
+        content: loadedContent,
         version: data.specification?.version ?? '',
         schemas: data.specification?.schemas ?? '',
         apis: data.specification?.apis ?? '',
         resources: data.specification?.resources ?? '',
         externalIndex: data.externalIndex ?? 0,
       }));
+      applyLoadedContent(loadedContent);
     } catch (err) {
       console.error(err);
       showNotice(t('messages.failedToLoad'));
     } finally {
       setLoadingContainer(false);
     }
-  }, [selectedContainerId, showNotice]);
+  }, [applyLoadedContent, selectedContainerId, showNotice]);
 
   useEffect(() => {
     const shouldAutoLoad =
@@ -121,7 +174,7 @@ export function UpdateContainerForm() {
 
   const valid = account && form.container.trim() && form.name.trim();
 
-  const submit = () => {
+  const submit = async () => {
     if (!account) {
       showNotice(t('messages.connectWalletToAdd'));
       return;
@@ -135,6 +188,22 @@ export function UpdateContainerForm() {
       return;
     }
 
+    let preparedContent;
+    try {
+      preparedContent = await prepareContentForPublish(form.content, {
+        autoCompressEnabled: autoCompressContent,
+        autoZipEnabled: autoZipContent,
+      });
+    } catch (error) {
+      console.error(error);
+      showNotice(t('messages.autoZipEncodeFailed'));
+      return;
+    }
+    if (autoZipContent && !preparedContent.zipSupported) {
+      showNotice(t('messages.autoZipUnsupported'));
+      return;
+    }
+
     const tx = new Transaction();
     tx.moveCall({
       target: moveTarget('update_container'),
@@ -144,7 +213,7 @@ export function UpdateContainerForm() {
         tx.pure.string(form.externalId.trim()),
         tx.pure.string(form.name.trim()),
         tx.pure.string(form.description.trim()),
-        tx.pure.string(form.content.trim()),
+        tx.pure.string(preparedContent.content),
         tx.pure.string(form.version.trim()),
         tx.pure.string(form.schemas.trim()),
         tx.pure.string(form.apis.trim()),
@@ -226,12 +295,21 @@ export function UpdateContainerForm() {
    {!carsMode && (
      <>
           <FormRow label={t('fields.content')}>
-            <textarea
-              className="form-control form-control-sm w-100"
-              rows={3}
-              value={form.content}
-              onChange={(e) => setForm({ ...form, content: e.target.value })}
-            />
+            <>
+              <textarea
+                className="form-control form-control-sm w-100"
+                rows={3}
+                value={form.content}
+                onChange={(e) => setEditedContent(e.target.value)}
+                onBlur={triggerContentCheck}
+              />
+              <ContentCheckInline
+                content={form.content}
+                autoCheckSignal={contentCheckSignal}
+                rightControl={renderContentPublishOptions()}
+                extraNotice={zipSavingsNotice}
+              />
+            </>
           </FormRow>
              </>
         )}
@@ -304,7 +382,9 @@ export function UpdateContainerForm() {
           <div className="form-section-middle text-center">
             <button
               className="btn btn-outline-primary btn-sm w-100"
-              onClick={submit}
+              onClick={() => {
+                void submit();
+              }}
             >
               {account ? t('actions.update') + ' ' + t('container.singular') : t('messages.connectWalletToAdd')}
             </button>

@@ -5,6 +5,8 @@ import { DataItemsView } from '../move/view/DataItemsView';
 import { ReceivedItemsView } from '../move/view/ReceivedItemsView.tsx';
 import { DataItemVerificationsView } from '../move/view/DataItemVerificationsView.tsx';
 import { ReceivedItemVerificationsView } from '../move/view/ReceivedItemVerificationsView.tsx';
+import { ContainerChildLinksView } from '../move/view/ContainerChildLinksView.tsx';
+import { OwnersView } from '../move/view/OwnersView.tsx';
 
 import { t } from '../Config.ts'; // <-- import translations
 
@@ -16,6 +18,8 @@ interface MainPanelProps {
     | 'received_items'
     | 'data_item_verifications'
     | 'received_item_verifications'
+    | 'container_child_links'
+    | 'owners'
     | 'add';
   account?: { address: string } | null;
   primaryMenu?: 'container' | 'data_type';
@@ -92,6 +96,12 @@ export function MainPanel({
             onBrowseItems={onOpenItemsView}
           />
         );
+
+      case 'container_child_links':
+        return <ContainerChildLinksView />;
+
+      case 'owners':
+        return <OwnersView />;
 
       case 'add':
         if (!account?.address) {

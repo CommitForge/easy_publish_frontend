@@ -747,6 +747,25 @@ a:hover {
   font-size: 0.76rem;
 }
 
+.bp-items-root .bp-data-item-filter-checkbox {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.45rem;
+  min-height: 36px;
+  padding: 0.2rem 0.3rem;
+  color: var(--fg-muted);
+  font-size: 0.74rem;
+  font-weight: 600;
+  user-select: none;
+}
+
+.bp-items-root .bp-data-item-filter-checkbox input {
+  width: 0.95rem;
+  height: 0.95rem;
+  accent-color: #50fa7b;
+  cursor: pointer;
+}
+
 .bp-items-root .bp-data-item-filter-secondary {
   margin-top: 0.55rem;
   display: flex;
@@ -1476,8 +1495,7 @@ a:hover {
   position: relative;
   padding: 0.55rem 0.75rem;
   border-radius: 14px;
-  overflow: hidden;
-  overflow: clip;
+  overflow: visible;
 }
 
 .addr-wrap {
@@ -1769,9 +1787,26 @@ a:hover {
 .form-content-check-inline {
   margin-top: 0.22rem;
   display: flex;
-  align-items: center;
-  gap: 0.45rem;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 0.2rem;
   min-height: 1rem;
+}
+
+.form-content-check-controls {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 0.45rem;
+  row-gap: 0.25rem;
+}
+
+.form-content-check-controls-primary {
+  width: 100%;
+}
+
+.form-content-check-controls-secondary {
+  width: 100%;
 }
 
 .form-content-check-trigger {
@@ -1804,23 +1839,72 @@ a:hover {
 }
 
 .form-content-check-help {
+  position: relative;
   display: inline-flex;
   align-items: center;
   color: var(--text-muted, #8a909b);
   font-size: 0.72rem;
   line-height: 1;
   cursor: help;
+  outline: none;
 }
 
 .form-content-check-help:hover {
   color: var(--cyan);
 }
 
+.form-content-check-help:focus-visible {
+  color: var(--cyan);
+}
+
+.form-content-help-tooltip-bubble {
+  position: absolute;
+  left: -0.15rem;
+  top: calc(100% + 0.25rem);
+  z-index: 1200;
+  min-width: 180px;
+  max-width: min(320px, 80vw);
+  border: 1px solid rgba(139, 233, 253, 0.54);
+  border-radius: 8px;
+  background: #161b24;
+  color: #f8f8f2;
+  box-shadow: 0 10px 22px rgba(0, 0, 0, 0.42);
+  padding: 0.32rem 0.45rem;
+  font-size: 0.69rem;
+  line-height: 1.3;
+  white-space: normal;
+  opacity: 0;
+  visibility: hidden;
+  pointer-events: none;
+  transform: translateY(-1px);
+  transition:
+    opacity 0.12s ease,
+    transform 0.12s ease,
+    visibility 0.12s ease;
+  transition-delay: 0s;
+}
+
+.form-content-help-tooltip-up .form-content-help-tooltip-bubble {
+  left: auto;
+  right: -0.15rem;
+  top: auto;
+  bottom: calc(100% + 0.25rem);
+}
+
+.form-content-help-tooltip:hover .form-content-help-tooltip-bubble,
+.form-content-help-tooltip:focus-visible .form-content-help-tooltip-bubble {
+  opacity: 1;
+  visibility: visible;
+  transform: translateY(0);
+  transition-delay: 0.14s;
+}
+
 .form-content-check-right-control {
   display: inline-flex;
   align-items: center;
   gap: 0.45rem;
-  flex-wrap: nowrap;
+  flex-wrap: wrap;
+  width: 100%;
 }
 
 .form-content-compress-control {
@@ -1852,10 +1936,56 @@ a:hover {
 .form-content-check-result {
   font-size: 0.74rem;
   line-height: 1.2;
-  min-width: 0;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
+  white-space: normal;
+}
+
+.form-content-check-result.text-warning {
+  color: var(--orange) !important;
+}
+
+.form-content-check-extra {
+  width: 100%;
+}
+
+.bp-dialog-content-preview {
+  width: min(94vw, 980px);
+}
+
+.form-content-preview-header {
+  margin-bottom: 0.35rem;
+  padding-right: 2.5rem;
+}
+
+.form-content-preview-title {
+  margin: 0;
+  color: var(--green);
+  font-size: 1rem;
+}
+
+.form-content-preview-meta {
+  display: block;
+  margin-top: 0.2rem;
+  color: var(--fg-muted);
+  font-size: 0.74rem;
+  line-height: 1.3;
+}
+
+.form-content-preview-loading {
+  color: var(--fg-muted);
+  font-size: 0.82rem;
+  padding: 0.3rem 0;
+}
+
+.form-content-preview-error {
+  display: block;
+  margin-bottom: 0.3rem;
+  font-size: 0.75rem;
+}
+
+.form-content-preview-textarea {
+  min-height: 320px;
+  font-family: 'JetBrains Mono', 'Fira Code', 'Courier New', monospace;
+  resize: vertical;
 }
 
 .bp-inline-action-row {
@@ -1915,6 +2045,29 @@ a:hover {
   text-decoration: none;
   opacity: 0.65;
   cursor: not-allowed;
+}
+
+.bp-sidebar-full-table-dialog {
+  width: min(96vw, 1220px);
+}
+
+.bp-sidebar-full-table-dialog-header {
+  margin-bottom: 0.48rem;
+  padding-right: 2.45rem;
+}
+
+.bp-sidebar-full-table-dialog-title {
+  margin: 0;
+  color: var(--green);
+  font-size: 1rem;
+}
+
+.bp-sidebar-full-table-dialog-subtitle {
+  display: block;
+  margin-top: 0.2rem;
+  color: var(--fg-muted);
+  font-size: 0.74rem;
+  line-height: 1.3;
 }
 
 .bp-repeatable-editor-item {
@@ -2029,6 +2182,42 @@ a:hover {
 .main-panel {
   height: 100%;
   min-height: 0;
+}
+
+.bp-sidebar-disabled-item {
+  position: relative;
+}
+
+.bp-sidebar-disabled-tooltip {
+  position: absolute;
+  left: 0.45rem;
+  right: 0.45rem;
+  top: calc(100% + 0.15rem);
+  z-index: 1200;
+  border: 1px solid rgba(139, 233, 253, 0.5);
+  background: #14181e;
+  color: var(--fg);
+  border-radius: 7px;
+  padding: 0.32rem 0.45rem;
+  font-size: 0.69rem;
+  line-height: 1.25;
+  box-shadow: 0 8px 20px rgba(0, 0, 0, 0.42);
+  opacity: 0;
+  visibility: hidden;
+  pointer-events: none;
+  transform: translateY(-1px);
+  transition:
+    opacity 0.12s ease,
+    transform 0.12s ease,
+    visibility 0.12s ease;
+  transition-delay: 0s;
+}
+
+.bp-sidebar-disabled-item:hover .bp-sidebar-disabled-tooltip {
+  opacity: 1;
+  visibility: visible;
+  transform: translateY(0);
+  transition-delay: 0.16s;
 }
 
 /********* COOKIE CONSENT ***********/
@@ -2341,8 +2530,7 @@ a:hover {
   position: relative;
   padding: 0.55rem 0.75rem;
   border-radius: 14px;
-  overflow: hidden;
-  overflow: clip;
+  overflow: visible;
 }
 
 .wallet-connect-btn {
@@ -2354,8 +2542,36 @@ a:hover {
 
 .wallet-connected {
   display: flex;
+  align-items: flex-start;
+  flex-direction: column;
+  gap: 6px;
+  overflow: visible;
+}
+
+.wallet-connected-row {
+  display: inline-flex;
   align-items: center;
   gap: 6px;
+}
+
+.wallet-auto-unzip-toggle {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.28rem;
+  font-size: 0.74rem;
+  font-weight: 600;
+  color: var(--fg-muted);
+  cursor: pointer;
+  user-select: none;
+  overflow: visible;
+}
+
+.wallet-auto-unzip-toggle input {
+  width: 0.74rem;
+  height: 0.74rem;
+  margin: 0;
+  cursor: pointer;
 }
 
 @media (max-width: 1100px) {

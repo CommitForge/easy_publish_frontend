@@ -12,10 +12,21 @@
   padding-left: 0;
 }
 
+.follow-panel-input-hint {
+  margin-top: 4px;
+  margin-bottom: 4px;
+}
+
+.follow-panel-input-title {
+  font-size: 12px;
+  font-weight: 600;
+  opacity: 0.85;
+  margin-bottom: 1px;
+}
+
 .follow-panel-input-row {
   display: flex;
   gap: 6px;
-  margin-top: 4px;
 }
 
 .follow-panel-input {

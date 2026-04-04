@@ -1,16 +1,22 @@
 import { useSignAndExecuteTransaction } from '@iota/dapp-kit';
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { Transaction } from '@iota/iota-sdk/transactions';
 import {
+  ContentCheckInline,
+  ContentPublishOptionsInline,
+  ContentZipSavingsNotice,
   FormInlineNotice,
   FormRow,
   CheckboxSection,
+  useSessionContentPublishOptions,
   useTimedFormNotice,
 } from './FormUi.tsx';
 import { FormSectionRow } from './CollapsibleFormSectionRow.tsx';
 import { TxDigestResult } from './TxDigestResult.tsx';
 import { moveTarget, submitTx } from './TransactionUtils.tsx';
+import { prepareContentForPublish } from './ContentCompaction.ts';
 import { defaultContent, getCarsContentJson, isCarsInstance } from './FormUtils.tsx';
+import { useAutoUnzippedContent } from './useAutoUnzippedContent.ts';
 import { useSelection } from '../../context/SelectionContext';
 import {
   CLOCK_ID,
@@ -56,15 +62,57 @@ export function CreateContainerForm({ address }: { address: string }) {
     eventRemove: false,
     eventUpdate: false,
   });
+  const [contentCheckSignal, setContentCheckSignal] = useState(0);
+  const {
+    autoCompressContent,
+    setAutoCompressContent,
+    autoZipContent,
+    setAutoZipContent,
+  } = useSessionContentPublishOptions();
+  const setContent = useCallback((nextContent: string) => {
+    setForm((prev) => ({ ...prev, content: nextContent }));
+  }, []);
+  const {
+    applyLoadedContent,
+    clearLoadedContent,
+    setEditedContent,
+  } = useAutoUnzippedContent({
+    content: form.content,
+    setContent,
+  });
+
+  const triggerContentCheck = () => {
+    setContentCheckSignal((signal) => signal + 1);
+  };
+
+  const renderContentPublishOptions = () => (
+    <ContentPublishOptionsInline
+      content={form.content}
+      autoCompressEnabled={autoCompressContent}
+      onAutoCompressChange={setAutoCompressContent}
+      autoZipEnabled={autoZipContent}
+      onAutoZipChange={setAutoZipContent}
+    />
+  );
+
+  const zipSavingsNotice = (
+    <ContentZipSavingsNotice
+      content={form.content}
+      autoCompressEnabled={autoCompressContent}
+      autoZipEnabled={autoZipContent}
+    />
+  );
 
   useEffect(() => {
     if (carsMode) {
+      clearLoadedContent();
       setForm((f) => ({
         ...f,
         content: carsContentJson,
       }));
+      setEditedContent(carsContentJson);
     }
-  }, [carsMode, carsContentJson]);
+  }, [carsMode, carsContentJson, clearLoadedContent, setEditedContent]);
 
   const toggle = (key: keyof typeof form) => setForm((f) => ({ ...f, [key]: !f[key] }));
 
@@ -80,11 +128,12 @@ export function CreateContainerForm({ address }: { address: string }) {
       if (!res.ok) throw new Error(t('messages.containerNotFound'));
 
       const data = await res.json();
+      const loadedContent = carsMode ? carsContentJson : data.content || '';
       setForm({
         externalId: data.externalId || '',
         name: data.name || '',
         description: data.description || '',
-        content: carsMode ? carsContentJson : data.content || '',
+        content: loadedContent,
         version: data.specification?.version || '',
         schemas: data.specification?.schemas || '',
         apis: data.specification?.apis || '',
@@ -103,6 +152,7 @@ export function CreateContainerForm({ address }: { address: string }) {
         eventRemove: data.eventConfig?.eventRemove ?? false,
         eventUpdate: data.eventConfig?.eventUpdate ?? false,
       });
+      applyLoadedContent(loadedContent);
     } catch (err) {
       console.error(err);
       showNotice(t('messages.failedLoadContainer'));
@@ -112,6 +162,7 @@ export function CreateContainerForm({ address }: { address: string }) {
   };
 
   const clearForm = () => {
+    clearLoadedContent();
     setForm({
       externalId: '',
       name: '',
@@ -140,10 +191,27 @@ export function CreateContainerForm({ address }: { address: string }) {
     setInvalidFields({ name: false });
   };
 
-  const submit = () => {
+  const submit = async () => {
     if (!form.name.trim()) {
       setInvalidFields({ name: true });
       showNotice(t('messages.nameRequired'));
+      return;
+    }
+
+    let preparedContent;
+    try {
+      preparedContent = await prepareContentForPublish(form.content, {
+        autoCompressEnabled: autoCompressContent,
+        autoZipEnabled: autoZipContent,
+      });
+    } catch (error) {
+      console.error(error);
+      showNotice(t('messages.autoZipEncodeFailed'));
+      return;
+    }
+
+    if (autoZipContent && !preparedContent.zipSupported) {
+      showNotice(t('messages.autoZipUnsupported'));
       return;
     }
 
@@ -156,7 +224,7 @@ export function CreateContainerForm({ address }: { address: string }) {
         tx.pure.string(form.externalId),
         tx.pure.string(form.name),
         tx.pure.string(form.description),
-        tx.pure.string(form.content),
+        tx.pure.string(preparedContent.content),
         tx.pure.string(form.version),
         tx.pure.string(form.schemas),
         tx.pure.string(form.apis),
@@ -235,16 +303,25 @@ export function CreateContainerForm({ address }: { address: string }) {
               onChange={(e) => setForm({ ...form, description: e.target.value })}
             />
           </FormRow>
-   {!carsMode && (
+          {!carsMode && (
           <>
           <FormRow label={t('fields.content')}>
-            <textarea
-              className="form-control form-control-sm w-100"
-              rows={3}
-              value={form.content}
-              readOnly={carsMode} // prevent editing if cars
-              onChange={(e) => setForm({ ...form, content: e.target.value })}
-            />
+            <>
+              <textarea
+                className="form-control form-control-sm w-100"
+                rows={3}
+                value={form.content}
+                readOnly={carsMode} // prevent editing if cars
+                onChange={(e) => setEditedContent(e.target.value)}
+                onBlur={triggerContentCheck}
+              />
+              <ContentCheckInline
+                content={form.content}
+                autoCheckSignal={contentCheckSignal}
+                rightControl={renderContentPublishOptions()}
+                extraNotice={zipSavingsNotice}
+              />
+            </>
           </FormRow>
              </>
         )}
@@ -368,7 +445,9 @@ export function CreateContainerForm({ address }: { address: string }) {
           <div className="form-section-middle text-center">
             <button
               className="btn btn-outline-primary btn-sm w-100"
-              onClick={submit}
+              onClick={() => {
+                void submit();
+              }}
             >
               {t('actions.create')} {t('container.singular')}
             </button>

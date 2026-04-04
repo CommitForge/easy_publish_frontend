@@ -1,5 +1,6 @@
 import React, { useCallback, useEffect, useRef, useState } from 'react';
 import { t } from '../../Config.ts';
+import { prepareContentForPublish } from './ContentCompaction.ts';
 
 /* ============================================================
    Generic vertical-aligned form row
@@ -22,12 +23,68 @@ export const FormRow: React.FC<FormRowProps> = ({ label, children }) => (
   </div>
 );
 
-export type FormNoticeTone = 'danger' | 'success' | 'info';
+export type FormNoticeTone = 'danger' | 'success' | 'info' | 'warning';
 
 export type FormNotice = {
   message: string;
   tone?: FormNoticeTone;
 };
+
+const AUTO_COMPRESS_SESSION_KEY = 'easy_publish:auto_compress';
+const AUTO_ZIP_SESSION_KEY = 'easy_publish:auto_zip';
+
+function readSessionBoolean(key: string, fallback: boolean): boolean {
+  if (typeof window === 'undefined') return fallback;
+  try {
+    const raw = window.sessionStorage.getItem(key);
+    if (raw === '1') return true;
+    if (raw === '0') return false;
+  } catch {
+    // Ignore storage issues and use fallback.
+  }
+  return fallback;
+}
+
+type SessionContentPublishOptions = {
+  autoCompressContent: boolean;
+  setAutoCompressContent: (enabled: boolean) => void;
+  autoZipContent: boolean;
+  setAutoZipContent: (enabled: boolean) => void;
+};
+
+export function useSessionContentPublishOptions(): SessionContentPublishOptions {
+  const [autoCompressContentState, setAutoCompressContentState] = useState<boolean>(
+    () => readSessionBoolean(AUTO_COMPRESS_SESSION_KEY, true)
+  );
+  const [autoZipContentState, setAutoZipContentState] = useState<boolean>(() =>
+    readSessionBoolean(AUTO_ZIP_SESSION_KEY, false)
+  );
+
+  const setAutoCompressContent = useCallback((enabled: boolean) => {
+    setAutoCompressContentState(enabled);
+    try {
+      window.sessionStorage.setItem(AUTO_COMPRESS_SESSION_KEY, enabled ? '1' : '0');
+    } catch {
+      // Ignore storage write issues.
+    }
+  }, []);
+
+  const setAutoZipContent = useCallback((enabled: boolean) => {
+    setAutoZipContentState(enabled);
+    try {
+      window.sessionStorage.setItem(AUTO_ZIP_SESSION_KEY, enabled ? '1' : '0');
+    } catch {
+      // Ignore storage write issues.
+    }
+  }, []);
+
+  return {
+    autoCompressContent: autoCompressContentState,
+    setAutoCompressContent,
+    autoZipContent: autoZipContentState,
+    setAutoZipContent,
+  };
+}
 
 export function useTimedFormNotice(autoHideMs = 15000) {
   const [notice, setNotice] = useState<FormNotice | null>(null);
@@ -85,6 +142,27 @@ export const FormInlineNotice: React.FC<FormInlineNoticeProps> = ({ notice }) =>
     </small>
   ) : null;
 
+type InfoTooltipProps = {
+  message: string;
+  ariaLabel?: string;
+  className?: string;
+};
+
+export const InfoTooltip: React.FC<InfoTooltipProps> = ({
+  message,
+  ariaLabel,
+  className = '',
+}) => (
+  <span
+    className={`form-content-help-tooltip ${className}`.trim()}
+    tabIndex={0}
+    aria-label={ariaLabel ?? message}
+  >
+    <i className="bi bi-info-circle" aria-hidden="true" />
+    <span className="form-content-help-tooltip-bubble">{message}</span>
+  </span>
+);
+
 type ContentCheckResult = {
   message: string;
   tone: FormNoticeTone;
@@ -130,7 +208,7 @@ function detectContentCheckResult(content: string): ContentCheckResult {
       JSON.parse(trimmed);
       return { message: t('messages.contentCheckJsonValid'), tone: 'success' };
     } catch {
-      return { message: t('messages.contentCheckJsonInvalid'), tone: 'danger' };
+      return { message: t('messages.contentCheckJsonInvalid'), tone: 'warning' };
     }
   }
 
@@ -140,23 +218,35 @@ function detectContentCheckResult(content: string): ContentCheckResult {
       message: validXml
         ? t('messages.contentCheckXmlValid')
         : t('messages.contentCheckXmlInvalid'),
-      tone: validXml ? 'success' : 'danger',
+      tone: validXml ? 'success' : 'warning',
     };
   }
 
   return { message: t('messages.contentCheckPlainText'), tone: 'info' };
 }
 
+function interpolateTemplate(
+  template: string,
+  values: Record<string, string | number>
+): string {
+  return Object.entries(values).reduce(
+    (next, [key, value]) => next.replaceAll(`{${key}}`, String(value)),
+    template
+  );
+}
+
 type ContentCheckInlineProps = {
   content: string;
   autoCheckSignal?: number;
   rightControl?: React.ReactNode;
+  extraNotice?: React.ReactNode;
 };
 
 export const ContentCheckInline: React.FC<ContentCheckInlineProps> = ({
   content,
   autoCheckSignal,
   rightControl,
+  extraNotice,
 }) => {
   const [result, setResult] = useState<ContentCheckResult | null>(null);
   const [isChecking, setIsChecking] = useState(false);
@@ -207,33 +297,253 @@ export const ContentCheckInline: React.FC<ContentCheckInlineProps> = ({
 
   return (
     <div className="form-content-check-inline">
-      <button
-        type="button"
-        className="form-content-check-trigger"
-        onClick={runCheck}
-        aria-busy={isChecking}
-      >
-        <i className="bi bi-check2-circle" aria-hidden="true" />
-        {t('actions.checkContent')}
-      </button>
-      <span
-        className="form-content-check-help"
-        title={t('messages.contentCheckHelp')}
-        aria-label={t('labels.contentCheckHelp')}
-      >
-        <i className="bi bi-info-circle" aria-hidden="true" />
-      </span>
+      <div className="form-content-check-controls form-content-check-controls-primary">
+        <button
+          type="button"
+          className="form-content-check-trigger"
+          onClick={runCheck}
+          aria-busy={isChecking}
+        >
+          <i className="bi bi-check2-circle" aria-hidden="true" />
+          {t('actions.checkContent')}
+        </button>
+        <InfoTooltip
+          className="form-content-check-help"
+          message={t('messages.contentCheckHelp')}
+          ariaLabel={t('labels.contentCheckHelp')}
+        />
+      </div>
       {rightControl ? (
-        <span className="form-content-check-right-control">{rightControl}</span>
+        <div className="form-content-check-controls form-content-check-controls-secondary">
+          <span className="form-content-check-right-control">{rightControl}</span>
+        </div>
       ) : null}
       {result ? (
         <small className={`form-content-check-result text-${result.tone}`}>
           {result.message}
         </small>
       ) : null}
+      {extraNotice ? <div className="form-content-check-extra">{extraNotice}</div> : null}
     </div>
   );
 };
+
+type ContentPreviewButtonProps = {
+  content: string;
+  autoCompressEnabled: boolean;
+  autoZipEnabled: boolean;
+};
+
+export const ContentPreviewButton: React.FC<ContentPreviewButtonProps> = ({
+  content,
+  autoCompressEnabled,
+  autoZipEnabled,
+}) => {
+  const [open, setOpen] = useState(false);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const [previewContent, setPreviewContent] = useState('');
+  const [previewMeta, setPreviewMeta] = useState('');
+
+  const openPreview = useCallback(async () => {
+    setOpen(true);
+    setLoading(true);
+    setError(null);
+
+    try {
+      const prepared = await prepareContentForPublish(content, {
+        autoCompressEnabled,
+        autoZipEnabled,
+      });
+
+      if (autoZipEnabled && !prepared.zipSupported) {
+        setError(t('messages.autoZipUnsupported'));
+        setPreviewContent(content);
+        setPreviewMeta('');
+        return;
+      }
+
+      setPreviewContent(prepared.content);
+      const details = [
+        `${t('labels.previewFormat')}: ${prepared.format.toUpperCase()}`,
+        `${t('labels.previewLength')}: ${prepared.content.length}`,
+        `${t('labels.previewCompacted')}: ${
+          prepared.compacted ? t('labels.previewYes') : t('labels.previewNo')
+        }`,
+        `${t('labels.previewZipped')}: ${
+          prepared.zipped ? t('labels.previewYes') : t('labels.previewNo')
+        }`,
+      ];
+      setPreviewMeta(details.join(' | '));
+    } catch {
+      setError(t('messages.previewPrepareFailed'));
+      setPreviewContent(content);
+      setPreviewMeta('');
+    } finally {
+      setLoading(false);
+    }
+  }, [autoCompressEnabled, autoZipEnabled, content]);
+
+  return (
+    <>
+      <button type="button" className="form-content-check-trigger" onClick={openPreview}>
+        <i className="bi bi-eye" aria-hidden="true" />
+        {t('actions.preview')}
+      </button>
+      {open ? (
+        <div className="bp-dialog-backdrop" role="presentation" onClick={() => setOpen(false)}>
+          <div
+            className="bp-dialog bp-dialog-content-preview"
+            role="dialog"
+            aria-modal="true"
+            aria-label={t('labels.previewSubmission')}
+            onClick={(event) => event.stopPropagation()}
+          >
+            <button
+              type="button"
+              className="bp-dialog-close"
+              aria-label={t('actions.close')}
+              onClick={() => setOpen(false)}
+            >
+              <i className="bi bi-x-lg" />
+            </button>
+
+            <div className="form-content-preview-header">
+              <h3 className="form-content-preview-title">{t('labels.previewSubmission')}</h3>
+              {previewMeta ? (
+                <small className="form-content-preview-meta">{previewMeta}</small>
+              ) : null}
+            </div>
+
+            {loading ? (
+              <div className="form-content-preview-loading">{t('actions.loading')}</div>
+            ) : (
+              <>
+                {error ? (
+                  <small className="form-content-preview-error text-danger">{error}</small>
+                ) : null}
+                <textarea
+                  readOnly
+                  className="form-control form-control-sm form-content-preview-textarea"
+                  rows={16}
+                  value={previewContent}
+                />
+              </>
+            )}
+          </div>
+        </div>
+      ) : null}
+    </>
+  );
+};
+
+type ContentZipSavingsNoticeProps = {
+  content: string;
+  autoCompressEnabled: boolean;
+  autoZipEnabled: boolean;
+};
+
+export const ContentZipSavingsNotice: React.FC<ContentZipSavingsNoticeProps> = ({
+  content,
+  autoCompressEnabled,
+  autoZipEnabled,
+}) => {
+  const [notice, setNotice] = useState<FormNotice | null>(null);
+  const tokenRef = useRef(0);
+
+  useEffect(() => {
+    const token = tokenRef.current + 1;
+    tokenRef.current = token;
+
+    if (!autoZipEnabled) {
+      setNotice(null);
+      return;
+    }
+
+    void (async () => {
+      try {
+        const plain = await prepareContentForPublish(content, {
+          autoCompressEnabled,
+          autoZipEnabled: false,
+        });
+        const zipped = await prepareContentForPublish(content, {
+          autoCompressEnabled,
+          autoZipEnabled: true,
+        });
+
+        if (tokenRef.current !== token) return;
+
+        if (!zipped.zipSupported) {
+          setNotice({ message: t('messages.autoZipUnsupported'), tone: 'warning' });
+          return;
+        }
+
+        const plainLength = plain.content.length;
+        const zippedLength = zipped.content.length;
+        const savedChars = plainLength - zippedLength;
+        const savedPercent =
+          plainLength > 0 ? ((savedChars / plainLength) * 100).toFixed(1) : '0.0';
+
+        if (savedChars > 0) {
+          setNotice({
+            message: interpolateTemplate(t('messages.autoZipSavingsPositive'), {
+              saved: savedChars,
+              percent: savedPercent,
+            }),
+            tone: 'success',
+          });
+          return;
+        }
+
+        setNotice({
+          message: interpolateTemplate(t('messages.autoZipSavingsNegative'), {
+            delta: Math.abs(savedChars),
+            percent: Math.abs(Number(savedPercent)).toFixed(1),
+          }),
+          tone: 'warning',
+        });
+      } catch {
+        if (tokenRef.current !== token) return;
+        setNotice({ message: t('messages.autoZipEncodeFailed'), tone: 'danger' });
+      }
+    })();
+  }, [autoCompressEnabled, autoZipEnabled, content]);
+
+  return notice ? (
+    <small className={`form-content-check-result text-${notice.tone ?? 'info'}`}>
+      {notice.message}
+    </small>
+  ) : null;
+};
+
+type ContentPublishOptionsInlineProps = {
+  content: string;
+  autoCompressEnabled: boolean;
+  onAutoCompressChange: (enabled: boolean) => void;
+  autoZipEnabled: boolean;
+  onAutoZipChange: (enabled: boolean) => void;
+};
+
+export const ContentPublishOptionsInline: React.FC<ContentPublishOptionsInlineProps> = ({
+  content,
+  autoCompressEnabled,
+  onAutoCompressChange,
+  autoZipEnabled,
+  onAutoZipChange,
+}) => (
+  <>
+    <ContentAutoCompressToggle
+      enabled={autoCompressEnabled}
+      onChange={onAutoCompressChange}
+    />
+    <ContentAutoZipToggle enabled={autoZipEnabled} onChange={onAutoZipChange} />
+    <ContentPreviewButton
+      content={content}
+      autoCompressEnabled={autoCompressEnabled}
+      autoZipEnabled={autoZipEnabled}
+    />
+  </>
+);
 
 type ContentAutoCompressToggleProps = {
   enabled: boolean;
@@ -253,13 +563,11 @@ export const ContentAutoCompressToggle: React.FC<ContentAutoCompressToggleProps>
       />
       {t('actions.autoCompress')}
     </label>
-    <span
+    <InfoTooltip
       className="form-content-check-help"
-      title={t('messages.autoCompressHelp')}
-      aria-label={t('labels.autoCompressHelp')}
-    >
-      <i className="bi bi-info-circle" aria-hidden="true" />
-    </span>
+      message={t('messages.autoCompressHelp')}
+      ariaLabel={t('labels.autoCompressHelp')}
+    />
   </span>
 );
 
@@ -281,13 +589,11 @@ export const ContentAutoZipToggle: React.FC<ContentAutoZipToggleProps> = ({
       />
       {t('actions.autoZip')}
     </label>
-    <span
+    <InfoTooltip
       className="form-content-check-help"
-      title={t('messages.autoZipHelp')}
-      aria-label={t('labels.autoZipHelp')}
-    >
-      <i className="bi bi-info-circle" aria-hidden="true" />
-    </span>
+      message={t('messages.autoZipHelp')}
+      ariaLabel={t('labels.autoZipHelp')}
+    />
   </span>
 );
 

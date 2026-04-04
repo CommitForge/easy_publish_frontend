@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { useCurrentAccount } from '@iota/dapp-kit';
 import { ItemsLoader } from '../move/view/ItemsLoader';
 import { CarMaintenanceReportButton } from './CarMaintenanceReportButton.tsx';
@@ -19,19 +19,26 @@ import {
   FaCheckCircle,
   FaUserPlus,
   FaUserMinus,
+  FaProjectDiagram,
+  FaUsers,
+  FaQuestionCircle,
 } from 'react-icons/fa';
 
 import { t } from '../Config.ts'; // <-- import translations
 import { useDragResize } from '../hooks/useDragResize';
+import { DEFAULT_FIELDS_BY_TYPE } from '../utils/itemLoaderConfig.ts';
 
 export type PanelMenuSelection = Extract<
   PrimarySelection,
+  | 'help'
   | 'dashboard'
   | 'createContainer'
   | 'addDataType'
   | 'addDataItem'
   | 'publishDataItemVerification'
   | 'items'
+  | 'containerChildLinks'
+  | 'owners'
   | 'receivedItems'
   | 'itemVerifications'
   | 'receivedItemVerifications'
@@ -47,6 +54,7 @@ type SecondaryAction = {
   key: PanelMenuSelection;
   icon: React.ReactNode;
   disabled?: boolean;
+  disabledReason?: string;
 };
 
 interface SidebarPanelProps {
@@ -79,6 +87,10 @@ export function SidebarPanel({
   const [showDataTypesPanel, setShowDataTypesPanel] = useState(false);
   const [containerRefreshKey, setContainerRefreshKey] = useState(0);
   const [dataTypeRefreshKey, setDataTypeRefreshKey] = useState(0);
+  const [showContainerFullTableDialog, setShowContainerFullTableDialog] =
+    useState(false);
+  const [showDataTypeFullTableDialog, setShowDataTypeFullTableDialog] =
+    useState(false);
   const [expandedSecondary, setExpandedSecondary] =
     useState<'createContainer' | 'addDataType' | null>(null);
   const [addDataCollapsed, setAddDataCollapsed] = useState(false);
@@ -91,10 +103,27 @@ export function SidebarPanel({
   const sectionHeaderStyle: React.CSSProperties = {
     display: 'flex',
     alignItems: 'center',
-    cursor: 'pointer',
     fontWeight: 600,
     padding: '5px 3px',
     borderRadius: 4,
+    justifyContent: 'space-between',
+    gap: 8,
+  };
+
+  const headerLinkStyle: React.CSSProperties = {
+    border: 'none',
+    background: 'transparent',
+    color: 'var(--comment)',
+    cursor: 'pointer',
+    display: 'inline-flex',
+    alignItems: 'center',
+    gap: 5,
+    padding: 0,
+    margin: 0,
+    fontSize: 12,
+    textDecoration: 'underline',
+    textUnderlineOffset: 2,
+    fontWeight: 600,
   };
 
   const actionButtonStyle = (
@@ -112,11 +141,12 @@ export function SidebarPanel({
     paddingLeft: 8 + indent,
     background: active ? 'rgba(255,255,255,0.12)' : 'transparent',
     fontWeight: active ? 600 : 400,
-    opacity: disabled ? 0.4 : 1,
+    color: disabled ? 'rgba(248, 248, 242, 0.58)' : undefined,
   });
 
   const panelSpacing = { marginBottom: 10 };
   const secondaryPanelsTogether = showContainersPanel && showDataTypesPanel;
+  const helpLinkIsActive = primaryMenuSelection === 'help';
 
   const sectionDividerStyle: React.CSSProperties = {
     display: 'flex',
@@ -154,19 +184,75 @@ export function SidebarPanel({
       key: 'updateContainer',
       icon: <FaEdit />,
       disabled: !selectedContainerId,
+      disabledReason: 'Select a container in Browse Containers to edit it.',
     },
-    { label: t('actions.attach'), key: 'attachChild', icon: <FaLink />, disabled: !selectedContainerId },
-    { label: t('actions.addOwner'), key: 'addOwner', icon: <FaUserPlus />, disabled: !selectedContainerId },
-    { label: t('actions.removeOwner'), key: 'removeOwner', icon: <FaUserMinus />, disabled: !selectedContainerId },
+    {
+      label: t('actions.attach'),
+      key: 'attachChild',
+      icon: <FaLink />,
+      disabled: !selectedContainerId,
+      disabledReason:
+        'Select a container in Browse Containers to attach a child link.',
+    },
+    {
+      label: t('actions.addOwner'),
+      key: 'addOwner',
+      icon: <FaUserPlus />,
+      disabled: !selectedContainerId,
+      disabledReason: 'Select a container in Browse Containers to add an owner.',
+    },
+    {
+      label: t('actions.removeOwner'),
+      key: 'removeOwner',
+      icon: <FaUserMinus />,
+      disabled: !selectedContainerId,
+      disabledReason:
+        'Select a container in Browse Containers to remove an owner.',
+    },
   ];
 
   const dataTypeSecondary: SecondaryAction[] = [
-    { label: t('type.singular') + ' ' + t('actions.edit'), key: 'updateDataType', icon: <FaEdit />, disabled: !selectedDataTypeId },
+    {
+      label: t('type.singular') + ' ' + t('actions.edit'),
+      key: 'updateDataType',
+      icon: <FaEdit />,
+      disabled: !selectedDataTypeId,
+      disabledReason: 'Select a data type in Browse Types to edit it.',
+    },
   ];
 
   const canCreateDataType = !!selectedContainerId;
   const canCreateDataItem = !!selectedContainerId && !!selectedDataTypeId;
   const canCreateVerification = !!selectedContainerId && !!selectedDataTypeId;
+  const canBrowseTypes = !!selectedContainerId;
+  const canBrowseItems = !!selectedContainerId || !!selectedDataTypeId;
+  const canBrowseItemVerifications = !!selectedContainerId;
+  const addDataTypeDisabledHint =
+    'Select a container in Browse Containers first, or create one in New Container.';
+  const addDataItemDisabledHint = !selectedContainerId
+    ? 'Select a container in Browse Containers first (or create one in New Container), then select a data type in Browse Types.'
+    : !selectedDataTypeId
+    ? 'Select a data type in Browse Types first, or create one in New Type.'
+    : undefined;
+  const addVerificationDisabledHint = !selectedContainerId
+    ? 'Select a container in Browse Containers first (or create one in New Container), then select a data type in Browse Types.'
+    : !selectedDataTypeId
+    ? 'Select a data type in Browse Types first, or create one in New Type.'
+    : undefined;
+  const browseTypesDisabledHint =
+    'Select a container in Browse Containers first (required). If no rows appear after selection, publish/create data types in that container.';
+  const browseItemsDisabledHint =
+    'Select at least one filter first: a container in Browse Containers or a data type in Browse Types. If it is still empty, publish/create data items that match your selection.';
+  const browseItemVerificationsDisabledHint =
+    'Select a container in Browse Containers first (required). If the table is still empty, publish item verifications for data items in that container.';
+  const renderDisabledHint = (hint?: string) =>
+    hint ? <span className="bp-sidebar-disabled-tooltip">{hint}</span> : null;
+
+  useEffect(() => {
+    if (canBrowseTypes) return;
+    setShowDataTypesPanel(false);
+    setShowDataTypeFullTableDialog(false);
+  }, [canBrowseTypes]);
 
   return (
     <div style={{ display: 'flex' }}>
@@ -185,10 +271,40 @@ export function SidebarPanel({
       >
         <div
           style={{ ...sectionHeaderStyle, marginBottom: 12 }}
-          onClick={toggleCollapse}
         >
-          <FaBars />
-          {!collapsed && <span style={{ marginLeft: 6 }}>{t('menu')}</span>}
+          <button
+            type="button"
+            style={{
+              border: 'none',
+              background: 'transparent',
+              color: 'inherit',
+              cursor: 'pointer',
+              padding: 0,
+              margin: 0,
+              display: 'inline-flex',
+              alignItems: 'center',
+            }}
+            onClick={toggleCollapse}
+            aria-label={collapsed ? 'Expand menu' : 'Collapse menu'}
+          >
+            <FaBars />
+            {!collapsed && <span style={{ marginLeft: 6 }}>{t('menu')}</span>}
+          </button>
+          {!collapsed && (
+            <button
+              type="button"
+              style={{
+                ...headerLinkStyle,
+                color: helpLinkIsActive ? 'var(--cyan)' : 'var(--comment)',
+                fontWeight: helpLinkIsActive ? 700 : 600,
+              }}
+              onClick={() => setPrimaryMenuSelection('help')}
+              aria-label={t('help')}
+            >
+              <FaQuestionCircle />
+              {t('help')}
+            </button>
+          )}
         </div>
 
         <div
@@ -239,12 +355,15 @@ export function SidebarPanel({
                       <div
                         key={item.key}
                         style={actionButtonStyle(primaryMenuSelection === item.key, 16, !!item.disabled)}
+                        className={item.disabled ? 'bp-sidebar-disabled-item' : undefined}
+                        aria-disabled={item.disabled ? 'true' : undefined}
                         onClick={() => {
                           if (item.disabled) return;
                           setPrimaryMenuSelection(item.key);
                         }}
                       >
                         {item.icon} {item.label}
+                        {item.disabled ? renderDisabledHint(item.disabledReason) : null}
                       </div>
                     ))}
 
@@ -254,6 +373,8 @@ export function SidebarPanel({
                       0,
                       !canCreateDataType
                     )}
+                    className={!canCreateDataType ? 'bp-sidebar-disabled-item' : undefined}
+                    aria-disabled={!canCreateDataType ? 'true' : undefined}
                     onClick={() => {
                       if (!canCreateDataType) return;
                       setPrimaryMenuSelection('addDataType');
@@ -263,18 +384,24 @@ export function SidebarPanel({
                     }}
                   >
                     <FaPlus /> {t('actions.new')} {t('type.singular')}
+                    {!canCreateDataType
+                      ? renderDisabledHint(addDataTypeDisabledHint)
+                      : null}
                   </div>
                   {expandedSecondary === 'addDataType' &&
                     dataTypeSecondary.map((item) => (
                       <div
                         key={item.key}
                         style={actionButtonStyle(primaryMenuSelection === item.key, 16, !!item.disabled)}
+                        className={item.disabled ? 'bp-sidebar-disabled-item' : undefined}
+                        aria-disabled={item.disabled ? 'true' : undefined}
                         onClick={() => {
                           if (item.disabled) return;
                           setPrimaryMenuSelection(item.key);
                         }}
                       >
                         {item.icon} {item.label}
+                        {item.disabled ? renderDisabledHint(item.disabledReason) : null}
                       </div>
                     ))}
 
@@ -284,12 +411,17 @@ export function SidebarPanel({
                       0,
                       !canCreateDataItem
                     )}
+                    className={!canCreateDataItem ? 'bp-sidebar-disabled-item' : undefined}
+                    aria-disabled={!canCreateDataItem ? 'true' : undefined}
                     onClick={() => {
                       if (!canCreateDataItem) return;
                       setPrimaryMenuSelection('addDataItem');
                     }}
                   >
                     <FaPlus /> {t('actions.new')} {t('item.singular')}
+                    {!canCreateDataItem
+                      ? renderDisabledHint(addDataItemDisabledHint)
+                      : null}
                   </div>
 
                   <div
@@ -298,12 +430,17 @@ export function SidebarPanel({
                       0,
                       !canCreateVerification
                     )}
+                    className={!canCreateVerification ? 'bp-sidebar-disabled-item' : undefined}
+                    aria-disabled={!canCreateVerification ? 'true' : undefined}
                     onClick={() => {
                       if (!canCreateVerification) return;
                       setPrimaryMenuSelection('publishDataItemVerification');
                     }}
                   >
                     <FaPlus /> {t('actions.new')} {t('itemVerification.singular')}
+                    {!canCreateVerification
+                      ? renderDisabledHint(addVerificationDisabledHint)
+                      : null}
                   </div>
                 </>
               )}
@@ -339,7 +476,7 @@ export function SidebarPanel({
                     onClick={() => setShowContainersPanel((p) => !p)}
                   >
                     <span style={{ display: 'inline-flex', alignItems: 'center', gap: 7 }}>
-                      <FaList /> {t('browse.containers')}
+                      <FaColumns /> {t('browse.containers')}
                     </span>
                     <span
                       title={
@@ -359,12 +496,39 @@ export function SidebarPanel({
                       {secondaryPanelsTogether ? <span>2</span> : null}
                     </span>
                   </div>
+                  {showContainersPanel && (
+                    <>
+                      <div
+                        style={actionButtonStyle(
+                          primaryMenuSelection === 'containerChildLinks',
+                          16
+                        )}
+                        onClick={() => setPrimaryMenuSelection('containerChildLinks')}
+                      >
+                        <FaProjectDiagram /> {t('browse.containerChildLinks')}
+                      </div>
+                      <div
+                        style={actionButtonStyle(primaryMenuSelection === 'owners', 16)}
+                        onClick={() => setPrimaryMenuSelection('owners')}
+                      >
+                        <FaUsers /> {t('browse.owners')}
+                      </div>
+                    </>
+                  )}
                   <div
-                    style={{ ...actionButtonStyle(showDataTypesPanel), justifyContent: 'space-between' }}
-                    onClick={() => setShowDataTypesPanel((p) => !p)}
+                    style={{
+                      ...actionButtonStyle(showDataTypesPanel, 0, !canBrowseTypes),
+                      justifyContent: 'space-between',
+                    }}
+                    className={!canBrowseTypes ? 'bp-sidebar-disabled-item' : undefined}
+                    aria-disabled={!canBrowseTypes ? 'true' : undefined}
+                    onClick={() => {
+                      if (!canBrowseTypes) return;
+                      setShowDataTypesPanel((p) => !p);
+                    }}
                   >
                     <span style={{ display: 'inline-flex', alignItems: 'center', gap: 7 }}>
-                      <FaList /> {t('browse.types')}
+                      <FaColumns /> {t('browse.types')}
                     </span>
                     <span
                       title={
@@ -383,18 +547,43 @@ export function SidebarPanel({
                       <FaColumns />
                       {secondaryPanelsTogether ? <span>2</span> : null}
                     </span>
+                    {!canBrowseTypes ? renderDisabledHint(browseTypesDisabledHint) : null}
                   </div>
                   <div
-                    style={actionButtonStyle(primaryMenuSelection === 'items')}
-                    onClick={() => setPrimaryMenuSelection('items')}
+                    style={actionButtonStyle(
+                      primaryMenuSelection === 'items',
+                      0,
+                      !canBrowseItems
+                    )}
+                    className={!canBrowseItems ? 'bp-sidebar-disabled-item' : undefined}
+                    aria-disabled={!canBrowseItems ? 'true' : undefined}
+                    onClick={() => {
+                      if (!canBrowseItems) return;
+                      setPrimaryMenuSelection('items');
+                    }}
                   >
                     <FaList /> {t('browse.items')}
+                    {!canBrowseItems ? renderDisabledHint(browseItemsDisabledHint) : null}
                   </div>
                   <div
-                    style={actionButtonStyle(primaryMenuSelection === 'itemVerifications')}
-                    onClick={() => setPrimaryMenuSelection('itemVerifications')}
+                    style={actionButtonStyle(
+                      primaryMenuSelection === 'itemVerifications',
+                      0,
+                      !canBrowseItemVerifications
+                    )}
+                    className={
+                      !canBrowseItemVerifications ? 'bp-sidebar-disabled-item' : undefined
+                    }
+                    aria-disabled={!canBrowseItemVerifications ? 'true' : undefined}
+                    onClick={() => {
+                      if (!canBrowseItemVerifications) return;
+                      setPrimaryMenuSelection('itemVerifications');
+                    }}
                   >
                     <FaCheckCircle /> {t('browse.itemVerifications')}
+                    {!canBrowseItemVerifications
+                      ? renderDisabledHint(browseItemVerificationsDisabledHint)
+                      : null}
                   </div>
                 </>
               )}
@@ -489,8 +678,17 @@ export function SidebarPanel({
               >
                 <FaChevronDown />{' '}
                 <span style={{ marginLeft: 6 }}>Containers</span>
-                <FaSyncAlt
+                <i
+                  className="bi bi-arrows-fullscreen"
+                  title={t('actions.openFullTable')}
                   style={{ marginLeft: 8, cursor: 'pointer' }}
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    setShowContainerFullTableDialog(true);
+                  }}
+                />
+                <FaSyncAlt
+                  style={{ marginLeft: 6, cursor: 'pointer' }}
                   onClick={(e) => {
                     e.stopPropagation();
                     setContainerRefreshKey((k) => k + 1);
@@ -537,8 +735,17 @@ export function SidebarPanel({
               onClick={() => setShowDataTypesPanel(false)}
             >
               <FaChevronDown /> <span style={{ marginLeft: 6 }}>Data Types</span>
-              <FaSyncAlt
+              <i
+                className="bi bi-arrows-fullscreen"
+                title={t('actions.openFullTable')}
                 style={{ marginLeft: 8, cursor: 'pointer' }}
+                onClick={(e) => {
+                  e.stopPropagation();
+                  setShowDataTypeFullTableDialog(true);
+                }}
+              />
+              <FaSyncAlt
+                style={{ marginLeft: 6, cursor: 'pointer' }}
                 onClick={(e) => {
                   e.stopPropagation();
                   setDataTypeRefreshKey((k) => k + 1);
@@ -554,6 +761,90 @@ export function SidebarPanel({
             />
           </div>
         </aside>
+      )}
+
+      {showContainerFullTableDialog && (
+        <div
+          className="bp-dialog-backdrop"
+          role="presentation"
+          onClick={() => setShowContainerFullTableDialog(false)}
+        >
+          <div
+            className="bp-dialog bp-dialog-wide bp-sidebar-full-table-dialog"
+            role="dialog"
+            aria-modal="true"
+            aria-label={t('browse.containers')}
+            onClick={(event) => event.stopPropagation()}
+          >
+            <button
+              type="button"
+              className="bp-dialog-close"
+              onClick={() => setShowContainerFullTableDialog(false)}
+              aria-label="Close"
+            >
+              ×
+            </button>
+
+            <div className="bp-sidebar-full-table-dialog-header">
+              <h3 className="bp-sidebar-full-table-dialog-title">
+                {t('browse.containers')}
+              </h3>
+              <small className="bp-sidebar-full-table-dialog-subtitle">
+                {t('messages.fullTableFilterHint')}
+              </small>
+            </div>
+
+            <ItemsLoader
+              type="container"
+              containerId={selectedContainerId ?? undefined}
+              dataTypeId={selectedDataTypeId ?? undefined}
+              fieldsToShow={DEFAULT_FIELDS_BY_TYPE.container}
+              enableEntityFilter
+            />
+          </div>
+        </div>
+      )}
+
+      {showDataTypeFullTableDialog && (
+        <div
+          className="bp-dialog-backdrop"
+          role="presentation"
+          onClick={() => setShowDataTypeFullTableDialog(false)}
+        >
+          <div
+            className="bp-dialog bp-dialog-wide bp-sidebar-full-table-dialog"
+            role="dialog"
+            aria-modal="true"
+            aria-label={t('browse.types')}
+            onClick={(event) => event.stopPropagation()}
+          >
+            <button
+              type="button"
+              className="bp-dialog-close"
+              onClick={() => setShowDataTypeFullTableDialog(false)}
+              aria-label="Close"
+            >
+              ×
+            </button>
+
+            <div className="bp-sidebar-full-table-dialog-header">
+              <h3 className="bp-sidebar-full-table-dialog-title">
+                {t('browse.types')}
+              </h3>
+              <small className="bp-sidebar-full-table-dialog-subtitle">
+                {t('messages.fullTableFilterHint')}
+              </small>
+            </div>
+
+            <ItemsLoader
+              type="data_type"
+              containerId={selectedContainerId ?? undefined}
+              dataTypeId={selectedDataTypeId ?? undefined}
+              fieldsToShow={DEFAULT_FIELDS_BY_TYPE.data_type}
+              enableEntityFilter
+            />
+          </div>
+        </div>
       )}
     </div>
   );

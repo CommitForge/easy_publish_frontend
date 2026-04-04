@@ -66,7 +66,7 @@ export function LinkGraphLaunchButton({
         onClick={() => setOpen(true)}
         title={
           seeds.length === 0
-            ? `Add ${mode} first to visualize links.`
+            ? 'Select at least one ID to visualize links.'
             : `Visualize ${mode} link graph`
         }
       >
@@ -414,15 +414,18 @@ function normalizeGraphPayload(
     seeds,
     maxDepth
   );
+  const payloadInfo =
+    typeof payload.info === 'string' && payload.info.trim()
+      ? payload.info.trim()
+      : undefined;
+  const inferredInfo = inferGraphInfo(payload, nodeMap.size, edgeMap.size, maxNodes);
+  const info = [payloadInfo, inferredInfo].filter(Boolean).join(' · ') || undefined;
 
   return {
     nodes: leveledNodes.slice(0, maxNodes),
     edges: Array.from(edgeMap.values()).slice(0, maxNodes * 3),
     source: 'backend',
-    info:
-      typeof payload.info === 'string' && payload.info.trim()
-        ? payload.info.trim()
-        : undefined,
+    info,
   };
 }
 
@@ -552,4 +555,40 @@ function buildGraphLayout(graph: GraphData): GraphLayout {
 function truncateNodeLabel(value: string): string {
   if (value.length <= 18) return value;
   return `${value.slice(0, 8)}...${value.slice(-7)}`;
+}
+
+function inferGraphInfo(
+  payload: Record<string, unknown>,
+  nodeCount: number,
+  edgeCount: number,
+  maxNodes: number
+): string | undefined {
+  const notes: string[] = [];
+  const edgeCap = maxNodes * 3;
+
+  if (payload.truncated === true) {
+    notes.push('Graph output is truncated by backend limits.');
+  }
+  if (
+    payload.maxDepthReached === true ||
+    payload.depthLimitReached === true ||
+    payload.reachedDepthLimit === true
+  ) {
+    notes.push('Traversal hit depth limit.');
+  }
+  if (
+    payload.maxNodesReached === true ||
+    payload.nodeLimitReached === true ||
+    payload.reachedNodeLimit === true
+  ) {
+    notes.push('Traversal hit node limit.');
+  }
+  if (nodeCount >= maxNodes) {
+    notes.push('Rendered node cap reached.');
+  }
+  if (edgeCount >= edgeCap) {
+    notes.push('Rendered edge cap reached.');
+  }
+
+  return notes.length > 0 ? Array.from(new Set(notes)).join(' ') : undefined;
 }

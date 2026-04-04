@@ -175,6 +175,44 @@ The `content.easy_publish` JSON structure used by the frontend is documented in:
 
 - `docs/EASY_PUBLISH_CONTENT.md`
 
+## Auto Zip Encoding Format
+
+When `Auto zip` is enabled in forms, content is encoded using a strict marker
+format so backend can reliably detect and decode it:
+
+- Stored value format: `EPZIP1:gzip+base64:<payload>`
+- `<payload>` is `gzip(utf8(content))` encoded as Base64
+
+Detection/decoding rule:
+
+1. If content starts with `EPZIP1:gzip+base64:`, treat it as encoded.
+2. Strip the prefix and Base64-decode the payload.
+3. Gunzip bytes to UTF-8 text.
+4. Parse/index the decoded content.
+
+If the prefix is not present, content is treated as normal plain JSON/XML/text.
+This prefix convention prevents confusion with other compression formats
+(`zip`, `7z`, `tar.gz`, etc.).
+
+### Why `EPZIP1:gzip+base64:`
+
+This marker was chosen for operational clarity and upgrade safety:
+
+- `EPZIP1`:
+  - `EP` means Easy Publish namespace.
+  - `ZIP1` is an explicit version tag so format upgrades are possible later
+    (for example `EPZIP2:...`) without ambiguity.
+- `gzip+base64`:
+  - Declares the exact codec chain used for payload bytes.
+  - Avoids guessing or magic-byte probing in string fields.
+  - Works in JSON/string-only transport and on-chain text fields.
+- Trailing `:` delimiter:
+  - Gives deterministic split point between metadata and payload.
+  - Keeps parser logic simple and robust.
+
+Design goal: make detection explicit, human-readable, backward-compatible, and
+safe against accidental collisions with plain text or other archive formats.
+
 ## Items API Guide (Beta)
 
 Comprehensive `/api/items` usage (params, include modes, pagination behavior,
@@ -182,12 +220,25 @@ request samples, and response sample) is documented in:
 
 - `docs/ITEMS_API.md`
 
+This guide also documents auxiliary browse APIs used by the newer sidebar
+screens:
+
+- `GET /api/container-child-links`
+- `GET /api/owners`
+
 ## Analytics Dashboard API (Beta)
 
 Read-only aggregated dashboard endpoint contract (`/api/analytics/dashboard`) is
 documented in:
 
 - `docs/ANALYTICS_API.md`
+
+## Link Graph API (Beta)
+
+The graph endpoint used by `Recipients Graph` and `References Graph` dialogs is
+documented in:
+
+- `docs/LINK_GRAPH_API.md`
 
 ## Security Notes
 

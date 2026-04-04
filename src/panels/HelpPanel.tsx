@@ -18,9 +18,41 @@ const containerStyle: React.CSSProperties = {
 };
 
 const introStyle: React.CSSProperties = {
-  margin: '0 0 0.9rem 0',
+  margin: '0 0 0.35rem 0',
   color: 'var(--comment)',
   lineHeight: 1.45,
+};
+
+const flowWrapStyle: React.CSSProperties = {
+  display: 'flex',
+  alignItems: 'center',
+  flexWrap: 'wrap',
+  gap: 6,
+  margin: '0 0 0.55rem 0',
+};
+
+const flowStepStyle: React.CSSProperties = {
+  border: '1px solid rgba(139, 233, 253, 0.4)',
+  background: 'rgba(139, 233, 253, 0.09)',
+  borderRadius: 999,
+  padding: '0.24rem 0.55rem',
+  fontSize: '0.8rem',
+  fontWeight: 600,
+  whiteSpace: 'nowrap',
+};
+
+const flowArrowStyle: React.CSSProperties = {
+  color: 'var(--comment)',
+  opacity: 0.9,
+  fontSize: '0.82rem',
+  userSelect: 'none',
+};
+
+const introNoteStyle: React.CSSProperties = {
+  margin: '0 0 0.9rem 0',
+  color: 'var(--comment)',
+  lineHeight: 1.4,
+  fontSize: '0.84rem',
 };
 
 const gridStyle: React.CSSProperties = {
@@ -111,9 +143,19 @@ export function HelpPanel({ accountAddress }: HelpPanelProps) {
           Quick Start Help
         </h2>
         <p style={introStyle}>
-          Use this checklist to get started quickly. The required flow is usually:
-          <strong> {t('container.singular')}</strong> → <strong>{t('type.singular')}</strong> →{' '}
-          <strong>{t('item.singular')}</strong> → <strong>{t('itemVerification.singular')}</strong>.
+          Use this checklist to get started quickly. Recommended flow:
+        </p>
+        <div style={flowWrapStyle} aria-label="Recommended data flow">
+          <span style={flowStepStyle}>{t('container.singular')}</span>
+          <span style={flowArrowStyle}>→</span>
+          <span style={flowStepStyle}>{t('type.singular')}</span>
+          <span style={flowArrowStyle}>→</span>
+          <span style={flowStepStyle}>{t('item.singular')}</span>
+          <span style={flowArrowStyle}>→</span>
+          <span style={flowStepStyle}>{t('itemVerification.singular')}</span>
+        </div>
+        <p style={introNoteStyle}>
+          All data is published to the IOTA blockchain, then indexed and displayed here.
         </p>
 
         <div style={gridStyle}>

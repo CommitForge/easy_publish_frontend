@@ -27,6 +27,7 @@ GET /api/analytics/dashboard
 | `drilldownDimension` | No | `container`, `dataType`, or `address`. |
 | `drilldownKey` | No | Identifier for drilldown (ID or address). |
 | `domain` | No | Optional domain-specific scope (same behavior as `/api/items`). |
+| `graphLimit` | No | Max item window for `latestPublishedGraph` (default `100`, max `300`). |
 
 ## Scope Rule
 
@@ -111,6 +112,29 @@ That makes dashboard numbers align with what users can browse in UI.
         "verifications": 28
       }
     ]
+  },
+  "latestPublishedGraph": {
+    "limit": 100,
+    "windowDataItems": 100,
+    "totalScopedDataItems": 1820,
+    "summary": {
+      "containers": 19,
+      "dataTypes": 34,
+      "dataItems": 100,
+      "verifications": 81
+    },
+    "nodes": [
+      { "id": "0xcontainer", "label": "Vehicle Records (0xcontain...)", "level": 0, "kind": "container" },
+      { "id": "0xtype", "label": "Maintenance (0xtype...)", "level": 1, "kind": "data_type" },
+      { "id": "0xitem", "label": "Oil Change (0xitem...)", "level": 2, "kind": "data_item" },
+      { "id": "0xverif", "label": "QA Check (0xverif...)", "level": 3, "kind": "data_item_verification" }
+    ],
+    "edges": [
+      { "from": "0xcontainer", "to": "0xtype", "relation": "contains_type" },
+      { "from": "0xtype", "to": "0xitem", "relation": "contains_item" },
+      { "from": "0xitem", "to": "0xverif", "relation": "has_verification" }
+    ],
+    "info": "Showing latest 100 of 1820 items."
   }
 }
 ```

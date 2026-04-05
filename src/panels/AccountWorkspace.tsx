@@ -3,6 +3,7 @@ import { useSelection } from '../context/SelectionContext.tsx';
 import { SidebarPanel } from './SidebarPanel.tsx';
 import { MainPanel } from './MainPanel.tsx';
 import { AnalyticsDashboardPanel } from './AnalyticsDashboardPanel.tsx';
+import { ErpIntegrationPanel } from './ErpIntegrationPanel.tsx';
 import { HelpPanel } from './HelpPanel.tsx';
 import {
   AddOwnerForm,
@@ -139,8 +140,19 @@ export default function AccountWorkspace({
           />
         )}
 
+        {primaryMenuSelection === 'erpIntegration' && (
+          <ErpIntegrationPanel
+            accountAddress={account.address}
+            selectedContainerId={selectedContainerId}
+            selectedDataTypeId={selectedDataTypeId}
+          />
+        )}
+
         {primaryMenuSelection === 'help' && (
-          <HelpPanel accountAddress={account.address} />
+          <HelpPanel
+            accountAddress={account.address}
+            setPrimaryMenuSelection={setPrimaryMenuSelection}
+          />
         )}
       </main>
     </div>

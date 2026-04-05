@@ -69,6 +69,34 @@ type AnalyticsDrilldown = {
   timeSeries?: AnalyticsTimeBucket[];
 };
 
+type AnalyticsGraphNodeRaw = {
+  id?: string;
+  label?: string;
+  level?: number;
+  kind?: string;
+};
+
+type AnalyticsGraphEdgeRaw = {
+  from?: string;
+  to?: string;
+  relation?: string;
+};
+
+type AnalyticsLatestPublishedGraph = {
+  limit?: number;
+  windowDataItems?: number;
+  totalScopedDataItems?: number;
+  nodes?: AnalyticsGraphNodeRaw[];
+  edges?: AnalyticsGraphEdgeRaw[];
+  summary?: {
+    containers?: number;
+    dataTypes?: number;
+    dataItems?: number;
+    verifications?: number;
+  };
+  info?: string;
+};
+
 type AnalyticsDashboardResponse = {
   meta?: {
     generatedAt?: string;
@@ -83,6 +111,27 @@ type AnalyticsDashboardResponse = {
   topContainers?: AnalyticsTopContainer[];
   topAddresses?: AnalyticsTopAddresses;
   drilldown?: AnalyticsDrilldown;
+  latestPublishedGraph?: AnalyticsLatestPublishedGraph;
+};
+
+type AnalyticsGraphNode = {
+  id: string;
+  label: string;
+  level: number;
+  kind: string;
+};
+
+type AnalyticsGraphEdge = {
+  from: string;
+  to: string;
+  relation: string;
+};
+
+type AnalyticsGraphLayout = {
+  width: number;
+  height: number;
+  levels: number[];
+  positions: Record<string, { x: number; y: number }>;
 };
 
 type VerificationReadinessBreakdown = {
@@ -174,6 +223,145 @@ function getBucketMetricValue(bucket: AnalyticsTimeBucket, metric: TrendMetric):
       return toSafeNumber(bucket.activeAddresses);
     default:
       return 0;
+  }
+}
+
+function normalizeGraphNodeId(value: unknown): string | null {
+  if (typeof value !== 'string') return null;
+  const trimmed = value.trim();
+  return trimmed ? trimmed : null;
+}
+
+function normalizeLatestPublishedGraph(graphRaw: AnalyticsLatestPublishedGraph | undefined): {
+  limit: number;
+  windowDataItems: number;
+  totalScopedDataItems: number;
+  summary: {
+    containers: number;
+    dataTypes: number;
+    dataItems: number;
+    verifications: number;
+  };
+  info?: string;
+  nodes: AnalyticsGraphNode[];
+  edges: AnalyticsGraphEdge[];
+} {
+  const nodesById = new Map<string, AnalyticsGraphNode>();
+
+  toSafeArray(graphRaw?.nodes).forEach((rawNode) => {
+    const id = normalizeGraphNodeId(rawNode.id);
+    if (!id) return;
+    const key = id.toLowerCase();
+    const level =
+      typeof rawNode.level === 'number' && Number.isFinite(rawNode.level)
+        ? Math.max(0, Math.min(8, Math.round(rawNode.level)))
+        : 0;
+    const label = typeof rawNode.label === 'string' && rawNode.label.trim() ? rawNode.label.trim() : id;
+    const kind = typeof rawNode.kind === 'string' && rawNode.kind.trim() ? rawNode.kind.trim() : 'node';
+    if (!nodesById.has(key)) {
+      nodesById.set(key, { id, label, level, kind });
+    }
+  });
+
+  const edgesByKey = new Map<string, AnalyticsGraphEdge>();
+  toSafeArray(graphRaw?.edges).forEach((rawEdge) => {
+    const from = normalizeGraphNodeId(rawEdge.from);
+    const to = normalizeGraphNodeId(rawEdge.to);
+    if (!from || !to) return;
+
+    if (!nodesById.has(from.toLowerCase()) || !nodesById.has(to.toLowerCase())) {
+      return;
+    }
+
+    const relation =
+      typeof rawEdge.relation === 'string' && rawEdge.relation.trim()
+        ? rawEdge.relation.trim()
+        : 'connected';
+    const key = `${from.toLowerCase()}->${to.toLowerCase()}:${relation}`;
+    if (!edgesByKey.has(key)) {
+      edgesByKey.set(key, { from, to, relation });
+    }
+  });
+
+  return {
+    limit: toSafeNumber(graphRaw?.limit),
+    windowDataItems: toSafeNumber(graphRaw?.windowDataItems),
+    totalScopedDataItems: toSafeNumber(graphRaw?.totalScopedDataItems),
+    summary: {
+      containers: toSafeNumber(graphRaw?.summary?.containers),
+      dataTypes: toSafeNumber(graphRaw?.summary?.dataTypes),
+      dataItems: toSafeNumber(graphRaw?.summary?.dataItems),
+      verifications: toSafeNumber(graphRaw?.summary?.verifications),
+    },
+    info:
+      typeof graphRaw?.info === 'string' && graphRaw.info.trim() ? graphRaw.info.trim() : undefined,
+    nodes: Array.from(nodesById.values()),
+    edges: Array.from(edgesByKey.values()),
+  };
+}
+
+function buildAnalyticsGraphLayout(nodes: AnalyticsGraphNode[]): AnalyticsGraphLayout {
+  const byLevel: Record<number, AnalyticsGraphNode[]> = {};
+  nodes.forEach((node) => {
+    const level = Math.max(0, node.level);
+    if (!byLevel[level]) {
+      byLevel[level] = [];
+    }
+    byLevel[level].push(node);
+  });
+
+  const levels = Object.keys(byLevel)
+    .map((entry) => Number(entry))
+    .filter((entry) => Number.isFinite(entry))
+    .sort((a, b) => a - b);
+
+  const maxRows = levels.reduce((maxRowsValue, level) => {
+    const count = byLevel[level]?.length ?? 0;
+    return Math.max(maxRowsValue, count);
+  }, 1);
+
+  const width = Math.max(760, levels.length * 240 + 120);
+  const height = Math.max(320, maxRows * 92 + 96);
+  const positions: Record<string, { x: number; y: number }> = {};
+
+  levels.forEach((level) => {
+    const levelNodes = byLevel[level] ?? [];
+    const levelX = 64 + level * 240;
+    const rowSpacing =
+      levelNodes.length <= 1
+        ? 0
+        : Math.max(72, (height - 120) / Math.max(1, levelNodes.length - 1));
+
+    levelNodes.forEach((node, index) => {
+      const position = {
+        x: levelX,
+        y: levelNodes.length <= 1 ? height / 2 : 60 + index * rowSpacing,
+      };
+      positions[node.id] = position;
+      positions[node.id.toLowerCase()] = position;
+    });
+  });
+
+  return { width, height, levels, positions };
+}
+
+function truncateGraphLabel(value: string): string {
+  if (value.length <= 22) return value;
+  return `${value.slice(0, 10)}...${value.slice(-8)}`;
+}
+
+function graphLevelLabel(level: number): string {
+  switch (level) {
+    case 0:
+      return 'Containers';
+    case 1:
+      return 'Types';
+    case 2:
+      return 'Items';
+    case 3:
+      return 'Verifications';
+    default:
+      return `Level ${level}`;
   }
 }
 
@@ -615,6 +803,14 @@ export function AnalyticsDashboardPanel({
   const topAddressVerifications = toSafeArray(data?.topAddresses?.verifications);
   const drilldownSeries = toSafeArray(data?.drilldown?.timeSeries);
   const drilldownTotals = data?.drilldown?.totals;
+  const latestPublishedGraph = useMemo(
+    () => normalizeLatestPublishedGraph(data?.latestPublishedGraph),
+    [data?.latestPublishedGraph]
+  );
+  const latestPublishedGraphLayout = useMemo(
+    () => buildAnalyticsGraphLayout(latestPublishedGraph.nodes),
+    [latestPublishedGraph.nodes]
+  );
 
   const maxTrendValue = useMemo(() => {
     if (timeSeries.length === 0) return 0;
@@ -841,6 +1037,122 @@ export function AnalyticsDashboardPanel({
             {verificationReadinessError ? (
               <div className="analytics-muted">{verificationReadinessError}</div>
             ) : null}
+          </section>
+
+          <section className="analytics-section">
+            <h3>Latest Published Graph</h3>
+            <div className="analytics-muted">
+              Window: {formatCount(latestPublishedGraph.windowDataItems)} /{' '}
+              {formatCount(latestPublishedGraph.totalScopedDataItems)} items (limit:{' '}
+              {formatCount(latestPublishedGraph.limit || 100)}).
+            </div>
+
+            <div className="analytics-kpi-grid analytics-kpi-grid--compact analytics-published-graph-summary">
+              <div className="analytics-kpi-card">
+                <div className="analytics-kpi-label">{t('container.plural')} In Graph</div>
+                <div className="analytics-kpi-value">
+                  {formatCount(latestPublishedGraph.summary.containers)}
+                </div>
+              </div>
+              <div className="analytics-kpi-card">
+                <div className="analytics-kpi-label">{t('type.plural')} In Graph</div>
+                <div className="analytics-kpi-value">
+                  {formatCount(latestPublishedGraph.summary.dataTypes)}
+                </div>
+              </div>
+              <div className="analytics-kpi-card">
+                <div className="analytics-kpi-label">{t('item.plural')} In Graph</div>
+                <div className="analytics-kpi-value">
+                  {formatCount(latestPublishedGraph.summary.dataItems)}
+                </div>
+              </div>
+              <div className="analytics-kpi-card">
+                <div className="analytics-kpi-label">{t('itemVerification.plural')} In Graph</div>
+                <div className="analytics-kpi-value">
+                  {formatCount(latestPublishedGraph.summary.verifications)}
+                </div>
+              </div>
+            </div>
+
+            {latestPublishedGraph.info ? (
+              <div className="analytics-muted">{latestPublishedGraph.info}</div>
+            ) : null}
+
+            <div className="analytics-published-graph-shell bp-link-graph-canvas">
+              {latestPublishedGraph.nodes.length === 0 ? (
+                <div className="bp-link-graph-empty">No graph rows for current scope and date range.</div>
+              ) : (
+                <svg
+                  className="bp-link-graph-svg"
+                  viewBox={`0 0 ${latestPublishedGraphLayout.width} ${latestPublishedGraphLayout.height}`}
+                  role="img"
+                  aria-label="Latest published graph"
+                >
+                  {latestPublishedGraph.edges.map((edge) => {
+                    const from =
+                      latestPublishedGraphLayout.positions[edge.from] ??
+                      latestPublishedGraphLayout.positions[edge.from.toLowerCase()];
+                    const to =
+                      latestPublishedGraphLayout.positions[edge.to] ??
+                      latestPublishedGraphLayout.positions[edge.to.toLowerCase()];
+                    if (!from || !to) return null;
+
+                    return (
+                      <line
+                        key={`${edge.from}->${edge.to}:${edge.relation}`}
+                        x1={from.x}
+                        y1={from.y}
+                        x2={to.x}
+                        y2={to.y}
+                        className="bp-link-graph-edge analytics-published-graph-edge"
+                      />
+                    );
+                  })}
+
+                  {latestPublishedGraphLayout.levels.map((level) => {
+                    const x = 38 + level * 240;
+                    return (
+                      <text
+                        key={`published-graph-level-${level}`}
+                        x={x}
+                        y={24}
+                        className="bp-link-graph-level-label"
+                      >
+                        {graphLevelLabel(level)}
+                      </text>
+                    );
+                  })}
+
+                  {latestPublishedGraph.nodes.map((node) => {
+                    const position =
+                      latestPublishedGraphLayout.positions[node.id] ??
+                      latestPublishedGraphLayout.positions[node.id.toLowerCase()];
+                    if (!position) return null;
+                    const nodeKindClass = `analytics-published-graph-node--${node.kind
+                      .toLowerCase()
+                      .replace(/[^a-z0-9_-]/g, '-')}`;
+                    return (
+                      <g key={node.id}>
+                        <circle
+                          cx={position.x}
+                          cy={position.y}
+                          r={17}
+                          className={`bp-link-graph-node analytics-published-graph-node ${nodeKindClass}`}
+                        />
+                        <text
+                          x={position.x}
+                          y={position.y + 33}
+                          textAnchor="middle"
+                          className="bp-link-graph-node-label analytics-published-graph-node-label"
+                        >
+                          {truncateGraphLabel(node.label)}
+                        </text>
+                      </g>
+                    );
+                  })}
+                </svg>
+              )}
+            </div>
           </section>
 
           <section className="analytics-section">

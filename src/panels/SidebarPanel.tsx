@@ -22,6 +22,7 @@ import {
   FaProjectDiagram,
   FaUsers,
   FaQuestionCircle,
+  FaPlug,
 } from 'react-icons/fa';
 
 import { t } from '../Config.ts'; // <-- import translations
@@ -32,6 +33,7 @@ export type PanelMenuSelection = Extract<
   PrimarySelection,
   | 'help'
   | 'dashboard'
+  | 'erpIntegration'
   | 'createContainer'
   | 'addDataType'
   | 'addDataItem'
@@ -469,6 +471,13 @@ export function SidebarPanel({
                     onClick={() => setPrimaryMenuSelection('dashboard')}
                   >
                     <FaChartBar /> Dashboard
+                  </div>
+
+                  <div
+                    style={actionButtonStyle(primaryMenuSelection === 'erpIntegration')}
+                    onClick={() => setPrimaryMenuSelection('erpIntegration')}
+                  >
+                    <FaPlug /> ERP Integration
                   </div>
 
                   <div

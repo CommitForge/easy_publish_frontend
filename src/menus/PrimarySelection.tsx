@@ -1,6 +1,7 @@
 export type PrimarySelection =
   | 'help'
   | 'dashboard'
+  | 'erpIntegration'
   | 'createContainer'
   | 'updateContainer'
   | 'addDataType'

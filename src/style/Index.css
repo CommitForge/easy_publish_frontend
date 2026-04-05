@@ -3815,6 +3815,48 @@ a:hover {
   font-size: 0.83rem;
 }
 
+.analytics-published-graph-summary {
+  margin-top: 0.5rem;
+}
+
+.analytics-published-graph-shell {
+  margin-top: 0.45rem;
+  min-height: 320px;
+  max-height: 68vh;
+}
+
+.analytics-published-graph-edge {
+  stroke: rgba(139, 233, 253, 0.44);
+}
+
+.analytics-published-graph-node {
+  transition: fill 0.16s ease, stroke 0.16s ease;
+}
+
+.analytics-published-graph-node--container {
+  fill: rgba(139, 233, 253, 0.2);
+  stroke: rgba(139, 233, 253, 0.86);
+}
+
+.analytics-published-graph-node--data_type {
+  fill: rgba(255, 184, 108, 0.2);
+  stroke: rgba(255, 184, 108, 0.88);
+}
+
+.analytics-published-graph-node--data_item {
+  fill: rgba(80, 250, 123, 0.2);
+  stroke: rgba(80, 250, 123, 0.88);
+}
+
+.analytics-published-graph-node--data_item_verification {
+  fill: rgba(255, 121, 198, 0.2);
+  stroke: rgba(255, 121, 198, 0.88);
+}
+
+.analytics-published-graph-node-label {
+  font-size: 10.5px;
+}
+
 @media (max-width: 760px) {
   .analytics-control,
   .analytics-control--small {
@@ -3832,5 +3874,154 @@ a:hover {
 
   .analytics-trend-value {
     text-align: left;
+  }
+
+  .analytics-published-graph-shell {
+    min-height: 260px;
+    max-height: 60vh;
+  }
+}
+
+/* =========================================================
+   ERP INTEGRATION
+========================================================= */
+.erp-panel {
+  display: flex;
+  flex-direction: column;
+  gap: 0.7rem;
+  width: 100%;
+}
+
+.erp-header h2 {
+  margin-bottom: 0.15rem;
+}
+
+.erp-message {
+  color: var(--green);
+  border: 1px solid rgba(80, 250, 123, 0.42);
+  border-radius: 8px;
+  background: rgba(80, 250, 123, 0.14);
+  padding: 0.48rem 0.58rem;
+  font-size: 0.83rem;
+}
+
+.erp-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+  gap: 0.45rem;
+}
+
+.erp-grid input,
+.erp-grid textarea,
+.erp-grid select,
+.erp-grid button,
+.erp-row button,
+.erp-row select {
+  border: 1px solid rgba(98, 114, 164, 0.6);
+  border-radius: 8px;
+  background: rgba(36, 37, 48, 0.92);
+  color: var(--fg);
+  padding: 0.34rem 0.5rem;
+  font-size: 0.79rem;
+  line-height: 1.25;
+}
+
+.erp-grid textarea {
+  min-height: 66px;
+  resize: vertical;
+}
+
+.erp-grid button,
+.erp-row button {
+  cursor: pointer;
+  transition: background-color 0.15s ease, border-color 0.15s ease, color 0.15s ease;
+}
+
+.erp-grid button:hover,
+.erp-row button:hover {
+  border-color: rgba(139, 233, 253, 0.65);
+  background: rgba(139, 233, 253, 0.15);
+}
+
+.erp-grid button:disabled,
+.erp-row button:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+}
+
+.erp-key-box {
+  margin-top: 0.42rem;
+  border: 1px solid rgba(189, 147, 249, 0.45);
+  background: rgba(189, 147, 249, 0.13);
+  border-radius: 8px;
+  padding: 0.5rem 0.58rem;
+  word-break: break-all;
+  font-size: 0.8rem;
+}
+
+.erp-row {
+  margin-top: 0.45rem;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.4rem;
+}
+
+.erp-row label {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  color: var(--fg-muted);
+  font-size: 0.78rem;
+}
+
+.erp-row select {
+  min-width: 190px;
+}
+
+.erp-content-input {
+  width: 100%;
+  min-height: 130px;
+  border: 1px solid rgba(98, 114, 164, 0.6);
+  border-radius: 8px;
+  background: rgba(36, 37, 48, 0.92);
+  color: var(--fg);
+  padding: 0.45rem 0.52rem;
+  font-size: 0.79rem;
+  resize: vertical;
+}
+
+.erp-checkbox {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.45rem;
+  color: var(--fg);
+  font-size: 0.79rem;
+}
+
+.erp-actions-cell {
+  display: inline-flex;
+  flex-wrap: wrap;
+  gap: 0.28rem;
+}
+
+@media (max-width: 760px) {
+  .erp-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .erp-row {
+    align-items: stretch;
+  }
+
+  .erp-row label {
+    width: 100%;
+    flex-direction: column;
+    align-items: flex-start;
+  }
+
+  .erp-row select {
+    min-width: 0;
+    width: 100%;
   }
 }

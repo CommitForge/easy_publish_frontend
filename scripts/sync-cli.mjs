@@ -3,11 +3,14 @@
 import JSZip from 'jszip';
 import { execFile } from 'node:child_process';
 import { mkdir, readFile, writeFile } from 'node:fs/promises';
-import { dirname } from 'node:path';
+import { dirname, resolve } from 'node:path';
 import { promisify } from 'node:util';
 
 const SOURCE_REPO = process.env.CLI_SOURCE_REPO || 'CommitForge/easy_publish_cli';
 const SOURCE_REF = process.env.CLI_SOURCE_REF || 'main';
+const LOCAL_SOURCE_DIR =
+  process.env.CLI_SOURCE_LOCAL_DIR || resolve(process.cwd(), '..', 'easy_publish_cli', 'easy_publish_cli');
+const PREFER_LOCAL_SOURCE = process.env.CLI_PREFER_LOCAL_SOURCE !== 'false';
 const STRIP_VITE_COMPAT = process.env.CLI_STRIP_VITE_COMPAT !== 'false';
 const SKIP_REMOTE_WHEN_CACHED = process.env.CLI_SKIP_REMOTE_WHEN_CACHED !== 'false';
 const FORCE_REFRESH = process.env.CLI_FORCE_REFRESH === 'true';
@@ -118,6 +121,11 @@ async function fetchRaw(path, ref) {
   return await response.text();
 }
 
+async function fetchLocal(pathInSource) {
+  const localPath = resolve(LOCAL_SOURCE_DIR, pathInSource);
+  return readFile(localPath, 'utf8');
+}
+
 async function fileExists(path) {
   try {
     await readFile(path, 'utf8');
@@ -151,6 +159,16 @@ async function writeSyncState(extra = {}) {
 async function haveAllRequiredLocalFiles() {
   for (const file of FILES) {
     if (!(await fileExists(file.dest))) return false;
+  }
+  return true;
+}
+
+async function hasLocalCliSource() {
+  const required = ['izipub.js', 'cli.sh', 'lib/commands.js', 'lib/iota.js', 'lib/logger.js'];
+  for (const rel of required) {
+    if (!(await fileExists(resolve(LOCAL_SOURCE_DIR, rel)))) {
+      return false;
+    }
   }
   return true;
 }
@@ -204,7 +222,21 @@ async function resolveRemoteSha() {
   }
 }
 
-async function syncOneFile(fileSpec, ref) {
+async function syncOneFile(fileSpec, ref, useLocalSource) {
+  if (useLocalSource) {
+    for (const candidate of fileSpec.candidates) {
+      try {
+        const raw = await fetchLocal(candidate);
+        const transformed = transformFile(fileSpec.dest, raw);
+        await mkdir(dirname(fileSpec.dest), { recursive: true });
+        await writeFile(fileSpec.dest, transformed, 'utf8');
+        return { status: 'updated', source: `local:${candidate}` };
+      } catch {
+        // try next local candidate
+      }
+    }
+  }
+
   for (const candidate of fileSpec.candidates) {
     try {
       const raw = await fetchRaw(candidate, ref);
@@ -232,16 +264,23 @@ async function syncOneFile(fileSpec, ref) {
 
 async function main() {
   console.log(`[sync-cli] source=${SOURCE_REPO}@${SOURCE_REF}`);
+  console.log(`[sync-cli] local_source_dir=${LOCAL_SOURCE_DIR}`);
+  console.log(`[sync-cli] prefer_local_source=${PREFER_LOCAL_SOURCE ? 'true' : 'false'}`);
   console.log(`[sync-cli] strip_vite_compat=${STRIP_VITE_COMPAT ? 'true' : 'false'}`);
   console.log(`[sync-cli] skip_remote_when_cached=${SKIP_REMOTE_WHEN_CACHED ? 'true' : 'false'}`);
   console.log(`[sync-cli] force_refresh=${FORCE_REFRESH ? 'true' : 'false'}`);
 
+  const useLocalSource = PREFER_LOCAL_SOURCE && (await hasLocalCliSource());
+  console.log(`[sync-cli] local_source_status=${useLocalSource ? 'available' : 'unavailable'}`);
+
   const cachedState = await readSyncState();
-  const remoteSha = await resolveRemoteSha();
-  if (remoteSha) {
+  const remoteSha = useLocalSource ? null : await resolveRemoteSha();
+  if (remoteSha && !useLocalSource) {
     console.log(`[sync-cli] remote_sha=${remoteSha}`);
-  } else {
+  } else if (!useLocalSource) {
     console.warn('[sync-cli] remote SHA check unavailable (network/offline), falling back');
+  } else {
+    console.log('[sync-cli] using local CLI source, remote checks skipped');
   }
 
   const effectiveRef = remoteSha || SOURCE_REF;
@@ -251,6 +290,7 @@ async function main() {
     !FORCE_REFRESH &&
     isCompatibleState(cachedState) &&
     (await haveAllRequiredLocalFiles()) &&
+    !useLocalSource &&
     (hasRemoteMatch || !remoteSha);
 
   if (cacheEligible) {
@@ -267,7 +307,7 @@ async function main() {
   const missing = [];
 
   for (const file of FILES) {
-    const result = await syncOneFile(file, effectiveRef);
+    const result = await syncOneFile(file, effectiveRef, useLocalSource);
     if (result.status === 'updated') {
       updated += 1;
       console.log(`[sync-cli] updated ${file.dest} <- ${result.source}`);

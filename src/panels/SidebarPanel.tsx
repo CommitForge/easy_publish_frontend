@@ -23,9 +23,11 @@ import {
   FaUsers,
   FaQuestionCircle,
   FaPlug,
+  FaFileAlt,
+  FaTimes,
 } from 'react-icons/fa';
 
-import { t } from '../Config.ts'; // <-- import translations
+import { API_BASE, t } from '../Config.ts'; // <-- import translations
 import { useDragResize } from '../hooks/useDragResize';
 import { DEFAULT_FIELDS_BY_TYPE } from '../utils/itemLoaderConfig.ts';
 
@@ -33,6 +35,7 @@ export type PanelMenuSelection = Extract<
   PrimarySelection,
   | 'help'
   | 'dashboard'
+  | 'smartReport'
   | 'erpIntegration'
   | 'createContainer'
   | 'addDataType'
@@ -97,8 +100,11 @@ export function SidebarPanel({
     useState<'createContainer' | 'addDataType' | null>(null);
   const [addDataCollapsed, setAddDataCollapsed] = useState(false);
   const [viewDataCollapsed, setViewDataCollapsed] = useState(false);
+  const [reportsCollapsed, setReportsCollapsed] = useState(false);
   const [receivedDataCollapsed, setReceivedDataCollapsed] = useState(false);
   const [followDataCollapsed, setFollowDataCollapsed] = useState(false);
+  const [needsStartupTutorialHelpHint, setNeedsStartupTutorialHelpHint] =
+    useState(false);
 
   const toggleCollapse = () => setCollapsed((v) => !v);
 
@@ -123,7 +129,7 @@ export function SidebarPanel({
     padding: 0,
     margin: 0,
     fontSize: 12,
-    textDecoration: 'underline',
+    textDecoration: 'none',
     textUnderlineOffset: 2,
     fontWeight: 600,
   };
@@ -149,6 +155,7 @@ export function SidebarPanel({
   const panelSpacing = { marginBottom: 10 };
   const secondaryPanelsTogether = showContainersPanel && showDataTypesPanel;
   const helpLinkIsActive = primaryMenuSelection === 'help';
+  const shouldGlowHelpLink = needsStartupTutorialHelpHint && !helpLinkIsActive;
 
   const sectionDividerStyle: React.CSSProperties = {
     display: 'flex',
@@ -256,6 +263,56 @@ export function SidebarPanel({
     setShowDataTypeFullTableDialog(false);
   }, [canBrowseTypes]);
 
+  useEffect(() => {
+    const userAddress = account?.address;
+    if (!userAddress) {
+      setNeedsStartupTutorialHelpHint(false);
+      return;
+    }
+
+    let cancelled = false;
+    const controller = new AbortController();
+
+    const loadTutorialProgress = async () => {
+      try {
+        const params = new URLSearchParams({
+          userAddress,
+          topN: '1',
+          graphLimit: '1',
+        });
+
+        const response = await fetch(
+          `${API_BASE}api/analytics/dashboard?${params.toString()}`,
+          { signal: controller.signal }
+        );
+        if (!response.ok) {
+          throw new Error(`HTTP ${response.status}`);
+        }
+
+        const payload = await response.json();
+        const totals = payload?.totals ?? {};
+        const hasContainer = Number(totals.containers) > 0;
+        const hasDataType = Number(totals.dataTypes) > 0;
+        const hasDataItem = Number(totals.dataItems) > 0;
+        const tutorialDone = hasContainer && hasDataType && hasDataItem;
+
+        if (!cancelled) {
+          setNeedsStartupTutorialHelpHint(!tutorialDone);
+        }
+      } catch {
+        if (controller.signal.aborted || cancelled) return;
+        setNeedsStartupTutorialHelpHint(false);
+      }
+    };
+
+    void loadTutorialProgress();
+
+    return () => {
+      cancelled = true;
+      controller.abort();
+    };
+  }, [account?.address, primaryMenuSelection]);
+
   return (
     <div style={{ display: 'flex' }}>
       <aside
@@ -297,11 +354,31 @@ export function SidebarPanel({
               type="button"
               style={{
                 ...headerLinkStyle,
-                color: helpLinkIsActive ? 'var(--cyan)' : 'var(--comment)',
-                fontWeight: helpLinkIsActive ? 700 : 600,
+                color: helpLinkIsActive
+                  ? 'var(--cyan)'
+                  : shouldGlowHelpLink
+                  ? 'var(--green)'
+                  : 'var(--comment)',
+                fontWeight: helpLinkIsActive || shouldGlowHelpLink ? 700 : 600,
+                padding: '2px 6px',
+                borderRadius: 6,
+                boxShadow: shouldGlowHelpLink
+                  ? '0 0 0 1px rgba(80, 250, 123, 0.24), 0 0 9px rgba(80, 250, 123, 0.2)'
+                  : 'none',
+                textShadow: shouldGlowHelpLink
+                  ? '0 0 8px rgba(80, 250, 123, 0.4)'
+                  : 'none',
+                transition:
+                  'color 0.2s ease, box-shadow 0.2s ease, text-shadow 0.2s ease',
+                textDecoration: helpLinkIsActive ? 'underline' : 'none',
               }}
               onClick={() => setPrimaryMenuSelection('help')}
               aria-label={t('help')}
+              title={
+                shouldGlowHelpLink
+                  ? 'Complete Startup Tutorial steps 1-3. Open Help for guidance.'
+                  : undefined
+              }
             >
               <FaQuestionCircle />
               {t('help')}
@@ -638,6 +715,35 @@ export function SidebarPanel({
                 <button
                   type="button"
                   style={sectionToggleStyle}
+                  onClick={() => setReportsCollapsed((prev) => !prev)}
+                  aria-expanded={!reportsCollapsed}
+                  aria-label="Toggle Reports section"
+                >
+                  {reportsCollapsed ? <FaChevronRight /> : <FaChevronDown />}
+                  REPORTS
+                </button>
+                <span style={sectionDividerLineStyle} />
+              </div>
+
+              {!reportsCollapsed && (
+                <>
+                  <div
+                    style={actionButtonStyle(primaryMenuSelection === 'smartReport')}
+                    onClick={() => setPrimaryMenuSelection('smartReport')}
+                  >
+                    <FaFileAlt /> Smart Report
+                  </div>
+                  <CarMaintenanceReportButton dataTypeId={selectedDataTypeId} />
+                </>
+              )}
+            </div>
+
+            <div style={panelSpacing}>
+              <div style={sectionDividerStyle}>
+                <span style={sectionDividerLineStyle} />
+                <button
+                  type="button"
+                  style={sectionToggleStyle}
                   onClick={() => setFollowDataCollapsed((prev) => !prev)}
                   aria-expanded={!followDataCollapsed}
                   aria-label="Toggle Follow Data section"
@@ -650,8 +756,6 @@ export function SidebarPanel({
 
               {!followDataCollapsed && (
                 <>
-                  {/* === Car Maintenance PDF Button === */}
-                  <CarMaintenanceReportButton dataTypeId={selectedDataTypeId} />
                   <FollowContainerPanel
                     accountAddress={account?.address}
                     followedContainers={followedContainers}
@@ -701,6 +805,14 @@ export function SidebarPanel({
                   onClick={(e) => {
                     e.stopPropagation();
                     setContainerRefreshKey((k) => k + 1);
+                  }}
+                />
+                <FaTimes
+                  style={{ marginLeft: 6, cursor: 'pointer' }}
+                  title="Close"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    setShowContainersPanel(false);
                   }}
                 />
               </div>
@@ -758,6 +870,14 @@ export function SidebarPanel({
                 onClick={(e) => {
                   e.stopPropagation();
                   setDataTypeRefreshKey((k) => k + 1);
+                }}
+              />
+              <FaTimes
+                style={{ marginLeft: 6, cursor: 'pointer' }}
+                title="Close"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  setShowDataTypesPanel(false);
                 }}
               />
             </div>

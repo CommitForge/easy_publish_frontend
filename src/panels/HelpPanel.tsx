@@ -48,6 +48,20 @@ const flowWrapStyle: React.CSSProperties = {
     'linear-gradient(90deg, rgba(139, 233, 253, 0.08), rgba(98, 114, 164, 0.08))',
 };
 
+const flowMeaningLabelStyle: React.CSSProperties = {
+  margin: '0 0 0.28rem 0',
+  color: 'var(--comment)',
+  lineHeight: 1.35,
+  fontSize: '0.8rem',
+};
+
+const flowMeaningWrapStyle: React.CSSProperties = {
+  ...flowWrapStyle,
+  margin: '0 0 0.7rem 0',
+  background:
+    'linear-gradient(90deg, rgba(80, 250, 123, 0.08), rgba(98, 114, 164, 0.08))',
+};
+
 const flowStepStyle: React.CSSProperties = {
   border: '1px solid rgba(139, 233, 253, 0.4)',
   background: 'rgba(139, 233, 253, 0.14)',
@@ -260,6 +274,17 @@ const nextTableCellStyle: React.CSSProperties = {
   lineHeight: 1.4,
 };
 
+const faqSectionStyle: React.CSSProperties = {
+  marginTop: 14,
+};
+
+const faqHeaderStyle: React.CSSProperties = {
+  margin: '0 0 0.55rem 0',
+  display: 'inline-flex',
+  alignItems: 'center',
+  gap: 7,
+};
+
 type HelpCounts = {
   containers: number;
   dataTypes: number;
@@ -387,7 +412,25 @@ export function HelpPanel({
           <span style={flowArrowStyle}>
             <FaArrowRight />
           </span>
-          <span style={flowStepStyle}>{t('itemVerification.singular')}</span>
+          <span style={flowStepStyle}>
+            {t('itemVerification.singular')} (Advanced)
+          </span>
+        </div>
+        <p style={flowMeaningLabelStyle}>Same flow, by meaning:</p>
+        <div style={flowMeaningWrapStyle} aria-label="Recommended data flow by meaning">
+          <span style={flowStepStyle}>Workspace</span>
+          <span style={flowArrowStyle}>
+            <FaArrowRight />
+          </span>
+          <span style={flowStepStyle}>Schema</span>
+          <span style={flowArrowStyle}>
+            <FaArrowRight />
+          </span>
+          <span style={flowStepStyle}>Record</span>
+          <span style={flowArrowStyle}>
+            <FaArrowRight />
+          </span>
+          <span style={flowStepStyle}>Proof (Advanced)</span>
         </div>
         <p style={introNoteStyle}>
           All data is published to the IOTA blockchain, then indexed and displayed on the website.
@@ -509,9 +552,9 @@ export function HelpPanel({
                 <button
                   type="button"
                   style={inlineActionButtonStyle}
-                  onClick={() => goToMenu('publishDataItemVerification')}
+                  onClick={() => goToMenu('dashboard')}
                 >
-                  Open Verification Form
+                  Open Dashboard
                 </button>
               </div>
             </article>
@@ -615,99 +658,105 @@ export function HelpPanel({
           </div>
         </section>
 
-        <div style={gridStyle}>
-          <article style={cardStyle}>
-            <h3 style={cardTitleStyle}>
-              <FaCompass />
-              1. Set Context
-            </h3>
-            <ul style={listStyle}>
-              <li>Connect your wallet first.</li>
-              <li>
-                Use <strong>{t('menu')}</strong> to expand/collapse the sidebar and open{' '}
-                <strong>{t('help')}</strong> anytime for guidance.
-              </li>
-              <li>
-                Work through the main sections: <strong>ADD DATA</strong>, <strong>VIEW DATA</strong>,{' '}
-                <strong>RECEIVED DATA</strong>, and <strong>FOLLOW DATA</strong>.
-              </li>
-              <li>
-                Start with <strong>Dashboard</strong>, then select context in{' '}
-                <strong>{t('browse.containers')}</strong> and <strong>{t('browse.types')}</strong>.
-              </li>
-              <li>Disabled menu entries show tooltips with exact requirements.</li>
-            </ul>
-          </article>
+        <section style={faqSectionStyle} aria-label="Frequently asked questions">
+          <h3 style={faqHeaderStyle}>
+            <FaBookOpen />
+            FAQ
+          </h3>
+          <div style={gridStyle}>
+            <article style={cardStyle}>
+              <h3 style={cardTitleStyle}>
+                <FaCompass />
+                1. Set Context
+              </h3>
+              <ul style={listStyle}>
+                <li>Connect your wallet first.</li>
+                <li>
+                  Use <strong>{t('menu')}</strong> to expand/collapse the sidebar and open{' '}
+                  <strong>{t('help')}</strong> anytime for guidance.
+                </li>
+                <li>
+                  Work through the main sections: <strong>ADD DATA</strong>, <strong>VIEW DATA</strong>,{' '}
+                  <strong>RECEIVED DATA</strong>, and <strong>FOLLOW DATA</strong>.
+                </li>
+                <li>
+                  Start with <strong>Dashboard</strong>, then select context in{' '}
+                  <strong>{t('browse.containers')}</strong> and <strong>{t('browse.types')}</strong>.
+                </li>
+                <li>Disabled menu entries show tooltips with exact requirements.</li>
+              </ul>
+            </article>
 
-          <article style={cardStyle}>
-            <h3 style={cardTitleStyle}>
-              <FaCheckCircle />
-              2. Publish Data
-            </h3>
-            <ul style={listStyle}>
-              <li>
-                Create data from <strong>{t('actions.new')} {t('container.singular')}</strong>,{' '}
-                <strong>{t('actions.new')} {t('type.singular')}</strong>,{' '}
-                <strong>{t('actions.new')} {t('item.singular')}</strong>, and{' '}
-                <strong>{t('actions.new')} {t('itemVerification.singular')}</strong>.
-              </li>
-              <li>
-                Container actions under the container sub-menu: <strong>{t('container.singular')} {t('actions.edit')}</strong>,{' '}
-                <strong>{t('actions.attach')}</strong>, <strong>{t('actions.addOwner')}</strong>, and{' '}
-                <strong>{t('actions.removeOwner')}</strong>.
-              </li>
-              <li>
-                Type action under the type sub-menu: <strong>{t('type.singular')} {t('actions.edit')}</strong>.
-              </li>
-              <li>
-                In publish forms, use <strong>Check content</strong>, <strong>Auto compact</strong>,{' '}
-                optional <strong>Auto zip</strong>, and <strong>Preview</strong> before submit.
-              </li>
-            </ul>
-          </article>
+            <article style={cardStyle}>
+              <h3 style={cardTitleStyle}>
+                <FaCheckCircle />
+                2. Publish Data
+              </h3>
+              <ul style={listStyle}>
+                <li>
+                  Create data from <strong>{t('actions.new')} {t('container.singular')}</strong>,{' '}
+                  <strong>{t('actions.new')} {t('type.singular')}</strong>,{' '}
+                  <strong>{t('actions.new')} {t('item.singular')}</strong>, and{' '}
+                  <strong>{t('actions.new')} {t('itemVerification.singular')}</strong>.
+                </li>
+                <li>
+                  Container actions under the container sub-menu: <strong>{t('container.singular')} {t('actions.edit')}</strong>,{' '}
+                  <strong>{t('actions.attach')}</strong>, <strong>{t('actions.addOwner')}</strong>, and{' '}
+                  <strong>{t('actions.removeOwner')}</strong>.
+                </li>
+                <li>
+                  Type action under the type sub-menu: <strong>{t('type.singular')} {t('actions.edit')}</strong>.
+                </li>
+                <li>
+                  In publish forms, use <strong>Check content</strong>, <strong>Auto compact</strong>,{' '}
+                  optional <strong>Auto zip</strong>, and <strong>Preview</strong> before submit.
+                </li>
+              </ul>
+            </article>
 
-          <article style={cardStyle}>
-            <h3 style={cardTitleStyle}>
-              <FaFilter />
-              3. Browse and Verify
-            </h3>
-            <ul style={listStyle}>
-              <li>
-                Use <strong>{t('browse.containers')}</strong> to manage selected container context.
-              </li>
-              <li>
-                Browse related metadata in <strong>{t('browse.containerChildLinks')}</strong> and{' '}
-                <strong>{t('browse.owners')}</strong>.
-              </li>
-              <li>
-                Use <strong>{t('browse.types')}</strong>, <strong>{t('browse.items')}</strong>, and{' '}
-                <strong>{t('browse.itemVerifications')}</strong> (requires selected {t('container.singular')}).
-              </li>
-              <li>
-                Review incoming data in <strong>{t('browse.receivedItems')}</strong> and{' '}
-                <strong>{t('browse.receivedItemVerifications')}</strong>.
-              </li>
-            </ul>
-          </article>
+            <article style={cardStyle}>
+              <h3 style={cardTitleStyle}>
+                <FaFilter />
+                3. Browse and Verify
+              </h3>
+              <ul style={listStyle}>
+                <li>
+                  Use <strong>{t('browse.containers')}</strong> to manage selected container context.
+                </li>
+                <li>
+                  Browse related metadata in <strong>{t('browse.containerChildLinks')}</strong> and{' '}
+                  <strong>{t('browse.owners')}</strong>.
+                </li>
+                <li>
+                  Use <strong>{t('browse.types')}</strong>, <strong>{t('browse.items')}</strong>, and{' '}
+                  <strong>{t('browse.itemVerifications')}</strong> (requires selected {t('container.singular')}).
+                </li>
+                <li>
+                  Review incoming data in <strong>{t('browse.receivedItems')}</strong> and{' '}
+                  <strong>{t('browse.receivedItemVerifications')}</strong>.
+                </li>
+              </ul>
+            </article>
 
-          <article style={cardStyle}>
-            <h3 style={cardTitleStyle}>
-              <FaMagic />
-              4. Content and Follow Options
-            </h3>
-            <ul style={listStyle}>
-              <li>Auto compact minifies JSON/XML formatting before publish.</li>
-              <li>Auto zip stores content as `EPZIP1:gzip+base64:...` (experimental).</li>
-              <li>Auto unzip decodes those values for readable UI/tables.</li>
-              <li>Orange hints indicate invalid JSON/XML or ineffective zip savings.</li>
-              <li>
-                In <strong>FOLLOW DATA</strong>, queue updates with <strong>Follow</strong> and{' '}
-                <strong>Unfollow</strong>, publish with <strong>Publish Pending</strong>, and inspect
-                with <strong>View Followed</strong> / <strong>Hide Followed</strong>.
-              </li>
-            </ul>
-          </article>
-        </div>
+            <article style={cardStyle}>
+              <h3 style={cardTitleStyle}>
+                <FaMagic />
+                4. Content and Follow Options
+              </h3>
+              <ul style={listStyle}>
+                <li>Auto compact minifies JSON/XML formatting before publish.</li>
+                <li>Auto zip stores content as `EPZIP1:gzip+base64:...` (experimental).</li>
+                <li>Auto unzip decodes those values for readable UI/tables.</li>
+                <li>Orange hints indicate invalid JSON/XML or ineffective zip savings.</li>
+                <li>
+                  In <strong>FOLLOW DATA</strong>, queue updates with <strong>Follow</strong> and{' '}
+                  <strong>Unfollow</strong>, publish with <strong>Publish Pending</strong>, and inspect
+                  with <strong>View Followed</strong> / <strong>Hide Followed</strong>.
+                </li>
+              </ul>
+            </article>
+          </div>
+        </section>
 
         <div style={statusWrapStyle}>
           <h4 style={statusTitleStyle}>Current Session Context</h4>

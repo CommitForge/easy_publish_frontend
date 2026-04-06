@@ -5,6 +5,7 @@ import { MainPanel } from './MainPanel.tsx';
 import { AnalyticsDashboardPanel } from './AnalyticsDashboardPanel.tsx';
 import { ErpIntegrationPanel } from './ErpIntegrationPanel.tsx';
 import { HelpPanel } from './HelpPanel.tsx';
+import { SmartReportPanel } from './SmartReportPanel.tsx';
 import {
   AddOwnerForm,
   AttachChildForm,
@@ -32,6 +33,7 @@ export default function AccountWorkspace({
   const {
     selectedContainerId,
     selectedDataTypeId,
+    selectedDataItemId,
     setSelectedContainerId,
     setSelectedDataTypeId,
   } = useSelection();
@@ -145,6 +147,15 @@ export default function AccountWorkspace({
             accountAddress={account.address}
             selectedContainerId={selectedContainerId}
             selectedDataTypeId={selectedDataTypeId}
+          />
+        )}
+
+        {primaryMenuSelection === 'smartReport' && (
+          <SmartReportPanel
+            accountAddress={account.address}
+            selectedContainerId={selectedContainerId}
+            selectedDataTypeId={selectedDataTypeId}
+            selectedDataItemId={selectedDataItemId}
           />
         )}
 

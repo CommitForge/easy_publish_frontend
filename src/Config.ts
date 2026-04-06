@@ -32,6 +32,18 @@ export const IOTA_EXPLORER_NETWORK =
 export const IOTA_EXPLORER_TXBLOCK =
   import.meta.env.VITE_IOTA_EXPLORER_TXBLOCK;
 export const TRANSLATION_VERSION = envFirst('VITE_TRANSLATION_VERSION');
+const smartReportMaxRecordsRaw = envFirst('VITE_SMART_REPORT_MAX_RECORDS');
+
+function parsePositiveInt(value: string, fallback: number): number {
+  const parsed = Number.parseInt(value, 10);
+  if (!Number.isFinite(parsed) || parsed <= 0) return fallback;
+  return parsed;
+}
+
+export const SMART_REPORT_MAX_RECORDS = parsePositiveInt(
+  smartReportMaxRecordsRaw,
+  1000
+);
 
 const AUTO_VALUE = 'auto';
 const DEFAULT_FALLBACK_INSTANCE = 'generic';

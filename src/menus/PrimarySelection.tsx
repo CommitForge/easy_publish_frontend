@@ -1,6 +1,7 @@
 export type PrimarySelection =
   | 'help'
   | 'dashboard'
+  | 'smartReport'
   | 'erpIntegration'
   | 'createContainer'
   | 'updateContainer'

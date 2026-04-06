@@ -31,6 +31,7 @@ export const IOTA_EXPLORER_NETWORK =
   import.meta.env.VITE_IOTA_EXPLORER_NETWORK;
 export const IOTA_EXPLORER_TXBLOCK =
   import.meta.env.VITE_IOTA_EXPLORER_TXBLOCK;
+export const TRANSLATION_VERSION = envFirst('VITE_TRANSLATION_VERSION');
 
 const AUTO_VALUE = 'auto';
 const DEFAULT_FALLBACK_INSTANCE = 'generic';
@@ -148,7 +149,12 @@ export async function loadTranslations(instance: string) {
 
   for (const candidate of candidates) {
     try {
-      const res = await fetch(`/config/${candidate}.json`);
+      const query = TRANSLATION_VERSION
+        ? `?v=${encodeURIComponent(TRANSLATION_VERSION)}`
+        : '';
+      const res = await fetch(`/config/${candidate}.json${query}`, {
+        cache: 'no-store',
+      });
       if (!res.ok) continue;
       translations = (await res.json()) as TranslationNode;
       return;

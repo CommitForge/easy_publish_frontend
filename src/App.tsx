@@ -10,7 +10,7 @@ import type { PanelMenuSelection } from './panels/SidebarPanel.tsx';
 
 import './style/Index.css';
 
-import { API_BASE } from './Config.ts';
+import { API_BASE, APP_INSTANCE_DOMAIN } from './Config.ts';
 
 const AccountWorkspace = lazy(() => import('./panels/AccountWorkspace.tsx'));
 
@@ -31,7 +31,55 @@ export default function App() {
     if (!account) return;
     if (hasNavigatedPrimaryMenu) return;
     if (primaryMenuSelection !== 'items') return;
-    setPrimaryMenuSelection('dashboard');
+
+    let cancelled = false;
+
+    const resolveStartupPanel = async () => {
+      try {
+        const params = new URLSearchParams({
+          userAddress: account.address,
+          include: 'CONTAINER',
+          page: '0',
+          pageSize: '1',
+          domain: APP_INSTANCE_DOMAIN ?? '',
+        });
+
+        const response = await fetch(`${API_BASE}api/items?${params.toString()}`);
+        if (!response.ok) {
+          if (!cancelled) setPrimaryMenuSelection('dashboard');
+          return;
+        }
+
+        const payload = (await response.json()) as {
+          containers?: unknown[];
+          meta?: { totalContainers?: number };
+        };
+
+        const totalContainers =
+          typeof payload?.meta?.totalContainers === 'number'
+            ? payload.meta.totalContainers
+            : null;
+        const containers = Array.isArray(payload?.containers)
+          ? payload.containers
+          : [];
+        const hasContainers =
+          totalContainers !== null ? totalContainers > 0 : containers.length > 0;
+
+        if (!cancelled) {
+          setPrimaryMenuSelection(hasContainers ? 'dashboard' : 'help');
+        }
+      } catch {
+        if (!cancelled) {
+          setPrimaryMenuSelection('dashboard');
+        }
+      }
+    };
+
+    void resolveStartupPanel();
+
+    return () => {
+      cancelled = true;
+    };
   }, [account, hasNavigatedPrimaryMenu, primaryMenuSelection]);
 
   useEffect(() => {

@@ -443,9 +443,9 @@ export function Navbar({
             className={`app-mode-btn ${appMode === 'generic' ? 'is-active' : ''}`.trim()}
             onClick={() => setAppMode('generic')}
             aria-pressed={appMode === 'generic'}
-            title="Generic mode"
+            title="Default mode"
           >
-            Generic
+            Default
           </button>
           <button
             type="button"

@@ -2555,11 +2555,14 @@ a:hover {
   display: inline-flex;
   align-items: center;
   gap: 0.2rem;
+  width: 100%;
+  justify-content: flex-end;
   padding: 0.18rem;
   border-radius: 999px;
   border: 1px solid rgba(139, 233, 253, 0.28);
   background: rgba(18, 22, 34, 0.8);
   box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.03);
+  margin-bottom: 0.15rem;
 }
 
 .app-mode-btn {
@@ -2656,9 +2659,7 @@ a:hover {
   }
 
   .app-mode-switch {
-    width: 100%;
     justify-content: center;
-    margin-bottom: 0.15rem;
   }
 
   .wallet-connect-btn {
@@ -2826,7 +2827,16 @@ a:hover {
 }
 
 .intro-wallet-cta-panel {
-  margin-top: 0.9rem;
+  width: min(100%, 900px);
+  margin: 0.65rem auto 0;
+  padding: 0.2rem 1rem 0.35rem;
+  text-align: center;
+}
+
+.intro-wallet-cta-panel h2 {
+  margin-bottom: 0.6rem;
+  color: var(--green);
+  text-shadow: 0 0 6px rgba(80, 250, 123, 0.6);
 }
 
 .intro-wallet-cta-text {
@@ -2938,6 +2948,12 @@ a:hover {
 
 .intro-faq-content {
   padding: 0 1rem 1rem;
+}
+
+.intro-faq-group-lead {
+  max-width: 780px;
+  margin: 0.12rem auto 0.66rem;
+  color: var(--fg-muted);
 }
 
 .intro-faq-content .feature-grid {

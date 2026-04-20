@@ -76,10 +76,11 @@ type IntroFaqCard = {
 type IntroFaqGroup = {
   id: string;
   title: string;
+  lead?: string;
   items: IntroFaqCard[];
 };
 
-const INTRO_FAQ_GROUPS: IntroFaqGroup[] = [
+const DEFAULT_FAQ_GROUPS: IntroFaqGroup[] = [
   {
     id: "what-is-this-for",
     title: "What is this for?",
@@ -202,6 +203,71 @@ const INTRO_FAQ_GROUPS: IntroFaqGroup[] = [
   },
 ];
 
+const CARS_FAQ_GROUPS: IntroFaqGroup[] = [
+  {
+    id: "cars-welcome",
+    title: "Welcome to Cars Mode!",
+    lead:
+      "This mode is built for car owners, garages, and fleets. Publish maintenance logs and workflow items in a clear structure.",
+    items: [
+      {
+        title: "Publish Car Maintenance Data",
+        description:
+          "Store service history, mileage, repairs, and parts replacements in structured containers.",
+        icon: LuCar,
+      },
+      {
+        title: "Structured & Searchable JSON",
+        description:
+          "Data is saved as structured JSON, ready for search, integrations, and long-term reference.",
+        icon: LuFileJson,
+      },
+      {
+        title: "Link Car Records",
+        description:
+          "Link vehicles with parts, maintenance events, and owners to build a clean historical timeline.",
+        icon: LuLink2,
+      },
+      {
+        title: "Share & Preserve for the Future",
+        description:
+          "Share trusted car history with garages, buyers, or partners using immutable blockchain records.",
+        icon: LuShare2,
+      },
+    ],
+  },
+  {
+    id: "cars-how-do-i-do-that",
+    title: "How do I do that?",
+    items: [
+      {
+        title: "1. Get IOTA Wallet",
+        description:
+          "Install the IOTA Wallet browser extension, then open it from your top-right wallet button.",
+        icon: LuWallet,
+      },
+      {
+        title: "2. Get a Few IOTA Tokens",
+        description:
+          "A few IOTA tokens cover many transactions; around 5 tokens can publish a large amount of data.",
+        icon: LuCoins,
+      },
+      {
+        title: "3. Connect and Log in",
+        description:
+          "Connect your wallet using the top-right button, then sign in to start publishing.",
+        icon: LuShieldCheck,
+      },
+      {
+        title: "4. Publish the Content",
+        description:
+          "Create a Container, then a Type, then an Item to publish your content.",
+        icon: LuRocket,
+      },
+    ],
+  },
+];
+
 async function fetchFirstText(paths: string[]): Promise<string> {
   for (const path of paths) {
     try {
@@ -255,7 +321,7 @@ function IntroWalletConnectSection() {
   const { mutate: connect } = useConnectWallet();
 
   return (
-    <section className="features intro-wallet-cta-panel">
+    <section className="intro-wallet-cta-panel">
       <h2>Connect to IOTA Wallet</h2>
       <p className="intro-wallet-cta-text">
         Connect your wallet to publish, link, verify, and explore on-chain
@@ -294,7 +360,7 @@ function IntroWalletConnectSection() {
   );
 }
 
-function IntroFaqSection() {
+function IntroFaqSection({ groups }: { groups: IntroFaqGroup[] }) {
   const [openSectionId, setOpenSectionId] = useState<string | null>(null);
 
   return (
@@ -305,7 +371,7 @@ function IntroFaqSection() {
       </p>
 
       <div className="intro-faq-list">
-        {INTRO_FAQ_GROUPS.map((group) => {
+        {groups.map((group) => {
           const isOpen = openSectionId === group.id;
           const panelId = `intro-faq-panel-${group.id}`;
           return (
@@ -333,6 +399,7 @@ function IntroFaqSection() {
 
               {isOpen && (
                 <div id={panelId} className="intro-faq-content">
+                  {group.lead ? <p className="intro-faq-group-lead">{group.lead}</p> : null}
                   <div className="feature-grid">
                     {group.items.map((item) => (
                       <div className="feature" key={item.title}>
@@ -357,6 +424,7 @@ function IntroFaqSection() {
 
 export function Introduction({ account }: IntroductionProps) {
   const isCarsInstance = isCarsTranslation();
+  const faqGroups = isCarsInstance ? CARS_FAQ_GROUPS : DEFAULT_FAQ_GROUPS;
   const logoPath = getBrandLogoPath();
 
   const [loadApiSection, setLoadApiSection] = useState(false);
@@ -487,85 +555,6 @@ export function Introduction({ account }: IntroductionProps) {
             </div>
           </section>
 
-          <section className="cars-intro features">
-            <h2>Welcome to Cars Mode!</h2>
-            <p>
-              This mode is built for car owners, garages, and fleets. Publish maintenance logs and workflow items in a clear structure.
-            </p>
-            <div className="feature-grid">
-              <div className="feature">
-                <h3>
-                  <SectionFeatureTitle icon={LuCar}>
-                    Publish Car Maintenance Data
-                  </SectionFeatureTitle>
-                </h3>
-                <p>Store service history, mileage, repairs, and parts replacements in structured containers.</p>
-              </div>
-              <div className="feature">
-                <h3>
-                  <SectionFeatureTitle icon={LuFileJson}>
-                    Structured &amp; Searchable JSON
-                  </SectionFeatureTitle>
-                </h3>
-                <p>Data is saved as structured JSON, ready for search, integrations, and long-term reference.</p>
-              </div>
-              <div className="feature">
-                <h3>
-                  <SectionFeatureTitle icon={LuLink2}>
-                    Link Car Records
-                  </SectionFeatureTitle>
-                </h3>
-                <p>Link vehicles with parts, maintenance events, and owners to build a clean historical timeline.</p>
-              </div>
-              <div className="feature">
-                <h3>
-                  <SectionFeatureTitle icon={LuShare2}>
-                    Share &amp; Preserve for the Future
-                  </SectionFeatureTitle>
-                </h3>
-                <p>Share trusted car history with garages, buyers, or partners using immutable blockchain records.</p>
-              </div>
-            </div>
-          </section>
-
-          <section id="features2" className="features">
-            <h2>How do I do that?</h2>
-            <div className="feature-grid">
-              <div className="feature">
-                <h3>
-                  <SectionFeatureTitle icon={LuWallet}>
-                    1. Get IOTA Wallet
-                  </SectionFeatureTitle>
-                </h3>
-                <p>Install the IOTA Wallet browser extension, then open it from your top-right wallet button.</p>
-              </div>
-              <div className="feature">
-                <h3>
-                  <SectionFeatureTitle icon={LuCoins}>
-                    2. Get a Few IOTA Tokens
-                  </SectionFeatureTitle>
-                </h3>
-                <p>A few IOTA tokens cover many transactions; around 5 tokens can publish a large amount of data.</p>
-              </div>
-              <div className="feature">
-                <h3>
-                  <SectionFeatureTitle icon={LuShieldCheck}>
-                    3. Connect and Log in
-                  </SectionFeatureTitle>
-                </h3>
-                <p>Connect your wallet using the top-right button, then sign in to start publishing.</p>
-              </div>
-              <div className="feature">
-                <h3>
-                  <SectionFeatureTitle icon={LuRocket}>
-                    4. Publish the Content
-                  </SectionFeatureTitle>
-                </h3>
-                <p>Create a Container, then a Type, then an Item to publish your content.</p>
-              </div>
-            </div>
-          </section>
-
           <section id="features3" className="features">
             <h2>Car Report</h2>
             <div className="feature-grid">
@@ -644,8 +633,6 @@ export function Introduction({ account }: IntroductionProps) {
           </section>
 
           <YoutubeVideoConsentSection />
-
-          <IntroFaqSection />
 
           <WorkflowDiagramSection
             carsMode={false}
@@ -760,6 +747,8 @@ export function Introduction({ account }: IntroductionProps) {
         </div>
       )}
     </section>
+
+    <IntroFaqSection groups={faqGroups} />
   </div>
   );
 }

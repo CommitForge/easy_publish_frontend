@@ -2346,6 +2346,9 @@ a:hover {
 .sync-status-card {
   flex: 1;
   min-width: 240px;
+  min-height: 102px;
+  display: flex;
+  align-items: stretch;
 }
 
 .sync-status-content {
@@ -2355,6 +2358,9 @@ a:hover {
   border-radius: 8px;
   isolation: isolate;
   min-height: 56px;
+  flex: 1 1 auto;
+  display: flex;
+  align-items: center;
 }
 
 .sync-status-body {

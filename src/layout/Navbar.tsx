@@ -437,54 +437,56 @@ export function Navbar({
 
       {/* Right-side wallet buttons */}
       <div className="nav-right">
-        <div className="app-mode-switch" role="group" aria-label="Application mode">
-          <button
-            type="button"
-            className={`app-mode-btn ${appMode === 'generic' ? 'is-active' : ''}`.trim()}
-            onClick={() => setAppMode('generic')}
-            aria-pressed={appMode === 'generic'}
-            title="Default mode"
-          >
-            Default
-          </button>
-          <button
-            type="button"
-            className={`app-mode-btn ${appMode === 'cars' ? 'is-active' : ''}`.trim()}
-            onClick={() => setAppMode('cars')}
-            aria-pressed={appMode === 'cars'}
-            title="Cars mode"
-          >
-            Cars
-          </button>
-        </div>
+        <div className="wallet-mode-stack">
+          <div className="app-mode-switch" role="group" aria-label="Application mode">
+            <button
+              type="button"
+              className={`app-mode-btn ${appMode === 'generic' ? 'is-active' : ''}`.trim()}
+              onClick={() => setAppMode('generic')}
+              aria-pressed={appMode === 'generic'}
+              title="Default mode"
+            >
+              Default
+            </button>
+            <button
+              type="button"
+              className={`app-mode-btn ${appMode === 'cars' ? 'is-active' : ''}`.trim()}
+              onClick={() => setAppMode('cars')}
+              aria-pressed={appMode === 'cars'}
+              title="Cars mode"
+            >
+              Cars
+            </button>
+          </div>
 
-        {!account &&
-          wallets.length > 0 &&
-          wallets.map((wallet) => (
+          {!account &&
+            wallets.length > 0 &&
+            wallets.map((wallet) => (
+              <button
+                className="btn primary btn-neon wallet-connect-btn"
+                key={wallet.name}
+                onClick={() =>
+                  connect({ wallet }, { onSuccess: () => console.log('connected') })
+                }
+              >
+                <span className="wallet-connect-btn-label">Connect to {wallet.name}</span>
+              </button>
+            ))}
+
+          {!account && wallets.length === 0 && (
             <button
               className="btn primary btn-neon wallet-connect-btn"
-              key={wallet.name}
               onClick={() =>
-                connect({ wallet }, { onSuccess: () => console.log('connected') })
+                window.open(
+                  'https://chromewebstore.google.com/detail/iota-wallet/iidjkmdceolghepehaaddojmnjnkkija?pli=1',
+                  '_blank'
+                )
               }
             >
-              <span className="wallet-connect-btn-label">Connect to {wallet.name}</span>
+              <span className="wallet-connect-btn-label">Get IOTA Wallet to Connect</span>
             </button>
-          ))}
-
-        {!account && wallets.length === 0 && (
-          <button
-            className="btn primary btn-neon wallet-connect-btn"
-            onClick={() =>
-              window.open(
-                'https://chromewebstore.google.com/detail/iota-wallet/iidjkmdceolghepehaaddojmnjnkkija?pli=1',
-                '_blank'
-              )
-            }
-          >
-            <span className="wallet-connect-btn-label">Get IOTA Wallet to Connect</span>
-          </button>
-        )}
+          )}
+        </div>
 
         {account && (
           <>

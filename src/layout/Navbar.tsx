@@ -499,8 +499,7 @@ export function Navbar({
 
         {account && (
           <div className="wallet-connected wallet-connected-card selected-object-card">
-            <div className="selected-object-title">Wallet Status</div>
-            <div className="wallet-connected-meta-label">Connected as</div>
+            <div className="selected-object-title">Connected as</div>
             <div className="selected-object-row wallet-connected-row">
               <span className="selected-object-id-text" title={account.address}>
                 {shortByAddressStyle(account.address)}

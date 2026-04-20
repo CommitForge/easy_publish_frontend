@@ -2348,6 +2348,7 @@ a:hover {
   min-width: 240px;
   min-height: 102px;
   display: flex;
+  flex-direction: column;
   align-items: stretch;
 }
 

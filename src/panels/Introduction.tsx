@@ -1,12 +1,15 @@
 import { Suspense, lazy, useEffect, useState } from "react";
+import { useConnectWallet, useWallets } from "@iota/dapp-kit";
 import { getBrandLogoPath, isCarsTranslation } from "../Config.ts";
 import { SectionFeatureTitle } from "../assets/section-icons/SectionFeatureTitle.tsx";
 import WorkflowDiagramSection from "./WorkflowDiagramSection.tsx";
+import type { IconType } from "react-icons";
 import {
   LuBadgeCheck,
   LuBoxes,
   LuCar,
   LuChartBar,
+  LuChevronDown,
   LuClipboardList,
   LuCoins,
   LuDatabase,
@@ -58,9 +61,146 @@ const emptyScripts: ScriptMap = {
 };
 
 const YOUTUBE_VIDEO_SRC =
-  "https://www.youtube.com/embed/AVfUStEqIoU?si=DkjPHmWMu5hzpTrV";
+  "https://www.youtube.com/embed/Wk_Z9NWsMcg";
+const IOTA_WALLET_DOWNLOAD_URL =
+  "https://chromewebstore.google.com/detail/iota-wallet/iidjkmdceolghepehaaddojmnjnkkija?pli=1";
 const ApiInstructions = lazy(() => import("./ApiInstructions"));
 const ScriptsCarousel = lazy(() => import("./ScriptsCarousel"));
+
+type IntroFaqCard = {
+  title: string;
+  description: string;
+  icon: IconType;
+};
+
+type IntroFaqGroup = {
+  id: string;
+  title: string;
+  items: IntroFaqCard[];
+};
+
+const INTRO_FAQ_GROUPS: IntroFaqGroup[] = [
+  {
+    id: "what-is-this-for",
+    title: "What is this for?",
+    items: [
+      {
+        title: "Put Content on Blockchain",
+        description:
+          "Store and share your content on-chain with transparent history and ownership.",
+        icon: LuDatabase,
+      },
+      {
+        title: "As Easy as Filling a Form",
+        description:
+          "Use guided forms instead of manual transactions to publish data quickly.",
+        icon: LuFilePenLine,
+      },
+      {
+        title: "View Published Content",
+        description:
+          "Browse published records in tables and inspect linked objects with ease.",
+        icon: LuEye,
+      },
+      {
+        title: "Integrate Content With Systems",
+        description:
+          "Connect published content to external systems, workflows, and automations.",
+        icon: LuPlugZap,
+      },
+    ],
+  },
+  {
+    id: "how-do-i-do-that",
+    title: "How do I do that?",
+    items: [
+      {
+        title: "1. Get IOTA Wallet",
+        description:
+          "Install the IOTA Wallet browser extension, then open it from your top-right wallet button.",
+        icon: LuWallet,
+      },
+      {
+        title: "2. Get a Few IOTA Tokens",
+        description:
+          "A few IOTA tokens cover many transactions; around 5 tokens can publish a large amount of data.",
+        icon: LuCoins,
+      },
+      {
+        title: "3. Connect and Log in",
+        description:
+          "Connect your wallet using the top-right button, then sign in to start publishing.",
+        icon: LuShieldCheck,
+      },
+      {
+        title: "4. Publish the Content",
+        description:
+          "Create a Container, then a Type, then an Item to publish your content.",
+        icon: LuRocket,
+      },
+    ],
+  },
+  {
+    id: "what-content-do-i-publish",
+    title: "What content do I publish?",
+    items: [
+      {
+        title: "Supports Custom Content",
+        description:
+          "Publish any content, usually structured JSON, as long as it respects the platform terms.",
+        icon: LuPuzzle,
+      },
+      {
+        title: "Supports Custom Workflow",
+        description:
+          "Design your own data workflow, including references and links between related records.",
+        icon: LuWorkflow,
+      },
+      {
+        title: "Predefined Structure",
+        description:
+          "Use predefined fields for faster setup; the Content field usually stores your main data.",
+        icon: LuBoxes,
+      },
+      {
+        title: "Examples of Published Data",
+        description:
+          "Use examples and guides before publishing, and avoid sensitive personal information.",
+        icon: LuChartBar,
+      },
+    ],
+  },
+  {
+    id: "tell-me-more",
+    title: "Tell me more!",
+    items: [
+      {
+        title: "Linked Containers",
+        description:
+          "Build hierarchies by attaching child containers to parent containers.",
+        icon: LuLink2,
+      },
+      {
+        title: "On-Chain and Off-Chain Indexing",
+        description:
+          "Traverse records on-chain and off-chain with efficient recursive indexing.",
+        icon: LuSearchCheck,
+      },
+      {
+        title: "Recipient Verification Enabled",
+        description:
+          "Allow recipients to mark items as verified when confirmation is required.",
+        icon: LuBadgeCheck,
+      },
+      {
+        title: "Ownership Model",
+        description:
+          "Use multi-owner containers for safer collaboration and controlled publishing access.",
+        icon: LuUsers,
+      },
+    ],
+  },
+];
 
 async function fetchFirstText(paths: string[]): Promise<string> {
   for (const path of paths) {
@@ -106,6 +246,111 @@ function YoutubeVideoConsentSection() {
           />
         </div>
       )}
+    </section>
+  );
+}
+
+function IntroWalletConnectSection() {
+  const wallets = useWallets();
+  const { mutate: connect } = useConnectWallet();
+
+  return (
+    <section className="features intro-wallet-cta-panel">
+      <h2>Connect to IOTA Wallet</h2>
+      <p className="intro-wallet-cta-text">
+        Connect your wallet to publish, link, verify, and explore on-chain
+        content in iziPublish.
+      </p>
+      <div className="intro-wallet-cta-actions">
+        {wallets.length > 0 &&
+          wallets.map((wallet) => (
+            <button
+              type="button"
+              className="btn primary btn-neon wallet-connect-btn intro-wallet-connect-btn"
+              key={wallet.name}
+              onClick={() =>
+                connect({ wallet }, { onSuccess: () => console.log("connected") })
+              }
+            >
+              <span className="wallet-connect-btn-label">
+                Connect to {wallet.name}
+              </span>
+            </button>
+          ))}
+
+        {wallets.length === 0 && (
+          <button
+            type="button"
+            className="btn primary btn-neon wallet-connect-btn intro-wallet-connect-btn"
+            onClick={() => window.open(IOTA_WALLET_DOWNLOAD_URL, "_blank")}
+          >
+            <span className="wallet-connect-btn-label">
+              Get IOTA Wallet to Connect
+            </span>
+          </button>
+        )}
+      </div>
+    </section>
+  );
+}
+
+function IntroFaqSection() {
+  const [openSectionId, setOpenSectionId] = useState<string | null>(null);
+
+  return (
+    <section id="intro-faq" className="features intro-faq-panel">
+      <h2>FAQ</h2>
+      <p className="intro-faq-lead">
+        Quick answers first. Expand each section when you need more detail.
+      </p>
+
+      <div className="intro-faq-list">
+        {INTRO_FAQ_GROUPS.map((group) => {
+          const isOpen = openSectionId === group.id;
+          const panelId = `intro-faq-panel-${group.id}`;
+          return (
+            <article
+              key={group.id}
+              className={`intro-faq-item ${isOpen ? "is-open" : ""}`.trim()}
+            >
+              <button
+                type="button"
+                className="intro-faq-trigger"
+                aria-expanded={isOpen}
+                aria-controls={panelId}
+                onClick={() =>
+                  setOpenSectionId((prev) => (prev === group.id ? null : group.id))
+                }
+              >
+                <span>{group.title}</span>
+                <LuChevronDown
+                  className={`intro-faq-trigger-icon ${
+                    isOpen ? "is-open" : ""
+                  }`.trim()}
+                  aria-hidden="true"
+                />
+              </button>
+
+              {isOpen && (
+                <div id={panelId} className="intro-faq-content">
+                  <div className="feature-grid">
+                    {group.items.map((item) => (
+                      <div className="feature" key={item.title}>
+                        <h3>
+                          <SectionFeatureTitle icon={item.icon}>
+                            {item.title}
+                          </SectionFeatureTitle>
+                        </h3>
+                        <p>{item.description}</p>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+            </article>
+          );
+        })}
+      </div>
     </section>
   );
 }
@@ -220,6 +465,8 @@ export function Introduction({ account }: IntroductionProps) {
               </div>
             </div>
           </section>
+
+          <IntroWalletConnectSection />
 
           <section className="features share-strip">
             <h2>Share iziPublish</h2>
@@ -365,15 +612,8 @@ export function Introduction({ account }: IntroductionProps) {
                   <span className="wallet-address"> Wallet: Not connected </span>
                 </div>
                 <p className="hero-secondary-link-wrap">
-                  Looking for car maintenance workflows?{' '}
-                  <a
-                    className="hero-secondary-link"
-                    href="https://cars.izipublish.com"
-                    target="_blank"
-                    rel="noreferrer"
-                  >
-                    Visit Cars Mode
-                  </a>
+                  Need car maintenance workflows? Switch the header mode to{' '}
+                  <strong>Cars</strong>.
                 </p>
               </div>
               <div className="hero-right">
@@ -381,6 +621,9 @@ export function Introduction({ account }: IntroductionProps) {
               </div>
             </div>
           </section>
+
+          <IntroWalletConnectSection />
+
           <section className="features share-strip">
             <h2>Share iziPublish</h2>
             <div className="share-strip-row">
@@ -399,154 +642,10 @@ export function Introduction({ account }: IntroductionProps) {
               ))}
             </div>
           </section>
-          <section id="features1" className="features">
-            <h2>What is this for?</h2>
-            <div className="feature-grid">
-              <div className="feature">
-                <h3>
-                  <SectionFeatureTitle icon={LuDatabase}>
-                    Put Content on Blockchain
-                  </SectionFeatureTitle>
-                </h3>
-                <p>Store and share your content on-chain with transparent history and ownership.</p>
-              </div>
-              <div className="feature">
-                <h3>
-                  <SectionFeatureTitle icon={LuFilePenLine}>
-                    As Easy as Filling a Form
-                  </SectionFeatureTitle>
-                </h3>
-                <p>Use guided forms instead of manual transactions to publish data quickly.</p>
-              </div>
-              <div className="feature">
-                <h3>
-                  <SectionFeatureTitle icon={LuEye}>
-                    View Published Content
-                  </SectionFeatureTitle>
-                </h3>
-                <p>Browse published records in tables and inspect linked objects with ease.</p>
-              </div>
-              <div className="feature">
-                <h3>
-                  <SectionFeatureTitle icon={LuPlugZap}>
-                    Integrate Content With Systems
-                  </SectionFeatureTitle>
-                </h3>
-                <p>Connect published content to external systems, workflows, and automations.</p>
-              </div>
-            </div>
-          </section>
-          <section id="features2" className="features">
-            <h2>How do I do that?</h2>
-            <div className="feature-grid">
-              <div className="feature">
-                <h3>
-                  <SectionFeatureTitle icon={LuWallet}>
-                    1. Get IOTA Wallet
-                  </SectionFeatureTitle>
-                </h3>
-                <p>Install the IOTA Wallet browser extension, then open it from your top-right wallet button.</p>
-              </div>
-              <div className="feature">
-                <h3>
-                  <SectionFeatureTitle icon={LuCoins}>
-                    2. Get a Few IOTA Tokens
-                  </SectionFeatureTitle>
-                </h3>
-                <p>A few IOTA tokens cover many transactions; around 5 tokens can publish a large amount of data.</p>
-              </div>
-              <div className="feature">
-                <h3>
-                  <SectionFeatureTitle icon={LuShieldCheck}>
-                    3. Connect and Log in
-                  </SectionFeatureTitle>
-                </h3>
-                <p>Connect your wallet using the top-right button, then sign in to start publishing.</p>
-              </div>
-              <div className="feature">
-                <h3>
-                  <SectionFeatureTitle icon={LuRocket}>
-                    4. Publish the Content
-                  </SectionFeatureTitle>
-                </h3>
-                <p>Create a Container, then a Type, then an Item to publish your content.</p>
-              </div>
-            </div>
-          </section>
-          <section id="features3" className="features">
-            <h2>What content do I publish?</h2>
-            <div className="feature-grid">
-              <div className="feature">
-                <h3>
-                  <SectionFeatureTitle icon={LuPuzzle}>
-                    Supports Custom Content
-                  </SectionFeatureTitle>
-                </h3>
-                <p>Publish any content, usually structured JSON, as long as it respects the platform terms.</p>
-              </div>
-              <div className="feature">
-                <h3>
-                  <SectionFeatureTitle icon={LuWorkflow}>
-                    Supports Custom Workflow
-                  </SectionFeatureTitle>
-                </h3>
-                <p>Design your own data workflow, including references and links between related records.</p>
-              </div>
-              <div className="feature">
-                <h3>
-                  <SectionFeatureTitle icon={LuBoxes}>
-                    Predefined Structure
-                  </SectionFeatureTitle>
-                </h3>
-                <p>Use predefined fields for faster setup; the Content field usually stores your main data.</p>
-              </div>
-              <div className="feature">
-                <h3>
-                  <SectionFeatureTitle icon={LuChartBar}>
-                    Examples of Published Data
-                  </SectionFeatureTitle>
-                </h3>
-                <p>Use examples and guides before publishing, and avoid sensitive personal information.</p>
-              </div>
-            </div>
-          </section>
-          <section id="features4" className="features">
-            <h2>Tell me more!</h2>
-            <div className="feature-grid">
-              <div className="feature">
-                <h3>
-                  <SectionFeatureTitle icon={LuLink2}>
-                    Linked Containers
-                  </SectionFeatureTitle>
-                </h3>
-                <p>Build hierarchies by attaching child containers to parent containers.</p>
-              </div>
-              <div className="feature">
-                <h3>
-                  <SectionFeatureTitle icon={LuSearchCheck}>
-                    On-Chain and Off-Chain Indexing
-                  </SectionFeatureTitle>
-                </h3>
-                <p>Traverse records on-chain and off-chain with efficient recursive indexing.</p>
-              </div>
-              <div className="feature">
-                <h3>
-                  <SectionFeatureTitle icon={LuBadgeCheck}>
-                    Recipient Verification Enabled
-                  </SectionFeatureTitle>
-                </h3>
-                <p>Allow recipients to mark items as verified when confirmation is required.</p>
-              </div>
-              <div className="feature">
-                <h3>
-                  <SectionFeatureTitle icon={LuUsers}>
-                    Ownership Model
-                  </SectionFeatureTitle>
-                </h3>
-                <p>Use multi-owner containers for safer collaboration and controlled publishing access.</p>
-              </div>
-            </div>
-          </section>
+
+          <YoutubeVideoConsentSection />
+
+          <IntroFaqSection />
 
           <WorkflowDiagramSection
             carsMode={false}
@@ -563,7 +662,6 @@ export function Introduction({ account }: IntroductionProps) {
               <div className="feature">To help us exit beta faster, please test and share feedback at izipublish.com@gmail.com.</div>
             </div>
           </section>
-          <YoutubeVideoConsentSection />
         </>
       )}
 

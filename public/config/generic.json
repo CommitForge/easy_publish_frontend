@@ -136,6 +136,7 @@
 
   "browse": {
   "containers": "Browse Containers",
+  "containersAndTypes": "Browse Containers and Types",
   "containerChildLinks": "Browse Child Links",
   "owners": "Browse Owners",
   "types": "Browse Types",

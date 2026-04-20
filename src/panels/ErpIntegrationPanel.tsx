@@ -627,7 +627,7 @@ export function ErpIntegrationPanel({
   return (
     <div className="erp-panel">
       <div className="erp-header">
-        <h2>ERP Integration (WIP)</h2>
+        <h2>ERP Integration (Work in Progress)</h2>
         <div className="analytics-muted">
           Independent ERP module with dedicated `erp_*` tables, backend API, CLI publishing jobs, sync wait, and verification candidate tracking.
         </div>

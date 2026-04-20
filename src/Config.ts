@@ -48,6 +48,9 @@ export const SMART_REPORT_MAX_RECORDS = parsePositiveInt(
 const AUTO_VALUE = 'auto';
 const DEFAULT_FALLBACK_INSTANCE = 'generic';
 const DEFAULT_API_PATH = '/izipublish';
+const APP_MODE_STORAGE_KEY = 'easy_publish.ui_mode.v1';
+
+export type AppMode = 'generic' | 'cars';
 
 function normalizeHost(host: string): string {
   return host.trim().toLowerCase().replace(/^www\./, '');
@@ -140,42 +143,115 @@ type TranslationNode = {
   [key: string]: TranslationNode | string | number | boolean | null;
 };
 
-let translations: TranslationNode | null = null;
+const SUPPORTED_APP_MODES: AppMode[] = ['generic', 'cars'];
+const translationsByMode: Partial<Record<AppMode, TranslationNode>> = {};
 
-function getTranslationValue(path: string): unknown {
-  if (!translations) return undefined;
+function normalizeAppMode(value?: string | null): AppMode {
+  const normalized = value?.trim().toLowerCase();
+  return normalized === 'cars' ? 'cars' : 'generic';
+}
 
+function defaultAppModeFromBuild(): AppMode {
+  return normalizeAppMode(APP_INSTANCE_NAME);
+}
+
+function readStoredAppMode(): AppMode | null {
+  if (typeof window === 'undefined') return null;
+  try {
+    const raw = window.localStorage.getItem(APP_MODE_STORAGE_KEY);
+    if (!raw) return null;
+    return normalizeAppMode(raw);
+  } catch {
+    return null;
+  }
+}
+
+function writeStoredAppMode(mode: AppMode) {
+  if (typeof window === 'undefined') return;
+  try {
+    window.localStorage.setItem(APP_MODE_STORAGE_KEY, mode);
+  } catch {
+    // ignore storage failures
+  }
+}
+
+let activeAppMode: AppMode = readStoredAppMode() ?? defaultAppModeFromBuild();
+
+function getTranslationValueFromNode(
+  node: TranslationNode | null | undefined,
+  path: string
+): unknown {
+  if (!node) return undefined;
   return path
     .split('.')
     .reduce<unknown>((current, key) => {
       if (!current || typeof current !== 'object') return undefined;
-      return (current as Record<string, unknown>)[key];
-    }, translations);
+      return (current as Record<string, unknown>)[key] as unknown;
+    }, node);
+}
+
+function getTranslationValue(path: string): unknown {
+  const activeNode = translationsByMode[activeAppMode];
+  const activeValue = getTranslationValueFromNode(activeNode, path);
+  if (activeValue !== undefined) return activeValue;
+
+  const fallbackNode = translationsByMode.generic;
+  const fallbackValue = getTranslationValueFromNode(fallbackNode, path);
+  if (fallbackValue !== undefined) return fallbackValue;
+
+  return undefined;
+}
+
+async function loadTranslationMode(mode: AppMode): Promise<void> {
+  try {
+    const query = TRANSLATION_VERSION
+      ? `?v=${encodeURIComponent(TRANSLATION_VERSION)}`
+      : '';
+    const res = await fetch(`/config/${mode}.json${query}`, {
+      cache: 'no-store',
+    });
+    if (!res.ok) return;
+    translationsByMode[mode] = (await res.json()) as TranslationNode;
+  } catch {
+    // continue
+  }
+}
+
+export function getActiveAppMode(): AppMode {
+  return activeAppMode;
+}
+
+export function setActiveAppMode(mode: AppMode) {
+  const normalized = normalizeAppMode(mode);
+  activeAppMode = normalized;
+  writeStoredAppMode(normalized);
+}
+
+export function getAvailableAppModes(): AppMode[] {
+  return [...SUPPORTED_APP_MODES];
 }
 
 export async function loadTranslations(instance: string) {
-  const preferred = instance.trim().toLowerCase();
-  const candidates = Array.from(
-    new Set([preferred, DEFAULT_FALLBACK_INSTANCE].filter(Boolean))
+  const preferredMode = normalizeAppMode(instance);
+  const defaultMode = defaultAppModeFromBuild();
+  const storedMode = readStoredAppMode();
+  activeAppMode = storedMode ?? preferredMode ?? defaultMode;
+
+  const prioritizedModes = Array.from(
+    new Set<AppMode>([preferredMode, 'generic', 'cars'])
   );
 
-  for (const candidate of candidates) {
-    try {
-      const query = TRANSLATION_VERSION
-        ? `?v=${encodeURIComponent(TRANSLATION_VERSION)}`
-        : '';
-      const res = await fetch(`/config/${candidate}.json${query}`, {
-        cache: 'no-store',
-      });
-      if (!res.ok) continue;
-      translations = (await res.json()) as TranslationNode;
-      return;
-    } catch {
-      // continue to next candidate
-    }
+  await Promise.all(prioritizedModes.map((mode) => loadTranslationMode(mode)));
+
+  if (!translationsByMode[activeAppMode]) {
+    activeAppMode = translationsByMode[preferredMode]
+      ? preferredMode
+      : translationsByMode.generic
+      ? 'generic'
+      : 'cars';
   }
 
-  translations = {};
+  writeStoredAppMode(activeAppMode);
 }
 
 export function t(path: string): string {
@@ -186,7 +262,7 @@ export function t(path: string): string {
 }
 
 export function isCarsTranslation(): boolean {
-  return t('translation') === 'cars' || t('container.singular') === 'Car';
+  return getActiveAppMode() === 'cars';
 }
 
 export function getBrandLogoPath(): string {

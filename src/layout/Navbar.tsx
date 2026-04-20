@@ -3,7 +3,7 @@ import { useEffect, useState } from 'react';
 import { copyToClipboard } from '../utils/clipboard';
 import { useSelection } from '../context/SelectionContext.tsx';
 import { useContentDisplay } from '../context/ContentDisplayContext.tsx';
-import { API_BASE, getBrandLogoPath, t } from '../Config.ts';
+import { API_BASE, getBrandLogoPath, t, type AppMode } from '../Config.ts';
 import { useSyncStatus } from '../hooks/useSyncStatus';
 import type { SyncStatus } from '../hooks/useSyncStatus';
 import { buildObjectExplorerUrl } from '../utils/explorer';
@@ -238,6 +238,8 @@ type NavbarProps = {
   account: { address: string } | null | undefined;
   disconnect: () => void;
   setPrimaryMenuSelection: (value: PanelMenuSelection) => void;
+  appMode: AppMode;
+  setAppMode: (mode: AppMode) => void;
 };
 
 function nameFromPayload(raw: unknown): string | null {
@@ -260,6 +262,8 @@ export function Navbar({
   account,
   disconnect,
   setPrimaryMenuSelection,
+  appMode,
+  setAppMode,
 }: NavbarProps) {
   const wallets = useWallets();
   const { mutate: connect } = useConnectWallet();
@@ -433,6 +437,27 @@ export function Navbar({
 
       {/* Right-side wallet buttons */}
       <div className="nav-right">
+        <div className="app-mode-switch" role="group" aria-label="Application mode">
+          <button
+            type="button"
+            className={`app-mode-btn ${appMode === 'generic' ? 'is-active' : ''}`.trim()}
+            onClick={() => setAppMode('generic')}
+            aria-pressed={appMode === 'generic'}
+            title="Generic mode"
+          >
+            Generic
+          </button>
+          <button
+            type="button"
+            className={`app-mode-btn ${appMode === 'cars' ? 'is-active' : ''}`.trim()}
+            onClick={() => setAppMode('cars')}
+            aria-pressed={appMode === 'cars'}
+            title="Cars mode"
+          >
+            Cars
+          </button>
+        </div>
+
         {!account &&
           wallets.length > 0 &&
           wallets.map((wallet) => (

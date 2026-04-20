@@ -2220,6 +2220,24 @@ a:hover {
   transition-delay: 0.16s;
 }
 
+@keyframes bp-sidebar-attention-blink {
+  0%,
+  100% {
+    background: rgba(80, 250, 123, 0.08);
+    box-shadow: 0 0 0 1px rgba(80, 250, 123, 0.18);
+  }
+  50% {
+    background: rgba(80, 250, 123, 0.18);
+    box-shadow:
+      0 0 0 1px rgba(80, 250, 123, 0.55),
+      0 0 14px rgba(80, 250, 123, 0.32);
+  }
+}
+
+.bp-sidebar-attention-blink {
+  animation: bp-sidebar-attention-blink 1.1s ease-in-out infinite;
+}
+
 /********* COOKIE CONSENT ***********/
 
 .cookie-banner {
@@ -2533,6 +2551,41 @@ a:hover {
   overflow: visible;
 }
 
+.app-mode-switch {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.2rem;
+  padding: 0.18rem;
+  border-radius: 999px;
+  border: 1px solid rgba(139, 233, 253, 0.28);
+  background: rgba(18, 22, 34, 0.8);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.03);
+}
+
+.app-mode-btn {
+  border: none;
+  border-radius: 999px;
+  padding: 0.32rem 0.68rem;
+  background: transparent;
+  color: var(--fg-muted);
+  font-size: 0.78rem;
+  font-weight: 700;
+  letter-spacing: 0.01em;
+  cursor: pointer;
+  transition: background-color 0.16s ease, color 0.16s ease, box-shadow 0.16s ease;
+}
+
+.app-mode-btn:hover {
+  color: var(--fg);
+  background: rgba(139, 233, 253, 0.12);
+}
+
+.app-mode-btn.is-active {
+  color: #0f151f;
+  background: linear-gradient(180deg, rgba(80, 250, 123, 0.98), rgba(80, 250, 123, 0.82));
+  box-shadow: 0 0 0 1px rgba(80, 250, 123, 0.5), 0 0 10px rgba(80, 250, 123, 0.22);
+}
+
 .wallet-connect-btn {
   --matrix-ring-spread: 8px;
   white-space: nowrap;
@@ -2600,6 +2653,12 @@ a:hover {
     order: 2;
     justify-content: center;
     padding: 0.55rem;
+  }
+
+  .app-mode-switch {
+    width: 100%;
+    justify-content: center;
+    margin-bottom: 0.15rem;
   }
 
   .wallet-connect-btn {
@@ -2764,6 +2823,125 @@ a:hover {
   border-color: rgba(80, 250, 123, 0.55);
   background: rgba(80, 250, 123, 0.12);
   color: var(--fg);
+}
+
+.intro-wallet-cta-panel {
+  margin-top: 0.9rem;
+}
+
+.intro-wallet-cta-text {
+  max-width: 760px;
+  margin: 0 auto 1rem;
+  color: var(--fg-muted);
+}
+
+.intro-wallet-cta-actions {
+  display: flex;
+  justify-content: center;
+  flex-wrap: wrap;
+  gap: 0.7rem;
+}
+
+.intro-wallet-connect-btn {
+  min-width: min(100%, 520px);
+  width: min(100%, 520px);
+  padding: 0.96rem 1.25rem;
+  font-size: 1.06rem;
+  font-weight: 700;
+  letter-spacing: 0.01em;
+  border-radius: 12px;
+  box-shadow:
+    0 0 0 1px rgba(80, 250, 123, 0.3),
+    0 0 20px rgba(80, 250, 123, 0.24),
+    0 8px 20px rgba(0, 0, 0, 0.35);
+  animation: introWalletCtaGlow 1.9s ease-in-out infinite;
+}
+
+.intro-wallet-connect-btn:hover {
+  transform: translateY(-2px) scale(1.01);
+}
+
+@keyframes introWalletCtaGlow {
+  0%,
+  100% {
+    box-shadow:
+      0 0 0 1px rgba(80, 250, 123, 0.28),
+      0 0 16px rgba(80, 250, 123, 0.2),
+      0 8px 20px rgba(0, 0, 0, 0.32);
+  }
+  50% {
+    box-shadow:
+      0 0 0 1px rgba(80, 250, 123, 0.45),
+      0 0 26px rgba(80, 250, 123, 0.38),
+      0 10px 24px rgba(0, 0, 0, 0.4);
+  }
+}
+
+.intro-faq-panel {
+  margin-top: 1rem;
+}
+
+.intro-faq-lead {
+  max-width: 780px;
+  margin: 0 auto 0.95rem;
+  color: var(--fg-muted);
+}
+
+.intro-faq-list {
+  display: grid;
+  gap: 0.7rem;
+}
+
+.intro-faq-item {
+  border: 1px solid rgba(98, 114, 164, 0.46);
+  border-radius: 14px;
+  background: linear-gradient(165deg, rgba(31, 32, 41, 0.9), rgba(26, 27, 36, 0.95));
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.03);
+  overflow: hidden;
+}
+
+.intro-faq-item.is-open {
+  border-color: rgba(139, 233, 253, 0.54);
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.05),
+    0 10px 24px rgba(0, 0, 0, 0.28);
+}
+
+.intro-faq-trigger {
+  width: 100%;
+  border: none;
+  background: transparent;
+  color: var(--fg);
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 0.75rem;
+  font-size: 1rem;
+  font-weight: 700;
+  text-align: left;
+  padding: 0.9rem 1rem;
+  cursor: pointer;
+}
+
+.intro-faq-trigger:hover {
+  background: rgba(139, 233, 253, 0.08);
+}
+
+.intro-faq-trigger-icon {
+  flex: 0 0 auto;
+  transition: transform 0.2s ease;
+}
+
+.intro-faq-trigger-icon.is-open {
+  transform: rotate(180deg);
+}
+
+.intro-faq-content {
+  padding: 0 1rem 1rem;
+}
+
+.intro-faq-content .feature-grid {
+  margin-top: 0.55rem;
 }
 
 .workflow-diagram-section {
@@ -3383,6 +3561,10 @@ a:hover {
 }
 
 @media (prefers-reduced-motion: reduce) {
+  .intro-wallet-connect-btn {
+    animation: none;
+  }
+
   .workflow-node-popup,
   .workflow-smart-popup,
   .workflow-preview-thumb-button {
@@ -3447,6 +3629,22 @@ a:hover {
   .share-strip-btn {
     min-width: 132px;
     justify-content: center;
+  }
+
+  .intro-wallet-connect-btn {
+    width: 100%;
+    min-width: 0;
+    font-size: 1rem;
+    padding: 0.9rem 1rem;
+  }
+
+  .intro-faq-trigger {
+    font-size: 0.95rem;
+    padding: 0.82rem 0.86rem;
+  }
+
+  .intro-faq-content {
+    padding: 0 0.86rem 0.86rem;
   }
 
   .workflow-diagram-rail::before {

@@ -10,7 +10,13 @@ import type { PanelMenuSelection } from './panels/SidebarPanel.tsx';
 
 import './style/Index.css';
 
-import { API_BASE, APP_INSTANCE_DOMAIN } from './Config.ts';
+import {
+  API_BASE,
+  APP_INSTANCE_DOMAIN,
+  getActiveAppMode,
+  setActiveAppMode,
+  type AppMode,
+} from './Config.ts';
 
 const AccountWorkspace = lazy(() => import('./panels/AccountWorkspace.tsx'));
 
@@ -21,10 +27,16 @@ export default function App() {
   const [primaryMenuSelection, setPrimaryMenuSelection] =
     useState<PanelMenuSelection>('items');
   const [hasNavigatedPrimaryMenu, setHasNavigatedPrimaryMenu] = useState(false);
+  const [appMode, setAppMode] = useState<AppMode>(() => getActiveAppMode());
 
   const handlePrimaryMenuSelection = (value: PanelMenuSelection) => {
     setHasNavigatedPrimaryMenu(true);
     setPrimaryMenuSelection(value);
+  };
+
+  const handleAppModeChange = (nextMode: AppMode) => {
+    setActiveAppMode(nextMode);
+    setAppMode(nextMode);
   };
 
   useEffect(() => {
@@ -98,6 +110,8 @@ export default function App() {
           disconnect={disconnect}
           primaryMenuSelection={primaryMenuSelection}
           setPrimaryMenuSelection={handlePrimaryMenuSelection}
+          appMode={appMode}
+          setAppMode={handleAppModeChange}
         />
       </ContentDisplayProvider>
     </SelectionProvider>
@@ -109,11 +123,15 @@ function AppInner({
   disconnect,
   primaryMenuSelection,
   setPrimaryMenuSelection,
+  appMode,
+  setAppMode,
 }: {
   account: { address: string } | null | undefined;
   disconnect: () => void;
   primaryMenuSelection: PanelMenuSelection;
   setPrimaryMenuSelection: (value: PanelMenuSelection) => void;
+  appMode: AppMode;
+  setAppMode: (mode: AppMode) => void;
 }) {
   return (
     <div className="app-container">
@@ -121,6 +139,8 @@ function AppInner({
         account={account}
         disconnect={disconnect}
         setPrimaryMenuSelection={setPrimaryMenuSelection}
+        appMode={appMode}
+        setAppMode={setAppMode}
       />
 
       <div className="app-body">

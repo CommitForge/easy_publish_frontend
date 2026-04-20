@@ -153,7 +153,7 @@ export function SidebarPanel({
   });
 
   const panelSpacing = { marginBottom: 10 };
-  const secondaryPanelsTogether = showContainersPanel && showDataTypesPanel;
+  const browsePanelsOpen = showContainersPanel || showDataTypesPanel;
   const helpLinkIsActive = primaryMenuSelection === 'help';
   const shouldGlowHelpLink = needsStartupTutorialHelpHint && !helpLinkIsActive;
 
@@ -193,7 +193,7 @@ export function SidebarPanel({
       key: 'updateContainer',
       icon: <FaEdit />,
       disabled: !selectedContainerId,
-      disabledReason: 'Select a container in Browse Containers to edit it.',
+      disabledReason: 'Select a container in Browse Containers and Types to edit it.',
     },
     {
       label: t('actions.attach'),
@@ -201,14 +201,14 @@ export function SidebarPanel({
       icon: <FaLink />,
       disabled: !selectedContainerId,
       disabledReason:
-        'Select a container in Browse Containers to attach a child link.',
+        'Select a container in Browse Containers and Types to attach a child link.',
     },
     {
       label: t('actions.addOwner'),
       key: 'addOwner',
       icon: <FaUserPlus />,
       disabled: !selectedContainerId,
-      disabledReason: 'Select a container in Browse Containers to add an owner.',
+      disabledReason: 'Select a container in Browse Containers and Types to add an owner.',
     },
     {
       label: t('actions.removeOwner'),
@@ -216,7 +216,7 @@ export function SidebarPanel({
       icon: <FaUserMinus />,
       disabled: !selectedContainerId,
       disabledReason:
-        'Select a container in Browse Containers to remove an owner.',
+        'Select a container in Browse Containers and Types to remove an owner.',
     },
   ];
 
@@ -226,42 +226,59 @@ export function SidebarPanel({
       key: 'updateDataType',
       icon: <FaEdit />,
       disabled: !selectedDataTypeId,
-      disabledReason: 'Select a data type in Browse Types to edit it.',
+      disabledReason: 'Select a data type in Browse Containers and Types to edit it.',
     },
   ];
 
   const canCreateDataType = !!selectedContainerId;
   const canCreateDataItem = !!selectedContainerId && !!selectedDataTypeId;
   const canCreateVerification = !!selectedContainerId && !!selectedDataTypeId;
-  const canBrowseTypes = !!selectedContainerId;
   const canBrowseItems = !!selectedContainerId || !!selectedDataTypeId;
   const canBrowseItemVerifications = !!selectedContainerId;
+  const shouldBlinkBrowseItems =
+    canBrowseItems &&
+    primaryMenuSelection !== 'items' &&
+    (!!selectedContainerId || !!selectedDataTypeId);
   const addDataTypeDisabledHint =
-    'Select a container in Browse Containers first, or create one in New Container.';
+    'Select a container in Browse Containers and Types first, or create one in New Container.';
   const addDataItemDisabledHint = !selectedContainerId
-    ? 'Select a container in Browse Containers first (or create one in New Container), then select a data type in Browse Types.'
+    ? 'Select a container in Browse Containers and Types first (or create one in New Container), then select a data type in Browse Containers and Types.'
     : !selectedDataTypeId
-    ? 'Select a data type in Browse Types first, or create one in New Type.'
+    ? 'Select a data type in Browse Containers and Types first, or create one in New Type.'
     : undefined;
   const addVerificationDisabledHint = !selectedContainerId
-    ? 'Select a container in Browse Containers first (or create one in New Container), then select a data type in Browse Types.'
+    ? 'Select a container in Browse Containers and Types first (or create one in New Container), then select a data type in Browse Containers and Types.'
     : !selectedDataTypeId
-    ? 'Select a data type in Browse Types first, or create one in New Type.'
+    ? 'Select a data type in Browse Containers and Types first, or create one in New Type.'
     : undefined;
-  const browseTypesDisabledHint =
-    'Select a container in Browse Containers first (required). If no rows appear after selection, publish/create data types in that container.';
   const browseItemsDisabledHint =
-    'Select at least one filter first: a container in Browse Containers or a data type in Browse Types. If it is still empty, publish/create data items that match your selection.';
+    'Select at least one filter first: a container or a data type in Browse Containers and Types. If it is still empty, publish/create data items that match your selection.';
   const browseItemVerificationsDisabledHint =
-    'Select a container in Browse Containers first (required). If the table is still empty, publish item verifications for data items in that container.';
+    'Select a container in Browse Containers and Types first (required). If the table is still empty, publish item verifications for data items in that container.';
   const renderDisabledHint = (hint?: string) =>
     hint ? <span className="bp-sidebar-disabled-tooltip">{hint}</span> : null;
 
+  const toggleBrowseContainersAndTypes = () => {
+    if (!browsePanelsOpen) {
+      setShowContainersPanel(true);
+      setShowDataTypesPanel(true);
+      return;
+    }
+
+    if (showContainersPanel && !showDataTypesPanel) {
+      setShowDataTypesPanel(true);
+      return;
+    }
+
+    setShowContainersPanel(false);
+    setShowDataTypesPanel(false);
+  };
+
   useEffect(() => {
-    if (canBrowseTypes) return;
+    if (showContainersPanel) return;
     setShowDataTypesPanel(false);
     setShowDataTypeFullTableDialog(false);
-  }, [canBrowseTypes]);
+  }, [showContainersPanel]);
 
   useEffect(() => {
     const userAddress = account?.address;
@@ -558,28 +575,35 @@ export function SidebarPanel({
                   </div>
 
                   <div
-                    style={{ ...actionButtonStyle(showContainersPanel), justifyContent: 'space-between' }}
-                    onClick={() => setShowContainersPanel((p) => !p)}
+                    style={{
+                      ...actionButtonStyle(browsePanelsOpen),
+                      justifyContent: 'space-between',
+                    }}
+                    onClick={toggleBrowseContainersAndTypes}
                   >
                     <span style={{ display: 'inline-flex', alignItems: 'center', gap: 7 }}>
-                      <FaColumns /> {t('browse.containers')}
+                      <FaColumns /> {t('browse.containersAndTypes')}
                     </span>
                     <span
                       title={
-                        secondaryPanelsTogether
+                        showContainersPanel && showDataTypesPanel
                           ? 'Secondary sidebars are open together'
-                          : 'Opens as a secondary sidebar'
+                          : showContainersPanel
+                          ? 'Container sidebar is open. Click again to open data types too.'
+                          : 'Opens as secondary sidebars'
                       }
                       style={{
                         display: 'inline-flex',
                         alignItems: 'center',
                         gap: 4,
                         fontSize: 11,
-                        opacity: showContainersPanel ? 0.95 : 0.55,
+                        opacity: browsePanelsOpen ? 0.95 : 0.55,
                       }}
                     >
                       <FaColumns />
-                      {secondaryPanelsTogether ? <span>2</span> : null}
+                      {browsePanelsOpen ? (
+                        <span>{showContainersPanel && showDataTypesPanel ? 2 : 1}</span>
+                      ) : null}
                     </span>
                   </div>
                   {showContainersPanel && (
@@ -599,78 +623,49 @@ export function SidebarPanel({
                       >
                         <FaUsers /> {t('browse.owners')}
                       </div>
+                      <div
+                        style={actionButtonStyle(
+                          primaryMenuSelection === 'items',
+                          16,
+                          !canBrowseItems
+                        )}
+                        className={[
+                          !canBrowseItems ? 'bp-sidebar-disabled-item' : '',
+                          shouldBlinkBrowseItems ? 'bp-sidebar-attention-blink' : '',
+                        ]
+                          .filter(Boolean)
+                          .join(' ')}
+                        aria-disabled={!canBrowseItems ? 'true' : undefined}
+                        onClick={() => {
+                          if (!canBrowseItems) return;
+                          setPrimaryMenuSelection('items');
+                        }}
+                      >
+                        <FaList /> {t('browse.items')}
+                        {!canBrowseItems ? renderDisabledHint(browseItemsDisabledHint) : null}
+                      </div>
+                      <div
+                        style={actionButtonStyle(
+                          primaryMenuSelection === 'itemVerifications',
+                          16,
+                          !canBrowseItemVerifications
+                        )}
+                        className={
+                          !canBrowseItemVerifications ? 'bp-sidebar-disabled-item' : undefined
+                        }
+                        aria-disabled={!canBrowseItemVerifications ? 'true' : undefined}
+                        onClick={() => {
+                          if (!canBrowseItemVerifications) return;
+                          setPrimaryMenuSelection('itemVerifications');
+                        }}
+                      >
+                        <FaCheckCircle /> {t('browse.itemVerifications')}
+                        {!canBrowseItemVerifications
+                          ? renderDisabledHint(browseItemVerificationsDisabledHint)
+                          : null}
+                      </div>
                     </>
                   )}
-                  <div
-                    style={{
-                      ...actionButtonStyle(showDataTypesPanel, 0, !canBrowseTypes),
-                      justifyContent: 'space-between',
-                    }}
-                    className={!canBrowseTypes ? 'bp-sidebar-disabled-item' : undefined}
-                    aria-disabled={!canBrowseTypes ? 'true' : undefined}
-                    onClick={() => {
-                      if (!canBrowseTypes) return;
-                      setShowDataTypesPanel((p) => !p);
-                    }}
-                  >
-                    <span style={{ display: 'inline-flex', alignItems: 'center', gap: 7 }}>
-                      <FaColumns /> {t('browse.types')}
-                    </span>
-                    <span
-                      title={
-                        secondaryPanelsTogether
-                          ? 'Secondary sidebars are open together'
-                          : 'Opens as a secondary sidebar'
-                      }
-                      style={{
-                        display: 'inline-flex',
-                        alignItems: 'center',
-                        gap: 4,
-                        fontSize: 11,
-                        opacity: showDataTypesPanel ? 0.95 : 0.55,
-                      }}
-                    >
-                      <FaColumns />
-                      {secondaryPanelsTogether ? <span>2</span> : null}
-                    </span>
-                    {!canBrowseTypes ? renderDisabledHint(browseTypesDisabledHint) : null}
-                  </div>
-                  <div
-                    style={actionButtonStyle(
-                      primaryMenuSelection === 'items',
-                      0,
-                      !canBrowseItems
-                    )}
-                    className={!canBrowseItems ? 'bp-sidebar-disabled-item' : undefined}
-                    aria-disabled={!canBrowseItems ? 'true' : undefined}
-                    onClick={() => {
-                      if (!canBrowseItems) return;
-                      setPrimaryMenuSelection('items');
-                    }}
-                  >
-                    <FaList /> {t('browse.items')}
-                    {!canBrowseItems ? renderDisabledHint(browseItemsDisabledHint) : null}
-                  </div>
-                  <div
-                    style={actionButtonStyle(
-                      primaryMenuSelection === 'itemVerifications',
-                      0,
-                      !canBrowseItemVerifications
-                    )}
-                    className={
-                      !canBrowseItemVerifications ? 'bp-sidebar-disabled-item' : undefined
-                    }
-                    aria-disabled={!canBrowseItemVerifications ? 'true' : undefined}
-                    onClick={() => {
-                      if (!canBrowseItemVerifications) return;
-                      setPrimaryMenuSelection('itemVerifications');
-                    }}
-                  >
-                    <FaCheckCircle /> {t('browse.itemVerifications')}
-                    {!canBrowseItemVerifications
-                      ? renderDisabledHint(browseItemVerificationsDisabledHint)
-                      : null}
-                  </div>
                 </>
               )}
             </div>
@@ -787,7 +782,10 @@ export function SidebarPanel({
             <div style={panelSpacing}>
               <div
                 style={sectionHeaderStyle}
-                onClick={() => setShowContainersPanel(false)}
+                onClick={() => {
+                  setShowContainersPanel(false);
+                  setShowDataTypesPanel(false);
+                }}
               >
                 <FaChevronDown />{' '}
                 <span style={{ marginLeft: 6 }}>Containers</span>
@@ -813,6 +811,7 @@ export function SidebarPanel({
                   onClick={(e) => {
                     e.stopPropagation();
                     setShowContainersPanel(false);
+                    setShowDataTypesPanel(false);
                   }}
                 />
               </div>

@@ -156,6 +156,7 @@
 
   "browse": {
   "containers": "Browse Cars",
+  "containersAndTypes": "Browse Cars and Maintenance Types",
   "containerChildLinks": "Browse Child Links",
   "owners": "Browse Car Owners",
   "types": "Browse Maintenance Types",

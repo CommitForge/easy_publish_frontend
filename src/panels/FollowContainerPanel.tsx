@@ -14,6 +14,8 @@ import {
 import ObjectIdListTextarea from '../move/forms/editor/ObjectIdListTextarea.tsx';
 import './FollowContainerPanel.css';
 
+const FOLLOW_VALIDATE_BATCH_SIZE = 12;
+
 interface FollowContainerPanelProps {
   accountAddress: string | undefined;
   followedContainers: string[];
@@ -97,16 +99,22 @@ export function FollowContainerPanel({
 
   const filterExistingContainerIds = async (ids: string[]) => {
     const uniqueIds = Array.from(new Set(ids));
-    const checks = await Promise.all(
-      uniqueIds.map(async (id) => {
-        try {
-          const res = await fetch(`${API_BASE}api/containers/${id}`);
-          return { id, exists: res.ok };
-        } catch {
-          return { id, exists: false };
-        }
-      })
-    );
+    const checks: Array<{ id: string; exists: boolean }> = [];
+
+    for (let index = 0; index < uniqueIds.length; index += FOLLOW_VALIDATE_BATCH_SIZE) {
+      const batch = uniqueIds.slice(index, index + FOLLOW_VALIDATE_BATCH_SIZE);
+      const batchChecks = await Promise.all(
+        batch.map(async (id) => {
+          try {
+            const res = await fetch(`${API_BASE}api/containers/${id}`);
+            return { id, exists: res.ok };
+          } catch {
+            return { id, exists: false };
+          }
+        })
+      );
+      checks.push(...batchChecks);
+    }
 
     return {
       existingIds: checks.filter((entry) => entry.exists).map((entry) => entry.id),

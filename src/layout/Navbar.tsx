@@ -486,39 +486,40 @@ export function Navbar({
               <span className="wallet-connect-btn-label">Get IOTA Wallet to Connect</span>
             </button>
           )}
+
+          {account && (
+            <div className="wallet-connected-controls">
+              <div className="wallet-connected">
+                <span className="wallet-connected-row">
+                  <span>Connected as: {shortByAddressStyle(account.address)}</span>
+                  <i
+                    className="bi bi-clipboard copy-icon"
+                    title="Copy address"
+                    onClick={(e) => copyToClipboard(e, account.address)}
+                  />
+                </span>
+                <label className="wallet-auto-unzip-toggle">
+                  <input
+                    type="checkbox"
+                    checked={autoUnzipContent}
+                    onChange={(event) => setAutoUnzipContent(event.target.checked)}
+                  />
+                  <span>{t('actions.autoUnzip')}</span>
+                  <InfoTooltip
+                    className="form-content-check-help form-content-help-tooltip-up"
+                    message={t('messages.autoUnzipHelp')}
+                    ariaLabel={t('labels.autoUnzipHelp')}
+                  />
+                </label>
+              </div>
+
+              <button className="btn primary" onClick={() => disconnect()}>
+                Disconnect
+              </button>
+            </div>
+          )}
         </div>
 
-        {account && (
-          <>
-            <div className="wallet-connected">
-              <span className="wallet-connected-row">
-                <span>Connected as: {shortByAddressStyle(account.address)}</span>
-                <i
-                  className="bi bi-clipboard copy-icon"
-                  title="Copy address"
-                  onClick={(e) => copyToClipboard(e, account.address)}
-                />
-              </span>
-              <label className="wallet-auto-unzip-toggle">
-                <input
-                  type="checkbox"
-                  checked={autoUnzipContent}
-                  onChange={(event) => setAutoUnzipContent(event.target.checked)}
-                />
-                <span>{t('actions.autoUnzip')}</span>
-                <InfoTooltip
-                  className="form-content-check-help form-content-help-tooltip-up"
-                  message={t('messages.autoUnzipHelp')}
-                  ariaLabel={t('labels.autoUnzipHelp')}
-                />
-              </label>
-            </div>
-
-            <button className="btn primary" onClick={() => disconnect()}>
-              Disconnect
-            </button>
-          </>
-        )}
       </div>
     </header>
   );

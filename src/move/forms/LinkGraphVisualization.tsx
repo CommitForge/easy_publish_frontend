@@ -45,6 +45,8 @@ const DEFAULT_MAX_DEPTH = 3;
 const MAX_DEPTH_LIMIT = 8;
 const DEFAULT_MAX_NODES = 160;
 const MAX_NODES_LIMIT = 500;
+const GRAPH_RENDER_NODE_CAP = 260;
+const GRAPH_RENDER_EDGE_CAP = 1040;
 
 export function LinkGraphLaunchButton({
   mode,
@@ -180,7 +182,24 @@ function LinkGraphDialog({
     sourceDataItemId,
   ]);
 
-  const layout = useMemo(() => buildGraphLayout(graph), [graph]);
+  const renderGraph = useMemo<GraphData>(() => {
+    const slice = createRenderableGraphSlice(
+      graph,
+      GRAPH_RENDER_NODE_CAP,
+      GRAPH_RENDER_EDGE_CAP
+    );
+
+    return {
+      ...graph,
+      nodes: slice.nodes,
+      edges: slice.edges,
+    };
+  }, [graph]);
+  const renderInfo = useMemo(
+    () => inferRenderInfo(graph, renderGraph),
+    [graph, renderGraph]
+  );
+  const layout = useMemo(() => buildGraphLayout(renderGraph), [renderGraph]);
 
   useEffect(() => {
     if (loadedOnce) return;
@@ -211,7 +230,8 @@ function LinkGraphDialog({
             {mode === 'recipients' ? 'Recipients Link Graph' : 'References Link Graph'}
           </h4>
           <div className="bp-link-graph-subtitle">
-            Seeds: {seeds.length} · Nodes: {graph.nodes.length} · Edges: {graph.edges.length}
+            Seeds: {seeds.length} · Nodes: {renderGraph.nodes.length}/{graph.nodes.length} · Edges:{' '}
+            {renderGraph.edges.length}/{graph.edges.length}
           </div>
         </div>
 
@@ -252,9 +272,10 @@ function LinkGraphDialog({
 
         {error && <div className="bp-link-graph-message is-error">{error}</div>}
         {graph.info && <div className="bp-link-graph-message">{graph.info}</div>}
+        {renderInfo && <div className="bp-link-graph-message">{renderInfo}</div>}
 
         <div className="bp-link-graph-canvas">
-          {graph.nodes.length === 0 ? (
+          {renderGraph.nodes.length === 0 ? (
             <div className="bp-link-graph-empty">No linkable values found.</div>
           ) : (
             <svg
@@ -263,7 +284,7 @@ function LinkGraphDialog({
               role="img"
               aria-label="Link graph"
             >
-              {graph.edges.map((edge) => {
+              {renderGraph.edges.map((edge) => {
                 const from = layout.positions[edge.from];
                 const to = layout.positions[edge.to];
                 if (!from || !to) return null;
@@ -295,7 +316,7 @@ function LinkGraphDialog({
                 );
               })}
 
-              {graph.nodes.map((node) => {
+              {renderGraph.nodes.map((node) => {
                 const position = layout.positions[node.id];
                 if (!position) return null;
                 return (
@@ -420,10 +441,17 @@ function normalizeGraphPayload(
       : undefined;
   const inferredInfo = inferGraphInfo(payload, nodeMap.size, edgeMap.size, maxNodes);
   const info = [payloadInfo, inferredInfo].filter(Boolean).join(' · ') || undefined;
+  const cappedNodes = leveledNodes.slice(0, maxNodes);
+  const cappedNodeIds = new Set(cappedNodes.map((node) => node.id));
+  const cappedEdges = Array.from(edgeMap.values())
+    .filter(
+      (edge) => cappedNodeIds.has(edge.from) && cappedNodeIds.has(edge.to)
+    )
+    .slice(0, maxNodes * 3);
 
   return {
-    nodes: leveledNodes.slice(0, maxNodes),
-    edges: Array.from(edgeMap.values()).slice(0, maxNodes * 3),
+    nodes: cappedNodes,
+    edges: cappedEdges,
     source: 'backend',
     info,
   };
@@ -478,8 +506,10 @@ function inferLevels(
     if (seedNode) seedNode.level = 0;
   });
 
-  while (queue.length > 0) {
-    const current = queue.shift();
+  let queueIndex = 0;
+  while (queueIndex < queue.length) {
+    const current = queue[queueIndex];
+    queueIndex += 1;
     if (!current) continue;
     if (current.level >= maxDepth) continue;
 
@@ -591,4 +621,36 @@ function inferGraphInfo(
   }
 
   return notes.length > 0 ? Array.from(new Set(notes)).join(' ') : undefined;
+}
+
+function createRenderableGraphSlice(
+  graph: GraphData,
+  maxNodes: number,
+  maxEdges: number
+): { nodes: GraphNode[]; edges: GraphEdge[] } {
+  const limitedNodes = graph.nodes.slice(0, maxNodes);
+  const allowedNodeIds = new Set(limitedNodes.map((node) => node.id));
+  const limitedEdges = graph.edges
+    .filter(
+      (edge) => allowedNodeIds.has(edge.from) && allowedNodeIds.has(edge.to)
+    )
+    .slice(0, maxEdges);
+
+  return { nodes: limitedNodes, edges: limitedEdges };
+}
+
+function inferRenderInfo(graph: GraphData, renderGraph: GraphData): string | undefined {
+  const notes: string[] = [];
+  if (graph.nodes.length > renderGraph.nodes.length) {
+    notes.push(
+      `Rendering capped to ${renderGraph.nodes.length} of ${graph.nodes.length} nodes.`
+    );
+  }
+  if (graph.edges.length > renderGraph.edges.length) {
+    notes.push(
+      `Rendering capped to ${renderGraph.edges.length} of ${graph.edges.length} edges.`
+    );
+  }
+
+  return notes.length > 0 ? notes.join(' ') : undefined;
 }

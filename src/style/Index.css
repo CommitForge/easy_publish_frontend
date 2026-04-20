@@ -2612,6 +2612,14 @@ a:hover {
   overflow: visible;
 }
 
+.wallet-connected-controls {
+  display: inline-flex;
+  align-items: flex-start;
+  gap: 8px;
+  flex-wrap: wrap;
+  margin-top: 0.1rem;
+}
+
 .wallet-connected-row {
   display: inline-flex;
   align-items: center;

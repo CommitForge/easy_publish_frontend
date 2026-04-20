@@ -151,6 +151,8 @@ type AnalyticsDashboardPanelProps = {
 const TOP_N_MIN = 1;
 const TOP_N_MAX = 200;
 const DEFAULT_TOP_N = 8;
+const ANALYTICS_GRAPH_RENDER_NODE_CAP = 320;
+const ANALYTICS_GRAPH_RENDER_EDGE_CAP = 1280;
 const VERIFICATION_BREAKDOWN_PAGE_SIZE = 200;
 const VERIFICATION_BREAKDOWN_MAX_PAGES = 40;
 const QUICK_RANGES = ['30d', '90d', '365d', 'all'] as const;
@@ -236,6 +238,8 @@ function normalizeLatestPublishedGraph(graphRaw: AnalyticsLatestPublishedGraph |
   limit: number;
   windowDataItems: number;
   totalScopedDataItems: number;
+  totalNodes: number;
+  totalEdges: number;
   summary: {
     containers: number;
     dataTypes: number;
@@ -283,20 +287,45 @@ function normalizeLatestPublishedGraph(graphRaw: AnalyticsLatestPublishedGraph |
     }
   });
 
+  const dedupedNodes = Array.from(nodesById.values());
+  const dedupedEdges = Array.from(edgesByKey.values());
+  const cappedNodes = dedupedNodes.slice(0, ANALYTICS_GRAPH_RENDER_NODE_CAP);
+  const allowedNodeIds = new Set(cappedNodes.map((node) => node.id.toLowerCase()));
+  const cappedEdges = dedupedEdges
+    .filter(
+      (edge) =>
+        allowedNodeIds.has(edge.from.toLowerCase()) &&
+        allowedNodeIds.has(edge.to.toLowerCase())
+    )
+    .slice(0, ANALYTICS_GRAPH_RENDER_EDGE_CAP);
+  const infoNotes: string[] = [];
+  if (
+    dedupedNodes.length > cappedNodes.length ||
+    dedupedEdges.length > cappedEdges.length
+  ) {
+    infoNotes.push(
+      `Graph rendering capped to ${cappedNodes.length}/${dedupedNodes.length} nodes and ${cappedEdges.length}/${dedupedEdges.length} edges.`
+    );
+  }
+  const infoValue =
+    typeof graphRaw?.info === 'string' && graphRaw.info.trim() ? graphRaw.info.trim() : undefined;
+  const info = [infoValue, ...infoNotes].filter(Boolean).join(' · ') || undefined;
+
   return {
     limit: toSafeNumber(graphRaw?.limit),
     windowDataItems: toSafeNumber(graphRaw?.windowDataItems),
     totalScopedDataItems: toSafeNumber(graphRaw?.totalScopedDataItems),
+    totalNodes: dedupedNodes.length,
+    totalEdges: dedupedEdges.length,
     summary: {
       containers: toSafeNumber(graphRaw?.summary?.containers),
       dataTypes: toSafeNumber(graphRaw?.summary?.dataTypes),
       dataItems: toSafeNumber(graphRaw?.summary?.dataItems),
       verifications: toSafeNumber(graphRaw?.summary?.verifications),
     },
-    info:
-      typeof graphRaw?.info === 'string' && graphRaw.info.trim() ? graphRaw.info.trim() : undefined,
-    nodes: Array.from(nodesById.values()),
-    edges: Array.from(edgesByKey.values()),
+    info,
+    nodes: cappedNodes,
+    edges: cappedEdges,
   };
 }
 
@@ -1045,6 +1074,12 @@ export function AnalyticsDashboardPanel({
               Window: {formatCount(latestPublishedGraph.windowDataItems)} /{' '}
               {formatCount(latestPublishedGraph.totalScopedDataItems)} items (limit:{' '}
               {formatCount(latestPublishedGraph.limit || 100)}).
+            </div>
+            <div className="analytics-muted">
+              Rendered graph: {formatCount(latestPublishedGraph.nodes.length)} /{' '}
+              {formatCount(latestPublishedGraph.totalNodes)} nodes ·{' '}
+              {formatCount(latestPublishedGraph.edges.length)} /{' '}
+              {formatCount(latestPublishedGraph.totalEdges)} edges.
             </div>
 
             <div className="analytics-kpi-grid analytics-kpi-grid--compact analytics-published-graph-summary">

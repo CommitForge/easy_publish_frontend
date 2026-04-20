@@ -2639,7 +2639,7 @@ a:hover {
   width: auto;
   min-width: 236px;
   flex: 0 1 236px;
-  min-height: 86px;
+  min-height: 102px;
 }
 
 .wallet-connected-card.selected-object-card {

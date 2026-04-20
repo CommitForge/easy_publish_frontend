@@ -2551,6 +2551,15 @@ a:hover {
   overflow: visible;
 }
 
+.nav-right.is-authenticated {
+  width: min(100%, 320px);
+  flex-direction: column;
+  align-items: stretch;
+  justify-content: flex-start;
+  gap: 0.5rem;
+  flex-wrap: nowrap;
+}
+
 .wallet-mode-stack {
   width: min(100%, 320px);
   display: flex;
@@ -2604,6 +2613,10 @@ a:hover {
   white-space: nowrap;
 }
 
+.wallet-disconnect-btn {
+  margin-top: 0;
+}
+
 .wallet-connected {
   display: flex;
   align-items: flex-start;
@@ -2612,18 +2625,26 @@ a:hover {
   overflow: visible;
 }
 
-.wallet-connected-controls {
-  display: inline-flex;
-  align-items: flex-start;
-  gap: 8px;
-  flex-wrap: wrap;
-  margin-top: 0.1rem;
+.wallet-connected-card {
+  width: 100%;
+  min-width: 0;
+  flex: 1 1 auto;
+}
+
+.wallet-connected-meta-label {
+  font-size: 0.68rem;
+  font-weight: 700;
+  letter-spacing: 0.03em;
+  text-transform: uppercase;
+  color: var(--comment);
+  margin-bottom: 0.18rem;
 }
 
 .wallet-connected-row {
   display: inline-flex;
   align-items: center;
   gap: 6px;
+  margin-bottom: 0.28rem;
 }
 
 .wallet-auto-unzip-toggle {
@@ -2637,6 +2658,10 @@ a:hover {
   cursor: pointer;
   user-select: none;
   overflow: visible;
+}
+
+.wallet-connected-card .wallet-auto-unzip-toggle {
+  font-size: 0.72rem;
 }
 
 .wallet-auto-unzip-toggle input {
@@ -2672,6 +2697,12 @@ a:hover {
     order: 2;
     justify-content: center;
     padding: 0.55rem;
+  }
+
+  .nav-right.is-authenticated {
+    width: min(100%, 440px);
+    justify-content: flex-start;
+    align-items: stretch;
   }
 
   .wallet-mode-stack {

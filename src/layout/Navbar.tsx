@@ -436,7 +436,7 @@ export function Navbar({
       </div>
 
       {/* Right-side wallet buttons */}
-      <div className="nav-right">
+      <div className={`nav-right ${account ? 'is-authenticated' : ''}`.trim()}>
         <div className="wallet-mode-stack">
           <div className="app-mode-switch" role="group" aria-label="Application mode">
             <button
@@ -488,38 +488,46 @@ export function Navbar({
           )}
 
           {account && (
-            <div className="wallet-connected-controls">
-              <div className="wallet-connected">
-                <span className="wallet-connected-row">
-                  <span>Connected as: {shortByAddressStyle(account.address)}</span>
-                  <i
-                    className="bi bi-clipboard copy-icon"
-                    title="Copy address"
-                    onClick={(e) => copyToClipboard(e, account.address)}
-                  />
-                </span>
-                <label className="wallet-auto-unzip-toggle">
-                  <input
-                    type="checkbox"
-                    checked={autoUnzipContent}
-                    onChange={(event) => setAutoUnzipContent(event.target.checked)}
-                  />
-                  <span>{t('actions.autoUnzip')}</span>
-                  <InfoTooltip
-                    className="form-content-check-help form-content-help-tooltip-up"
-                    message={t('messages.autoUnzipHelp')}
-                    ariaLabel={t('labels.autoUnzipHelp')}
-                  />
-                </label>
-              </div>
-
-              <button className="btn primary" onClick={() => disconnect()}>
-                Disconnect
-              </button>
-            </div>
+            <button
+              className="btn primary wallet-connect-btn wallet-disconnect-btn"
+              onClick={() => disconnect()}
+            >
+              Disconnect
+            </button>
           )}
         </div>
 
+        {account && (
+          <div className="wallet-connected wallet-connected-card selected-object-card">
+            <div className="selected-object-title">Wallet Status</div>
+            <div className="wallet-connected-meta-label">Connected as</div>
+            <div className="selected-object-row wallet-connected-row">
+              <span className="selected-object-id-text" title={account.address}>
+                {shortByAddressStyle(account.address)}
+              </span>
+              <span className="selected-object-icons">
+                <i
+                  className="bi bi-clipboard copy-icon"
+                  title="Copy address"
+                  onClick={(e) => copyToClipboard(e, account.address)}
+                />
+              </span>
+            </div>
+            <label className="wallet-auto-unzip-toggle">
+              <input
+                type="checkbox"
+                checked={autoUnzipContent}
+                onChange={(event) => setAutoUnzipContent(event.target.checked)}
+              />
+              <span>{t('actions.autoUnzip')}</span>
+              <InfoTooltip
+                className="form-content-check-help form-content-help-tooltip-up"
+                message={t('messages.autoUnzipHelp')}
+                ariaLabel={t('labels.autoUnzipHelp')}
+              />
+            </label>
+          </div>
+        )}
       </div>
     </header>
   );

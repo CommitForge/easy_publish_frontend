@@ -7,6 +7,6 @@
     "izipub": "./izipub.js"
   },
   "dependencies": {
-    "@iota/iota-sdk": "*"
+    "@iota/iota-sdk": "^1.17.0"
   }
 }

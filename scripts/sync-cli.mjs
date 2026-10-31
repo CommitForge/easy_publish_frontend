@@ -9,7 +9,7 @@ import { promisify } from 'node:util';
 const SOURCE_REPO = process.env.CLI_SOURCE_REPO || 'CommitForge/easy_publish_cli';
 const SOURCE_REF = process.env.CLI_SOURCE_REF || 'main';
 const LOCAL_SOURCE_DIR =
-  process.env.CLI_SOURCE_LOCAL_DIR || resolve(process.cwd(), '..', 'easy_publish_cli', 'easy_publish_cli');
+  process.env.CLI_SOURCE_LOCAL_DIR || resolve(process.cwd(), '..', 'easy_publish_cli');
 const PREFER_LOCAL_SOURCE = process.env.CLI_PREFER_LOCAL_SOURCE !== 'false';
 const STRIP_VITE_COMPAT = process.env.CLI_STRIP_VITE_COMPAT !== 'false';
 const SKIP_REMOTE_WHEN_CACHED = process.env.CLI_SKIP_REMOTE_WHEN_CACHED !== 'false';

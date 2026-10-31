@@ -29,3 +29,4 @@ dist-ssr
 *.sln
 *.sw?
 .lh/sync-cli-state.json
+.codex

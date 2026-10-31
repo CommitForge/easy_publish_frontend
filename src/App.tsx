@@ -6,6 +6,7 @@ import { SelectionProvider } from './context/SelectionContext.tsx';
 import { ContentDisplayProvider } from './context/ContentDisplayContext.tsx';
 import { Navbar, Footer, CookieConsent } from './layout';
 import { Introduction } from './panels/Introduction.tsx';
+import { NetworkDashboardRoute } from './panels/NetworkDashboardRoute.tsx';
 import type { PanelMenuSelection } from './panels/SidebarPanel.tsx';
 
 import './style/Index.css';
@@ -23,6 +24,9 @@ const AccountWorkspace = lazy(() => import('./panels/AccountWorkspace.tsx'));
 export default function App() {
   const account = useCurrentAccount();
   const { mutate: disconnect } = useDisconnectWallet();
+  const isNetworkDashboardRoute =
+    typeof window !== 'undefined'
+      && /^\/network-dashbo(a)?rd\/?$/.test(window.location.pathname);
 
   const [primaryMenuSelection, setPrimaryMenuSelection] =
     useState<PanelMenuSelection>('items');
@@ -40,6 +44,7 @@ export default function App() {
   };
 
   useEffect(() => {
+    if (isNetworkDashboardRoute) return;
     if (!account) return;
     if (hasNavigatedPrimaryMenu) return;
     if (primaryMenuSelection !== 'items') return;
@@ -92,15 +97,20 @@ export default function App() {
     return () => {
       cancelled = true;
     };
-  }, [account, hasNavigatedPrimaryMenu, primaryMenuSelection]);
+  }, [account, hasNavigatedPrimaryMenu, isNetworkDashboardRoute, primaryMenuSelection]);
 
   useEffect(() => {
+    if (isNetworkDashboardRoute) return;
     if (!account) return;
 
     void fetch(`${API_BASE}api/user/${account.address}/update`, {
       method: 'POST',
     }).catch(console.error);
-  }, [account]);
+  }, [account, isNetworkDashboardRoute]);
+
+  if (isNetworkDashboardRoute) {
+    return <NetworkDashboardRoute />;
+  }
 
   return (
     <SelectionProvider>

@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { useSelection } from '../context/SelectionContext.tsx';
 import { SidebarPanel } from './SidebarPanel.tsx';
 import { MainPanel } from './MainPanel.tsx';
@@ -39,6 +39,13 @@ export default function AccountWorkspace({
   } = useSelection();
 
   const [followedContainers, setFollowedContainers] = useState<string[]>([]);
+  const lastContentSelection = useRef<PanelMenuSelection>('items');
+
+  useEffect(() => {
+    if (primaryMenuSelection !== 'smartReport') {
+      lastContentSelection.current = primaryMenuSelection;
+    }
+  }, [primaryMenuSelection]);
 
   return (
     <div className="app-content">
@@ -156,6 +163,7 @@ export default function AccountWorkspace({
             selectedContainerId={selectedContainerId}
             selectedDataTypeId={selectedDataTypeId}
             selectedDataItemId={selectedDataItemId}
+            onClose={() => setPrimaryMenuSelection(lastContentSelection.current)}
           />
         )}
 

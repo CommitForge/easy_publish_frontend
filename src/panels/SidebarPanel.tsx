@@ -12,7 +12,6 @@ import {
   FaChartBar,
   FaPlus,
   FaList,
-  FaColumns,
   FaEdit,
   FaLink,
   FaInbox,
@@ -100,6 +99,7 @@ export function SidebarPanel({
     useState<'createContainer' | 'addDataType' | null>(null);
   const [addDataCollapsed, setAddDataCollapsed] = useState(false);
   const [viewDataCollapsed, setViewDataCollapsed] = useState(false);
+  const [viewDashboardCollapsed, setViewDashboardCollapsed] = useState(false);
   const [reportsCollapsed, setReportsCollapsed] = useState(false);
   const [receivedDataCollapsed, setReceivedDataCollapsed] = useState(false);
   const [followDataCollapsed, setFollowDataCollapsed] = useState(false);
@@ -153,7 +153,6 @@ export function SidebarPanel({
   });
 
   const panelSpacing = { marginBottom: 10 };
-  const browsePanelsOpen = showContainersPanel || showDataTypesPanel;
   const helpLinkIsActive = primaryMenuSelection === 'help';
   const shouldGlowHelpLink = needsStartupTutorialHelpHint && !helpLinkIsActive;
 
@@ -193,7 +192,7 @@ export function SidebarPanel({
       key: 'updateContainer',
       icon: <FaEdit />,
       disabled: !selectedContainerId,
-      disabledReason: 'Select a container in Browse Containers and Types to edit it.',
+      disabledReason: 'Select a container in the Containers and Data Types side panels to edit it.',
     },
     {
       label: t('actions.attach'),
@@ -201,14 +200,14 @@ export function SidebarPanel({
       icon: <FaLink />,
       disabled: !selectedContainerId,
       disabledReason:
-        'Select a container in Browse Containers and Types to attach a child link.',
+        'Select a container in the Containers and Data Types side panels to attach a child link.',
     },
     {
       label: t('actions.addOwner'),
       key: 'addOwner',
       icon: <FaUserPlus />,
       disabled: !selectedContainerId,
-      disabledReason: 'Select a container in Browse Containers and Types to add an owner.',
+      disabledReason: 'Select a container in the Containers and Data Types side panels to add an owner.',
     },
     {
       label: t('actions.removeOwner'),
@@ -216,7 +215,7 @@ export function SidebarPanel({
       icon: <FaUserMinus />,
       disabled: !selectedContainerId,
       disabledReason:
-        'Select a container in Browse Containers and Types to remove an owner.',
+        'Select a container in the Containers and Data Types side panels to remove an owner.',
     },
   ];
 
@@ -226,52 +225,35 @@ export function SidebarPanel({
       key: 'updateDataType',
       icon: <FaEdit />,
       disabled: !selectedDataTypeId,
-      disabledReason: 'Select a data type in Browse Containers and Types to edit it.',
+      disabledReason: 'Select a data type in the Containers and Data Types side panels to edit it.',
     },
   ];
 
   const canCreateDataType = !!selectedContainerId;
   const canCreateDataItem = !!selectedContainerId && !!selectedDataTypeId;
   const canCreateVerification = !!selectedContainerId && !!selectedDataTypeId;
-  const canBrowseItems = !!selectedContainerId || !!selectedDataTypeId;
-  const canBrowseItemVerifications = !!selectedContainerId;
-  const shouldBlinkBrowseItems =
-    canBrowseItems &&
-    primaryMenuSelection !== 'items' &&
-    (!!selectedContainerId || !!selectedDataTypeId);
   const addDataTypeDisabledHint =
-    'Select a container in Browse Containers and Types first, or create one in New Container.';
+    'Select a container in the Containers and Data Types side panels first, or create one in New Container.';
   const addDataItemDisabledHint = !selectedContainerId
-    ? 'Select a container in Browse Containers and Types first (or create one in New Container), then select a data type in Browse Containers and Types.'
+    ? 'Select a container in the Containers and Data Types side panels first (or create one in New Container), then select a data type there.'
     : !selectedDataTypeId
-    ? 'Select a data type in Browse Containers and Types first, or create one in New Type.'
+    ? 'Select a data type in the Containers and Data Types side panels first, or create one in New Type.'
     : undefined;
   const addVerificationDisabledHint = !selectedContainerId
-    ? 'Select a container in Browse Containers and Types first (or create one in New Container), then select a data type in Browse Containers and Types.'
+    ? 'Select a container in the Containers and Data Types side panels first (or create one in New Container), then select a data type there.'
     : !selectedDataTypeId
-    ? 'Select a data type in Browse Containers and Types first, or create one in New Type.'
+    ? 'Select a data type in the Containers and Data Types side panels first, or create one in New Type.'
     : undefined;
-  const browseItemsDisabledHint =
-    'Select at least one filter first: a container or a data type in Browse Containers and Types. If it is still empty, publish/create data items that match your selection.';
-  const browseItemVerificationsDisabledHint =
-    'Select a container in Browse Containers and Types first (required). If the table is still empty, publish item verifications for data items in that container.';
   const renderDisabledHint = (hint?: string) =>
     hint ? <span className="bp-sidebar-disabled-tooltip">{hint}</span> : null;
 
-  const toggleBrowseContainersAndTypes = () => {
-    if (!browsePanelsOpen) {
-      setShowContainersPanel(true);
-      setShowDataTypesPanel(true);
-      return;
-    }
-
-    if (showContainersPanel && !showDataTypesPanel) {
-      setShowDataTypesPanel(true);
-      return;
-    }
-
-    setShowContainersPanel(false);
-    setShowDataTypesPanel(false);
+  const openBrowseView = (
+    selection: 'items' | 'itemVerifications' | 'owners' | 'containerChildLinks'
+  ) => {
+    // Open the contextual filter panels for every browse view.
+    setShowContainersPanel(true);
+    setShowDataTypesPanel(true);
+    setPrimaryMenuSelection(selection);
   };
 
   useEffect(() => {
@@ -561,6 +543,55 @@ export function SidebarPanel({
               {!viewDataCollapsed && (
                 <>
                   <div
+                    style={actionButtonStyle(primaryMenuSelection === 'items')}
+                    onClick={() => openBrowseView('items')}
+                  >
+                    <FaList /> {t('browse.items')}
+                  </div>
+
+                  <div
+                    style={actionButtonStyle(primaryMenuSelection === 'itemVerifications')}
+                    onClick={() => openBrowseView('itemVerifications')}
+                  >
+                    <FaCheckCircle /> {t('browse.itemVerifications')}
+                  </div>
+
+                  <div
+                    style={actionButtonStyle(primaryMenuSelection === 'owners')}
+                    onClick={() => openBrowseView('owners')}
+                  >
+                    <FaUsers /> {t('browse.owners')}
+                  </div>
+
+                  <div
+                    style={actionButtonStyle(primaryMenuSelection === 'containerChildLinks')}
+                    onClick={() => openBrowseView('containerChildLinks')}
+                  >
+                    <FaProjectDiagram /> {t('browse.containerChildLinks')}
+                  </div>
+                </>
+              )}
+            </div>
+
+            <div style={panelSpacing}>
+              <div style={sectionDividerStyle}>
+                <span style={sectionDividerLineStyle} />
+                <button
+                  type="button"
+                  style={sectionToggleStyle}
+                  onClick={() => setViewDashboardCollapsed((prev) => !prev)}
+                  aria-expanded={!viewDashboardCollapsed}
+                  aria-label="Toggle View Dashboard section"
+                >
+                  {viewDashboardCollapsed ? <FaChevronRight /> : <FaChevronDown />}
+                  VIEW DASHBOARD
+                </button>
+                <span style={sectionDividerLineStyle} />
+              </div>
+
+              {!viewDashboardCollapsed && (
+                <>
+                  <div
                     style={actionButtonStyle(primaryMenuSelection === 'dashboard')}
                     onClick={() => setPrimaryMenuSelection('dashboard')}
                   >
@@ -573,99 +604,6 @@ export function SidebarPanel({
                   >
                     <FaPlug /> ERP Integration
                   </div>
-
-                  <div
-                    style={{
-                      ...actionButtonStyle(browsePanelsOpen),
-                      justifyContent: 'space-between',
-                    }}
-                    onClick={toggleBrowseContainersAndTypes}
-                  >
-                    <span style={{ display: 'inline-flex', alignItems: 'center', gap: 7 }}>
-                      <FaColumns /> {t('browse.containersAndTypes')}
-                    </span>
-                    <span
-                      title={
-                        showContainersPanel && showDataTypesPanel
-                          ? 'Secondary sidebars are open together'
-                          : showContainersPanel
-                          ? 'Container sidebar is open. Click again to open data types too.'
-                          : 'Opens as secondary sidebars'
-                      }
-                      style={{
-                        display: 'inline-flex',
-                        alignItems: 'center',
-                        gap: 4,
-                        fontSize: 11,
-                        opacity: browsePanelsOpen ? 0.95 : 0.55,
-                      }}
-                    >
-                      <FaColumns />
-                      {browsePanelsOpen ? (
-                        <span>{showContainersPanel && showDataTypesPanel ? 2 : 1}</span>
-                      ) : null}
-                    </span>
-                  </div>
-                  {showContainersPanel && (
-                    <>
-                      <div
-                        style={actionButtonStyle(
-                          primaryMenuSelection === 'containerChildLinks',
-                          16
-                        )}
-                        onClick={() => setPrimaryMenuSelection('containerChildLinks')}
-                      >
-                        <FaProjectDiagram /> {t('browse.containerChildLinks')}
-                      </div>
-                      <div
-                        style={actionButtonStyle(primaryMenuSelection === 'owners', 16)}
-                        onClick={() => setPrimaryMenuSelection('owners')}
-                      >
-                        <FaUsers /> {t('browse.owners')}
-                      </div>
-                      <div
-                        style={actionButtonStyle(
-                          primaryMenuSelection === 'items',
-                          16,
-                          !canBrowseItems
-                        )}
-                        className={[
-                          !canBrowseItems ? 'bp-sidebar-disabled-item' : '',
-                          shouldBlinkBrowseItems ? 'bp-sidebar-attention-blink' : '',
-                        ]
-                          .filter(Boolean)
-                          .join(' ')}
-                        aria-disabled={!canBrowseItems ? 'true' : undefined}
-                        onClick={() => {
-                          if (!canBrowseItems) return;
-                          setPrimaryMenuSelection('items');
-                        }}
-                      >
-                        <FaList /> {t('browse.items')}
-                        {!canBrowseItems ? renderDisabledHint(browseItemsDisabledHint) : null}
-                      </div>
-                      <div
-                        style={actionButtonStyle(
-                          primaryMenuSelection === 'itemVerifications',
-                          16,
-                          !canBrowseItemVerifications
-                        )}
-                        className={
-                          !canBrowseItemVerifications ? 'bp-sidebar-disabled-item' : undefined
-                        }
-                        aria-disabled={!canBrowseItemVerifications ? 'true' : undefined}
-                        onClick={() => {
-                          if (!canBrowseItemVerifications) return;
-                          setPrimaryMenuSelection('itemVerifications');
-                        }}
-                      >
-                        <FaCheckCircle /> {t('browse.itemVerifications')}
-                        {!canBrowseItemVerifications
-                          ? renderDisabledHint(browseItemVerificationsDisabledHint)
-                          : null}
-                      </div>
-                    </>
-                  )}
                 </>
               )}
             </div>

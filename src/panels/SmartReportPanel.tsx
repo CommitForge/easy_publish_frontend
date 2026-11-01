@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import {
   API_BASE,
   APP_INSTANCE_DOMAIN,
@@ -12,12 +12,18 @@ type SortBy = 'created' | 'name' | 'external_index' | 'external_id';
 type SortDirection = 'asc' | 'desc';
 type TemplateVariant = 'standard' | 'compact' | 'dense';
 type ScopeFieldOption = { key: string; label: string };
+type ReportDescendants = {
+  dataTypes: boolean;
+  dataItems: boolean;
+  itemVerifications: boolean;
+};
 
 type SmartReportPanelProps = {
   accountAddress: string;
   selectedContainerId?: string | null;
   selectedDataTypeId?: string | null;
   selectedDataItemId?: string | null;
+  onClose: () => void;
 };
 
 const DEFAULT_TEXT_MAX_LENGTH = 200;
@@ -84,11 +90,62 @@ function scopeLabel(scope: SmartReportScope | null): string {
   return 'No selection';
 }
 
+function resolveReportIncludes(
+  scope: SmartReportScope | null,
+  descendants: ReportDescendants
+): string[] {
+  if (!scope) return [];
+
+  const includes = ['CONTAINER'];
+  const includeDataTypes = scope !== 'container' || descendants.dataTypes;
+  const includeDataItems =
+    scope === 'data_item'
+      || (scope === 'data_type' ? descendants.dataItems : descendants.dataTypes && descendants.dataItems);
+  const includeItemVerifications =
+    scope === 'data_item' || (includeDataItems && descendants.itemVerifications);
+
+  if (includeDataTypes) includes.push('DATA_TYPE');
+  if (includeDataItems) includes.push('DATA_ITEM');
+  if (includeItemVerifications) includes.push('DATA_ITEM_VERIFICATION');
+  return includes;
+}
+
+function describeReportContents(
+  scope: SmartReportScope | null,
+  includeDataTypes: boolean,
+  includeDataItems: boolean,
+  includeItemVerifications: boolean
+): string {
+  if (!scope) return 'Select a container, data type, or data item first.';
+  if (scope === 'data_item') {
+    return 'the selected container, data type, data item, and its verifications';
+  }
+
+  const parts = ['the selected container'];
+  if (scope === 'data_type') {
+    parts.push('the selected data type');
+  } else if (includeDataTypes) {
+    parts.push('all data types in that container');
+  }
+  if (includeDataItems) {
+    parts.push(
+      scope === 'data_type'
+        ? 'all items in that data type'
+        : 'all items in those data types'
+    );
+  }
+  if (includeItemVerifications) {
+    parts.push('all verifications for those items');
+  }
+  return parts.join(', ');
+}
+
 export function SmartReportPanel({
   accountAddress,
   selectedContainerId,
   selectedDataTypeId,
   selectedDataItemId,
+  onClose,
 }: SmartReportPanelProps) {
   const scope = useMemo(
     () =>
@@ -107,6 +164,11 @@ export function SmartReportPanel({
     useState<TemplateVariant>('compact');
   const [compactOutput, setCompactOutput] = useState(true);
   const [textMaxLength, setTextMaxLength] = useState(DEFAULT_TEXT_MAX_LENGTH);
+  const [reportDescendants, setReportDescendants] = useState<ReportDescendants>({
+    dataTypes: false,
+    dataItems: false,
+    itemVerifications: false,
+  });
   const [selectedFieldsByScope, setSelectedFieldsByScope] = useState<
     Record<SmartReportScope, string[]>
   >({
@@ -122,8 +184,31 @@ export function SmartReportPanel({
 
   const activeFieldOptions = scope ? FIELD_OPTIONS_BY_SCOPE[scope] : [];
   const activeSelectedFields = scope ? selectedFieldsByScope[scope] : [];
-  const dataTypeScopeActive = scope === 'data_type';
-  const canGenerate = !!scope && activeSelectedFields.length > 0;
+  const reportIncludes = useMemo(
+    () => resolveReportIncludes(scope, reportDescendants),
+    [scope, reportDescendants]
+  );
+  const includeDataTypes = reportIncludes.includes('DATA_TYPE');
+  const includeDataItems = reportIncludes.includes('DATA_ITEM');
+  const includeItemVerifications = reportIncludes.includes('DATA_ITEM_VERIFICATION');
+  const itemFiltersActive = scope === 'data_type' && includeDataItems;
+  const hasConfigurableFields =
+    scope === 'data_item' || includeDataItems || (scope === 'container' && includeDataTypes);
+  const canGenerate = !!scope && (!hasConfigurableFields || activeSelectedFields.length > 0);
+  const reportContentsDescription = describeReportContents(
+    scope,
+    includeDataTypes,
+    includeDataItems,
+    includeItemVerifications
+  );
+
+  useEffect(() => {
+    const closeOnEscape = (event: KeyboardEvent) => {
+      if (event.key === 'Escape') onClose();
+    };
+    window.addEventListener('keydown', closeOnEscape);
+    return () => window.removeEventListener('keydown', closeOnEscape);
+  }, [onClose]);
 
   const updateFieldsForScope = (next: string[]) => {
     if (!scope) return;
@@ -141,7 +226,7 @@ export function SmartReportPanel({
       );
       return;
     }
-    if (activeSelectedFields.length === 0) {
+    if (hasConfigurableFields && activeSelectedFields.length === 0) {
       setError('Select at least one report field to include.');
       return;
     }
@@ -172,6 +257,8 @@ export function SmartReportPanel({
       if (selectedContainerId) params.set('containerId', selectedContainerId);
       if (selectedDataTypeId) params.set('dataTypeId', selectedDataTypeId);
       if (selectedDataItemId) params.set('dataItemId', selectedDataItemId);
+
+      params.set('include', reportIncludes.join(','));
 
       if (scope === 'data_type') {
         const trimmedQuery = dataItemQuery.trim();
@@ -228,7 +315,26 @@ export function SmartReportPanel({
   };
 
   return (
-    <section className="analytics-dashboard">
+    <div
+      className="bp-dialog-backdrop"
+      role="presentation"
+      onMouseDown={onClose}
+    >
+      <section
+        className="bp-dialog bp-dialog-wide analytics-dashboard"
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="smart-report-title"
+        onMouseDown={(event) => event.stopPropagation()}
+      >
+        <button
+          type="button"
+          className="bp-dialog-close"
+          onClick={onClose}
+          aria-label="Close Smart Report"
+        >
+          ×
+        </button>
       <div
         style={{
           border: '1px solid rgba(139, 233, 253, 0.3)',
@@ -238,24 +344,134 @@ export function SmartReportPanel({
           marginBottom: '0.8rem',
         }}
       >
-        <h2 style={{ margin: '0 0 0.45rem 0' }}>Smart Report</h2>
+        <h2 id="smart-report-title" style={{ margin: '0 2.5rem 0.45rem 0' }}>
+          Smart Report
+        </h2>
         <p style={{ margin: '0 0 0.5rem 0', color: 'var(--comment)' }}>
-          Generate a PDF report for your current selection context.
+          Choose the data to include, then download a PDF.
         </p>
         <p style={{ margin: '0 0 0.5rem 0' }}>
           Current scope: <strong>{scopeLabel(scope)}</strong>
         </p>
-        <p style={{ margin: '0 0 0.25rem 0', color: 'var(--comment)' }}>
-          Container: {selectedContainerId || '(not selected)'}
+        <p style={{ margin: 0 }}>
+          <strong>This PDF will contain:</strong> {reportContentsDescription}.
         </p>
-        <p style={{ margin: '0 0 0.25rem 0', color: 'var(--comment)' }}>
-          Data Type: {selectedDataTypeId || '(not selected)'}
-        </p>
-        <p style={{ margin: 0, color: 'var(--comment)' }}>
-          Data Item: {selectedDataItemId || '(not selected)'}
-        </p>
+        <details style={{ marginTop: '0.55rem', color: 'var(--comment)' }}>
+          <summary style={{ cursor: 'pointer' }}>Selected IDs</summary>
+          <div style={{ display: 'grid', gap: 3, marginTop: 5, overflowWrap: 'anywhere' }}>
+            <span>Container: {selectedContainerId || '(not selected)'}</span>
+            <span>Data Type: {selectedDataTypeId || '(not selected)'}</span>
+            <span>Data Item: {selectedDataItemId || '(not selected)'}</span>
+          </div>
+        </details>
       </div>
 
+      <div
+        style={{
+          border: '1px solid rgba(80, 250, 123, 0.3)',
+          borderRadius: 12,
+          background: 'rgba(80, 250, 123, 0.05)',
+          padding: '0.8rem',
+          marginBottom: '0.8rem',
+        }}
+      >
+        <h3 style={{ margin: '0 0 0.35rem 0' }}>Report Contents</h3>
+        <p style={{ margin: '0 0 0.6rem 0', color: 'var(--comment)' }}>
+          Your current selection and its parent context are always included. Add only
+          the descendant levels you need in the PDF.
+        </p>
+
+        <div style={{ display: 'grid', gap: 7 }}>
+          <label style={{ display: 'inline-flex', alignItems: 'center', gap: 8 }}>
+            <input type="checkbox" checked={!!scope} disabled />
+            <span>
+              Container{selectedContainerId ? ' (selected)' : ''}
+            </span>
+          </label>
+
+          <label style={{ display: 'inline-flex', alignItems: 'center', gap: 8 }}>
+            <input
+              type="checkbox"
+              checked={includeDataTypes}
+              disabled={scope === 'data_type' || scope === 'data_item' || !scope}
+              onChange={(event) =>
+                setReportDescendants((previous) => ({
+                  ...previous,
+                  dataTypes: event.target.checked,
+                  dataItems: event.target.checked ? previous.dataItems : false,
+                  itemVerifications: event.target.checked
+                    ? previous.itemVerifications
+                    : false,
+                }))
+              }
+            />
+            <span>
+              Data Type{scope === 'container' ? ' — include all types in this container' : ' (selected)'}
+            </span>
+          </label>
+
+          <label style={{ display: 'inline-flex', alignItems: 'center', gap: 8 }}>
+            <input
+              type="checkbox"
+              checked={includeDataItems}
+              disabled={scope === 'data_item' || !scope || !includeDataTypes}
+              onChange={(event) =>
+                setReportDescendants((previous) => ({
+                  ...previous,
+                  dataItems: event.target.checked,
+                  itemVerifications: event.target.checked
+                    ? previous.itemVerifications
+                    : false,
+                }))
+              }
+            />
+            <span>
+              Data Item
+              {scope === 'data_item'
+                ? ' (selected)'
+                : scope === 'data_type'
+                ? ' — include all items in this type'
+                : ' — include all items in included types'}
+            </span>
+          </label>
+
+          <label style={{ display: 'inline-flex', alignItems: 'center', gap: 8 }}>
+            <input
+              type="checkbox"
+              checked={includeItemVerifications}
+              disabled={scope === 'data_item' || !includeDataItems}
+              onChange={(event) =>
+                setReportDescendants((previous) => ({
+                  ...previous,
+                  itemVerifications: event.target.checked,
+                }))
+              }
+            />
+            <span>
+              Item Verifications
+              {scope === 'data_item'
+                ? ' (all for the selected item)'
+                : ' — include all verifications for included items'}
+            </span>
+          </label>
+        </div>
+      </div>
+
+      <details
+        style={{
+          border: '1px solid rgba(98, 114, 164, 0.35)',
+          borderRadius: 12,
+          background: 'rgba(98, 114, 164, 0.05)',
+          padding: '0.8rem',
+          marginBottom: '0.8rem',
+        }}
+      >
+        <summary style={{ cursor: 'pointer', fontWeight: 600 }}>
+          Advanced options — filters, columns, and PDF layout
+        </summary>
+
+        <div style={{ marginTop: '0.8rem' }}>
+        {itemFiltersActive && (
       <div
         style={{
           border: '1px solid rgba(98, 114, 164, 0.35)',
@@ -263,16 +479,11 @@ export function SmartReportPanel({
           background: 'rgba(98, 114, 164, 0.08)',
           padding: '0.8rem',
           marginBottom: '0.8rem',
-          opacity: dataTypeScopeActive ? 1 : 0.85,
         }}
       >
-        <h3 style={{ margin: '0 0 0.45rem 0' }}>Data Item Filters For Report</h3>
+        <h3 style={{ margin: '0 0 0.45rem 0' }}>Filter Included Data Items</h3>
         <p style={{ margin: '0 0 0.55rem 0', color: 'var(--comment)' }}>
-          These are the classic Smart Report filters. They apply when scope is{' '}
-          <strong>Data Type</strong>.
-          {!dataTypeScopeActive
-            ? ' Select a data type to activate them.'
-            : ''}
+          These filters apply only to the included items in the selected data type.
         </p>
 
         <div
@@ -288,7 +499,7 @@ export function SmartReportPanel({
               value={dataItemQuery}
               onChange={(event) => setDataItemQuery(event.target.value)}
               placeholder="Name, description, external ID..."
-              disabled={!dataTypeScopeActive}
+              disabled={!itemFiltersActive}
             />
           </label>
 
@@ -299,7 +510,7 @@ export function SmartReportPanel({
               onChange={(event) =>
                 setVerifiedFilter(event.target.value as VerifiedFilter)
               }
-              disabled={!dataTypeScopeActive}
+              disabled={!itemFiltersActive}
             >
               <option value="all">All</option>
               <option value="verified">Verified</option>
@@ -314,7 +525,7 @@ export function SmartReportPanel({
               onChange={(event) =>
                 setRevisionsFilter(event.target.value as FilterToggle)
               }
-              disabled={!dataTypeScopeActive}
+              disabled={!itemFiltersActive}
             >
               <option value="all">All</option>
               <option value="with">With Revisions</option>
@@ -329,7 +540,7 @@ export function SmartReportPanel({
               onChange={(event) =>
                 setVerificationsFilter(event.target.value as FilterToggle)
               }
-              disabled={!dataTypeScopeActive}
+              disabled={!itemFiltersActive}
             >
               <option value="all">All</option>
               <option value="with">With Verifications</option>
@@ -342,7 +553,7 @@ export function SmartReportPanel({
             <select
               value={sortBy}
               onChange={(event) => setSortBy(event.target.value as SortBy)}
-              disabled={!dataTypeScopeActive}
+              disabled={!itemFiltersActive}
             >
               <option value="created">Created On-chain</option>
               <option value="name">Name</option>
@@ -358,7 +569,7 @@ export function SmartReportPanel({
               onChange={(event) =>
                 setSortDirection(event.target.value as SortDirection)
               }
-              disabled={!dataTypeScopeActive}
+              disabled={!itemFiltersActive}
             >
               <option value="desc">Descending</option>
               <option value="asc">Ascending</option>
@@ -366,6 +577,7 @@ export function SmartReportPanel({
           </label>
         </div>
       </div>
+        )}
 
       <div
         style={{
@@ -378,7 +590,7 @@ export function SmartReportPanel({
       >
         <h3 style={{ margin: '0 0 0.45rem 0' }}>Report Output Settings</h3>
         <p style={{ margin: '0 0 0.55rem 0', color: 'var(--comment)' }}>
-          Control included fields, layout density, and compact formatting.
+          Control optional columns, layout density, and compact formatting.
         </p>
 
         <div
@@ -464,17 +676,6 @@ export function SmartReportPanel({
           >
             Clear Fields
           </button>
-          <button
-            type="button"
-            className="btn"
-            onClick={() => {
-              if (!scope) return;
-              updateFieldsForScope(DEFAULT_FIELDS_BY_SCOPE[scope]);
-            }}
-            disabled={!scope}
-          >
-            Reset Defaults
-          </button>
         </div>
 
         {!scope ? (
@@ -484,7 +685,8 @@ export function SmartReportPanel({
         ) : (
           <>
             <p style={{ margin: '0 0 0.4rem 0', color: 'var(--comment)' }}>
-              Fields for current scope ({scopeLabel(scope)}):
+              Optional columns for {scopeLabel(scope)} reports. Child sections keep
+              their essential columns.
             </p>
             <div
               style={{
@@ -530,6 +732,8 @@ export function SmartReportPanel({
           </>
         )}
       </div>
+        </div>
+      </details>
 
       <div
         style={{
@@ -565,6 +769,7 @@ export function SmartReportPanel({
           </p>
         )}
       </div>
-    </section>
+      </section>
+    </div>
   );
 }
